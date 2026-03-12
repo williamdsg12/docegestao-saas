@@ -1,0 +1,130 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: #FFF1F5;
+  --foreground: #1F2937;
+  --card: #ffffff;
+  --card-foreground: #1F2937;
+  --popover: #ffffff;
+  --popover-foreground: #1F2937;
+  --primary: #FF6B9A;
+  --primary-foreground: #ffffff;
+  --secondary: #7C3AED;
+  --secondary-foreground: #ffffff;
+  --muted: #FFE4EC;
+  --muted-foreground: #6B7280;
+  --accent: #FFB3C7;
+  --accent-foreground: #7C3AED;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #FBCFE8;
+  --input: #FBCFE8;
+  --ring: #FF6B9A;
+  --chart-1: #FF6B9A;
+  --chart-2: #7C3AED;
+  --chart-3: #10B981;
+  --chart-4: #F59E0B;
+  --chart-5: #FFB3C7;
+  --radius: 1rem;
+
+  /* Custom SaaS Tokens */
+  --sidebar: #ffffff;
+  --sidebar-foreground: #6B7280;
+  --sidebar-primary: #FF6B9A;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #FFF1F5;
+  --sidebar-accent-foreground: #FF6B9A;
+  --sidebar-border: #FBCFE8;
+  --sidebar-ring: #FF6B9A;
+
+  /* Glassmorphism Variables */
+  --glass-background: rgba(255, 255, 255, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.5);
+  --glass-shadow: 0 8px 32px 0 rgba(255, 107, 154, 0.1);
+}
+
+.dark {
+  --background: #111827;
+  --foreground: #F9FAFB;
+  --card: #1F2937;
+  --card-foreground: #F9FAFB;
+  --popover: #1F2937;
+  --popover-foreground: #F9FAFB;
+  --primary: #FF6B9A;
+  --primary-foreground: #ffffff;
+  --secondary: #7C3AED;
+  --secondary-foreground: #ffffff;
+  --muted: #374151;
+  --muted-foreground: #9CA3AF;
+  --accent: #374151;
+  --accent-foreground: #F9FAFB;
+  --destructive: #F87171;
+  --destructive-foreground: #ffffff;
+  --border: #374151;
+  --input: #374151;
+  --ring: #FF6B9A;
+
+  /* Glassmorphism Variables Dark */
+  --glass-background: rgba(31, 41, 55, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+
+@theme inline {
+  --font-inter: var(--font-inter), 'Inter', system-ui, sans-serif;
+  --font-sans: var(--font-dm-sans), 'DM Sans', system-ui, sans-serif;
+  --font-serif: var(--font-dm-serif), 'DM Serif Display', Georgia, serif;
+  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer utilities {
+  .glass-card {
+    background: var(--glass-background);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground font-inter;
+  }
+}

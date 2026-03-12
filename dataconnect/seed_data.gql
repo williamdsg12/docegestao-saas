@@ -1,0 +1,146 @@
+mutation CreateDemoData @transaction {
+  user_insertMany(data: [
+    {
+      id: "77a837c7-c711-477d-b333-68d1844e18d3",
+      displayName: "Confeitaria da Luna",
+      email: "luna@example.com",
+      createdAt: "2024-01-01T10:00:00Z",
+      businessName: "Confeitaria da Luna",
+      phoneNumber: "11987654321"
+    },
+    {
+      id: "9f10d9c4-0b1a-4f51-b06f-632b5d4e1a0b",
+      displayName: "Bolos da Ana",
+      email: "ana@example.com",
+      createdAt: "2024-01-01T10:05:00Z",
+      businessName: "Bolos da Ana",
+      phoneNumber: "11912345678"
+    }
+  ])
+  customer_insertMany(data: [
+    {
+      id: "0a1b2c3d-4e5f-6789-0123-456789abcdef",
+      userId: "77a837c7-c711-477d-b333-68d1844e18d3",
+      name: "João Silva",
+      createdAt: "2024-01-15T11:00:00Z",
+      email: "joao.silva@example.com",
+      phoneNumber: "11998877665",
+      address: "Rua A, 123"
+    },
+    {
+      id: "f9e8d7c6-b5a4-3210-fedc-ba9876543210",
+      userId: "77a837c7-c711-477d-b333-68d1844e18d3",
+      name: "Maria Oliveira",
+      createdAt: "2024-01-20T12:00:00Z",
+      email: "maria.oliveira@example.com",
+      phoneNumber: "11976543210",
+      address: "Avenida B, 456"
+    }
+  ])
+  ingredient_insertMany(data: [
+    {
+      id: "1a2b3c4d-5e6f-7890-1234-567890abcdef",
+      userId: "77a837c7-c711-477d-b333-68d1844e18d3",
+      name: "Farinha de Trigo",
+      unitOfMeasure: "kg",
+      currentStock: 50.0,
+      createdAt: "2024-02-01T09:00:00Z"
+    },
+    {
+      id: "abcde123-f4e5-6d7c-8901-234567890123",
+      userId: "77a837c7-c711-477d-b333-68d1844e18d3",
+      name: "Açúcar Refinado",
+      unitOfMeasure: "kg",
+      currentStock: 30.0,
+      createdAt: "2024-02-01T09:10:00Z"
+    }
+  ])
+  product_insertMany(data: [
+    {
+      id: "5a6b7c8d-9e0f-1234-5678-90abcdef0123",
+      userId: "77a837c7-c711-477d-b333-68d1844e18d3",
+      name: "Bolo de Chocolate",
+      description: "Delicioso bolo de chocolate com cobertura de ganache.",
+      price: 60.00,
+      createdAt: "2024-02-10T14:00:00Z",
+      imageUrl: "https://example.com/bolo_chocolate.jpg"
+    },
+    {
+      id: "b2c3d4e5-f6a7-8901-2345-67890abcdef0",
+      userId: "77a837c7-c711-477d-b333-68d1844e18d3",
+      name: "Torta de Limão",
+      description: "Torta refrescante de limão com merengue suíço.",
+      price: 55.00,
+      createdAt: "2024-02-12T15:00:00Z",
+      imageUrl: "https://example.com/torta_limao.jpg"
+    }
+  ])
+  recipe_insertMany(data: [
+    {
+      id: "d1e2f3a4-b5c6-7890-1234-567890abcdef",
+      productId: "5a6b7c8d-9e0f-1234-5678-90abcdef0123",
+      instructions: "Misture os ingredientes secos, adicione os molhados e asse.",
+      createdAt: "2024-02-11T10:00:00Z"
+    },
+    {
+      id: "f8e7d6c5-b4a3-2109-8765-43210fedcba9",
+      productId: "b2c3d4e5-f6a7-8901-2345-67890abcdef0",
+      instructions: "Faça a massa, prepare o recheio de limão e cubra com merengue.",
+      createdAt: "2024-02-13T11:00:00Z"
+    }
+  ])
+  recipeIngredient_insertMany(data: [
+    {
+      recipeId: "d1e2f3a4-b5c6-7890-1234-567890abcdef",
+      ingredientId: "1a2b3c4d-5e6f-7890-1234-567890abcdef",
+      quantity: 0.5
+    },
+    {
+      recipeId: "d1e2f3a4-b5c6-7890-1234-567890abcdef",
+      ingredientId: "abcde123-f4e5-6d7c-8901-234567890123",
+      quantity: 0.3
+    },
+    {
+      recipeId: "f8e7d6c5-b4a3-2109-8765-43210fedcba9",
+      ingredientId: "abcde123-f4e5-6d7c-8901-234567890123",
+      quantity: 0.2
+    }
+  ])
+  order_insertMany(data: [
+    {
+      id: "e1f2g3h4-i5j6-7890-klmn-opqrstuvwxyz",
+      userId: "77a837c7-c711-477d-b333-68d1844e18d3",
+      customerId: "0a1b2c3d-4e5f-6789-0123-456789abcdef",
+      orderDate: "2024-03-01",
+      deliveryDate: "2024-03-05",
+      totalAmount: 120.00,
+      status: "Pendente",
+      createdAt: "2024-03-01T10:00:00Z",
+      notes: "Aniversário do cliente"
+    },
+    {
+      id: "abcdef01-2345-6789-abcd-ef0123456789",
+      userId: "77a837c7-c711-477d-b333-68d1844e18d3",
+      customerId: "f9e8d7c6-b5a4-3210-fedc-ba9876543210",
+      orderDate: "2024-03-02",
+      deliveryDate: "2024-03-06",
+      totalAmount: 55.00,
+      status: "Concluído",
+      createdAt: "2024-03-02T11:00:00Z"
+    }
+  ])
+  orderItem_insertMany(data: [
+    {
+      orderId: "e1f2g3h4-i5j6-7890-klmn-opqrstuvwxyz",
+      productId: "5a6b7c8d-9e0f-1234-5678-90abcdef0123",
+      quantity: 2,
+      unitPrice: 60.00
+    },
+    {
+      orderId: "abcdef01-2345-6789-abcd-ef0123456789",
+      productId: "b2c3d4e5-f6a7-8901-2345-67890abcdef0",
+      quantity: 1,
+      unitPrice: 55.00
+    }
+  ])
+}

@@ -1,0 +1,46 @@
+query ListAllProducts @auth(level: PUBLIC, insecureReason: "This operation is safe to expose to the public") {
+  products {
+    id
+    name
+    description
+    price
+    imageUrl
+  }
+}
+
+query GetMyOrders @auth(level: USER, insecureReason: "This operation is safe to expose to all logged in users.") {
+  orders(where: {userId: {eq_expr: "auth.uid"}}) {
+    id
+    orderDate
+    totalAmount
+    status
+    customer {
+      name
+      email
+    }
+    orderItems {
+      quantity
+      unitPrice
+      product {
+        name
+      }
+    }
+  }
+}
+
+mutation CreateNewIngredient($name: String!, $unitOfMeasure: String!, $currentStock: Float) @auth(level: USER, insecureReason: "This operation is safe to expose to all logged in users.") {
+  ingredient_insert(data: {
+    userId_expr: "auth.uid",
+    name: $name,
+    unitOfMeasure: $unitOfMeasure,
+    currentStock: $currentStock
+  }) {
+    id
+  }
+}
+
+mutation UpdateProductPrice($id: UUID!, $newPrice: Float!) @auth(expr: "auth.uid != null && auth.token.admin == true") {
+  product_update(key: {id: $id}, data: {price: $newPrice}) {
+    id
+  }
+}

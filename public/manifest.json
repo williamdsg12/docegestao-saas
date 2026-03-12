@@ -1,0 +1,21 @@
+{
+    "name": "DoceGestão - Gestão Inteligente para Confeiteiras",
+    "short_name": "DoceGestão",
+    "description": "O sistema de gestão criado especialmente para confeiteiras que trabalham com encomendas.",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#f2799b",
+    "icons": [
+        {
+            "src": "/favicon.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/favicon.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}

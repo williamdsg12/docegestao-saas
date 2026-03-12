@@ -1,0 +1,90 @@
+2026/03/11-17:53:29.015 a80 Creating DB D:\app\sistema confeitaria\.wwebjs_auth\session\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb since it was missing.
+2026/03/11-17:53:29.618 a80 Reusing MANIFEST D:\app\sistema confeitaria\.wwebjs_auth\session\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
+2026/03/11-17:53:53.656 a80 Level-0 table #5: started
+2026/03/11-17:53:53.818 a80 Level-0 table #5: 1008506 bytes OK
+2026/03/11-17:53:53.973 a80 Delete type=0 #3
+2026/03/11-17:53:57.327 a80 Level-0 table #7: started
+2026/03/11-17:53:57.530 a80 Level-0 table #7: 1114953 bytes OK
+2026/03/11-17:53:57.699 a80 Delete type=0 #4
+2026/03/11-17:53:57.753 a80 Compacting 1@1 + 1@2 files
+2026/03/11-17:53:58.015 a80 Generated table #8@1: 24636 keys, 1017497 bytes
+2026/03/11-17:53:58.016 a80 Compacted 1@1 + 1@2 files => 1017497 bytes
+2026/03/11-17:53:58.193 a80 compacted to: files[ 0 0 1 0 0 0 0 ]
+2026/03/11-17:53:58.193 a80 Delete type=2 #5
+2026/03/11-17:53:58.194 a80 Delete type=2 #7
+2026/03/11-17:53:58.195 a80 Level-0 table #10: started
+2026/03/11-17:53:58.341 a80 Level-0 table #10: 1019258 bytes OK
+2026/03/11-17:53:58.670 185c Current memtable full; waiting...
+2026/03/11-17:53:58.739 a80 Delete type=0 #6
+2026/03/11-17:53:58.740 a80 Level-0 table #12: started
+2026/03/11-17:53:59.061 a80 Level-0 table #12: 994787 bytes OK
+2026/03/11-17:53:59.299 a80 Delete type=0 #9
+2026/03/11-17:53:59.422 a80 Compacting 1@1 + 1@2 files
+2026/03/11-17:53:59.787 a80 Generated table #13@1: 32398 keys, 1304990 bytes
+2026/03/11-17:53:59.787 a80 Compacted 1@1 + 1@2 files => 1304990 bytes
+2026/03/11-17:53:59.965 a80 compacted to: files[ 1 0 1 0 0 0 0 ]
+2026/03/11-17:53:59.965 a80 Delete type=2 #8
+2026/03/11-17:53:59.965 a80 Delete type=2 #10
+2026/03/11-17:54:00.730 a80 Moved #12 to level-1 994787 bytes OK: files[ 0 1 1 0 0 0 0 ]
+2026/03/11-17:54:03.166 4814 Compacting 1@1 + 1@2 files
+2026/03/11-17:54:03.322 4814 Generated table #14@1: 50489 keys, 1998845 bytes
+2026/03/11-17:54:03.322 4814 Compacted 1@1 + 1@2 files => 1998845 bytes
+2026/03/11-17:54:03.486 4814 compacted to: files[ 0 0 1 0 0 0 0 ]
+2026/03/11-17:54:03.487 4814 Delete type=2 #12
+2026/03/11-17:54:03.487 4814 Delete type=2 #13
+2026/03/11-17:54:03.696 a80 Level-0 table #16: started
+2026/03/11-17:54:03.828 a80 Level-0 table #16: 967603 bytes OK
+2026/03/11-17:54:03.969 a80 Delete type=0 #11
+2026/03/11-17:54:03.971 a80 Compacting 1@1 + 1@2 files
+2026/03/11-17:54:04.169 a80 Generated table #17@1: 45797 keys, 2206089 bytes
+2026/03/11-17:54:04.204 a80 Generated table #18@1: 206 keys, 4295 bytes
+2026/03/11-17:54:04.204 a80 Compacted 1@1 + 1@2 files => 2210384 bytes
+2026/03/11-17:54:04.340 a80 compacted to: files[ 0 0 2 0 0 0 0 ]
+2026/03/11-17:54:04.341 a80 Delete type=2 #14
+2026/03/11-17:54:04.341 a80 Delete type=2 #16
+2026/03/11-17:54:16.014 a80 Level-0 table #20: started
+2026/03/11-17:54:16.207 a80 Level-0 table #20: 1000029 bytes OK
+2026/03/11-17:54:16.358 a80 Delete type=0 #15
+2026/03/11-17:54:20.573 a80 Compacting 1@1 + 1@2 files
+2026/03/11-17:54:20.804 a80 Generated table #21@1: 41161 keys, 2201195 bytes
+2026/03/11-17:54:20.869 a80 Generated table #22@1: 13262 keys, 501137 bytes
+2026/03/11-17:54:20.869 a80 Compacted 1@1 + 1@2 files => 2702332 bytes
+2026/03/11-17:54:21.015 a80 compacted to: files[ 0 0 3 0 0 0 0 ]
+2026/03/11-17:54:21.015 a80 Delete type=2 #17
+2026/03/11-17:54:21.015 a80 Delete type=2 #20
+2026/03/11-17:54:22.840 a80 Level-0 table #24: started
+2026/03/11-17:54:22.994 a80 Level-0 table #24: 1061970 bytes OK
+2026/03/11-17:54:23.115 a80 Delete type=0 #19
+2026/03/11-17:54:23.571 4d70 Compacting 1@1 + 2@2 files
+2026/03/11-17:54:23.765 4d70 Generated table #25@1: 39113 keys, 2197551 bytes
+2026/03/11-17:54:23.884 4d70 Generated table #26@1: 15646 keys, 580810 bytes
+2026/03/11-17:54:23.884 4d70 Compacted 1@1 + 2@2 files => 2778361 bytes
+2026/03/11-17:54:24.023 4d70 compacted to: files[ 0 0 3 0 0 0 0 ]
+2026/03/11-17:54:24.024 4d70 Delete type=2 #21
+2026/03/11-17:54:24.024 4d70 Delete type=2 #22
+2026/03/11-17:54:24.024 4d70 Delete type=2 #24
+2026/03/11-17:54:40.424 a80 Level-0 table #28: started
+2026/03/11-17:54:40.638 a80 Level-0 table #28: 1123239 bytes OK
+2026/03/11-17:54:40.771 a80 Delete type=0 #23
+2026/03/11-17:54:40.773 a80 Compacting 1@1 + 2@2 files
+2026/03/11-17:54:40.952 a80 Generated table #29@1: 38632 keys, 2197830 bytes
+2026/03/11-17:54:41.088 a80 Generated table #30@1: 20439 keys, 778523 bytes
+2026/03/11-17:54:41.089 a80 Compacted 1@1 + 2@2 files => 2976353 bytes
+2026/03/11-17:54:41.211 a80 compacted to: files[ 0 0 3 0 0 0 0 ]
+2026/03/11-17:54:41.212 a80 Delete type=2 #25
+2026/03/11-17:54:41.212 a80 Delete type=2 #26
+2026/03/11-17:54:41.212 a80 Delete type=2 #28
+2026/03/11-17:55:01.572 a80 Level-0 table #32: started
+2026/03/11-17:55:01.702 a80 Level-0 table #32: 1075377 bytes OK
+2026/03/11-17:55:01.814 a80 Delete type=0 #27
+2026/03/11-17:55:02.604 a80 Compacting 1@1 + 2@2 files
+2026/03/11-17:55:02.811 a80 Generated table #33@1: 40231 keys, 2215987 bytes
+2026/03/11-17:55:02.942 a80 Generated table #34@1: 22279 keys, 892218 bytes
+2026/03/11-17:55:02.942 a80 Compacted 1@1 + 2@2 files => 3108205 bytes
+2026/03/11-17:55:03.055 a80 compacted to: files[ 0 0 3 0 0 0 0 ]
+2026/03/11-17:55:03.055 a80 Delete type=2 #29
+2026/03/11-17:55:03.055 a80 Delete type=2 #30
+2026/03/11-17:55:03.055 a80 Delete type=2 #32
+2026/03/11-18:12:46.309 185c Level-0 table #36: started
+2026/03/11-18:12:46.484 185c Level-0 table #36: 1080248 bytes OK
+2026/03/11-18:12:46.606 185c Delete type=0 #31
