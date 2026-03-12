@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/hooks/useAuth"
+import { useBusiness } from "@/hooks/useBusiness"
+import { usePlanLimits } from "@/hooks/usePlanLimits"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -88,6 +90,8 @@ const categoryColors: Record<string, string> = {
 
 export default function FichaTecnicaPage() {
   const { user } = useAuth()
+  const { profile } = useBusiness()
+  const { limits, canAddProduct, refreshLimits } = usePlanLimits()
   const [products, setProducts] = useState<Product[]>([])
   const [ingredients, setIngredients] = useState<Ingredient[]>([])
   const [loading, setLoading] = useState(true)
@@ -122,17 +126,18 @@ export default function FichaTecnicaPage() {
   const [ingSearch, setIngSearch] = useState("")
 
   useEffect(() => {
-    if (user) {
+    if (profile?.company_id) {
       fetchData()
     }
-  }, [user])
+  }, [profile])
 
   async function fetchData() {
+    if (!profile?.company_id) return
     try {
       setLoading(true)
       const [prodRes, ingRes] = await Promise.all([
-        supabase.from('products').select('*').order('name'),
-        supabase.from('ingredientes').select('*').order('nome')
+        supabase.from('products').select('*').eq('company_id', profile.company_id).order('name'),
+        supabase.from('ingredientes').select('*').eq('company_id', profile.company_id).order('nome')
       ])
 
       if (prodRes.error) throw prodRes.error
@@ -149,6 +154,11 @@ export default function FichaTecnicaPage() {
   }
 
   async function handleSaveProduct() {
+    if (!editingProduct && !canAddProduct()) {
+      toast.error(`Limite do plano ${limits.plan_name} atingido (${limits.max_products} produtos). Faça upgrade para continuar!`)
+      return
+    }
+
     if (!productForm.nome) {
       toast.error("O nome do produto é obrigatório")
       return
@@ -191,6 +201,7 @@ export default function FichaTecnicaPage() {
           .from('products')
           .insert({
             user_id: user?.id,
+            company_id: profile?.company_id,
             name: productForm.nome,
             category: productForm.categoria,
             custo_base,
@@ -231,6 +242,7 @@ export default function FichaTecnicaPage() {
       setNewProductOpen(false)
       setEditingProduct(null)
       toast.success("Produto/Ficha Técnica salva com sucesso!")
+      refreshLimits() // Update plan usage
       setWizardStep(1)
       setProductForm({
         nome: "",
@@ -285,6 +297,7 @@ export default function FichaTecnicaPage() {
           .from('ingredientes')
           .insert({
             user_id: user?.id,
+            company_id: profile?.company_id,
             nome: ingData.nome,
             preco_compra: parseFloat(ingData.preco_compra),
             quantidade_embalagem: parseFloat(ingData.quantidade_embalagem) || 1,
@@ -317,6 +330,7 @@ export default function FichaTecnicaPage() {
       if (error) throw error
       setProducts(prev => prev.filter(p => p.id !== id))
       toast.success("Produto excluído!")
+      refreshLimits()
     } catch (error: any) {
       toast.error("Erro ao excluir produto")
     }
@@ -400,9 +414,14 @@ export default function FichaTecnicaPage() {
             Exportar Tudo
           </Button>
           <Button onClick={() => setNewProductOpen(true)} className="h-11 px-8 rounded-xl bg-primary hover:bg-primary text-white font-bold shadow-lg shadow-primary/20 transition-transform hover:scale-105">
-            <Plus className="mr-2 size-5" />
-            Nova Ficha Técnica
-          </Button>
+                <Plus className="mr-2 size-5" />
+                Nova Ficha Técnica
+                {limits.max_products < 99999 && (
+                  <span className="ml-2 text-[8px] bg-white/20 px-1.5 py-0.5 rounded-md">
+                    {limits.current_products}/{limits.max_products}
+                  </span>
+                )}
+              </Button>
         </div>
       </div>
 

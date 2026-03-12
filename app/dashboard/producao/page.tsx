@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/hooks/useAuth"
+import { useBusiness } from "@/hooks/useBusiness"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -47,21 +48,24 @@ const columns: { id: ProductionStatus, label: string, icon: any, color: string, 
 
 export default function ProducaoPage() {
     const { user } = useAuth()
+    const { profile } = useBusiness()
     const [items, setItems] = useState<ProductionItem[]>([])
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        if (user) {
+        if (profile?.company_id) {
             fetchOrders()
         }
-    }, [user])
+    }, [profile])
 
     async function fetchOrders() {
+        if (!profile?.company_id) return
         try {
             setLoading(true)
             const { data, error } = await supabase
                 .from('orders')
                 .select('*, clients(name)')
+                .eq('company_id', profile.company_id)
                 .order('delivery_date', { ascending: true })
 
             if (error) throw error

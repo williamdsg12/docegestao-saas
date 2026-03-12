@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/hooks/useAuth"
+import { useBusiness } from "@/hooks/useBusiness"
 import { toast } from "sonner"
 import {
     Plus,
@@ -42,6 +43,7 @@ interface Quote {
 
 export default function OrcamentosPage() {
     const { user } = useAuth()
+    const { profile } = useBusiness()
     const [quotes, setQuotes] = useState<Quote[]>([])
     const [clients, setClients] = useState<any[]>([])
     const [searchTerm, setSearchTerm] = useState("")
@@ -57,21 +59,18 @@ export default function OrcamentosPage() {
     })
 
     useEffect(() => {
-        if (user) {
+        if (profile?.company_id) {
             initData()
         }
-    }, [user])
+    }, [profile])
 
     async function initData() {
+        if (!profile?.company_id) return
         setLoading(true)
         try {
-            const { data: companyRes } = await supabase.from('companies').select('id').eq('owner_id', user?.id).single()
-            let cid = companyRes?.id
-            setCompanyId(cid || null)
-
             const [quotesRes, clientsRes] = await Promise.all([
-                supabase.from('quotes').select('id, status, total, created_at, valid_until, client_id').order('created_at', { ascending: false }),
-                supabase.from('clients').select('id, name').order('name')
+                supabase.from('quotes').select('id, status, total, created_at, valid_until, client_id, company_id').eq('company_id', profile.company_id).order('created_at', { ascending: false }),
+                supabase.from('clients').select('id, name').eq('company_id', profile.company_id).order('name')
             ])
 
             const clientsData = clientsRes.data || []
@@ -103,7 +102,7 @@ export default function OrcamentosPage() {
         setIsSaving(true)
         try {
             const { data, error } = await supabase.from('quotes').insert({
-                confeitaria_id: companyId,
+                company_id: profile?.company_id,
                 client_id: formData.client_id,
                 total: parseFloat(formData.total),
                 status: 'Aguardando',

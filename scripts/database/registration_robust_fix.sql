@@ -85,9 +85,9 @@ END $$;
 -- 2. Inserir planos padrão se não existirem (Essencial para evitar falha no trigger)
 INSERT INTO public.plans (name, slug, price)
 VALUES 
-    ('Iniciante', 'iniciante', 0),
+    ('Iniciante', 'iniciante', 19.90),
     ('Profissional', 'profissional', 49.90),
-    ('Premium', 'premium', 89.90)
+    ('Premium', 'premium', 59.90)
 ON CONFLICT (slug) DO NOTHING;
 
 -- 3. Função de Cadastro ULTRA ROBUSTA

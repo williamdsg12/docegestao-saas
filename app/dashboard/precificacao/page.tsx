@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/hooks/useAuth"
+import { useBusiness } from "@/hooks/useBusiness"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -48,20 +49,42 @@ interface Ingredient {
 
 export default function PrecificacaoPage() {
     const { user } = useAuth()
+    const { profile } = useBusiness()
     const [products, setProducts] = useState<any[]>([])
     const [selectedProduct, setSelectedProduct] = useState<string>("")
     const [loadingProducts, setLoadingProducts] = useState(false)
+    const [inventory, setInventory] = useState<any[]>([])
 
     useEffect(() => {
-        if (user) {
+        if (profile?.company_id) {
             fetchProducts()
+            fetchInventory()
         }
-    }, [user])
+    }, [profile])
+
+    async function fetchInventory() {
+        if (!profile?.company_id) return
+        try {
+            const { data } = await supabase
+                .from('ingredientes')
+                .select('*')
+                .eq('company_id', profile.company_id)
+                .order('nome')
+            setInventory(data || [])
+        } catch (error: any) {
+            console.error("Error fetching inventory:", error)
+        }
+    }
 
     async function fetchProducts() {
+        if (!profile?.company_id) return
         setLoadingProducts(true)
         try {
-            const { data } = await supabase.from('receitas').select('id, nome')
+            const { data } = await supabase
+                .from('receitas')
+                .select('id, nome')
+                .eq('company_id', profile.company_id)
+                .order('nome')
             setProducts(data || [])
         } catch (error: any) {
             console.error("Error fetching recipes:", error.message || error)
@@ -141,9 +164,26 @@ export default function PrecificacaoPage() {
     }
 
     const atualizarIngrediente = (id: string, campo: keyof Ingredient, valor: any) => {
-        setIngredientes(
-            ingredientes.map((i) => (i.id === id ? { ...i, [campo]: valor } : i))
-        )
+        setIngredientes(prev => {
+            const index = prev.findIndex(i => i.id === id)
+            if (index === -1) return prev
+            
+            const newIngredientes = [...prev]
+            const updatedItem = { ...newIngredientes[index], [campo]: valor }
+
+            // Se mudou o nome, verificar se existe no inventário para auto-preencher
+            if (campo === 'nome') {
+                const invItem = inventory.find(i => i.nome.toLowerCase() === valor.toLowerCase())
+                if (invItem) {
+                    updatedItem.precoPago = invItem.preco_compra
+                    updatedItem.quantidadeComprada = invItem.quantidade_embalagem
+                    updatedItem.unidade = invItem.unidade_padrao
+                }
+            }
+
+            newIngredientes[index] = updatedItem
+            return newIngredientes
+        })
     }
 
     const calculos = useMemo(() => {
@@ -281,10 +321,16 @@ export default function PrecificacaoPage() {
                                         <div className="md:col-span-4">
                                             <Input
                                                 placeholder="Ingrediente..."
+                                                list="inventory-list"
                                                 className="h-14 bg-transparent border-none font-black italic uppercase italic text-slate-900 placeholder:text-slate-300 focus-visible:ring-0"
                                                 value={ing.nome}
                                                 onChange={(e) => atualizarIngrediente(ing.id, "nome", e.target.value)}
                                             />
+                                            <datalist id="inventory-list">
+                                                {inventory.map((inv) => (
+                                                    <option key={inv.id} value={inv.nome} />
+                                                ))}
+                                            </datalist>
                                         </div>
                                         <div className="md:col-span-2 flex items-center gap-2">
                                             <Input

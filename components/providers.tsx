@@ -2,6 +2,7 @@
 
 import { ThemeProvider as NextThemesProvider } from "next-themes"
 import { AuthProvider, useAuth } from "@/hooks/useAuth"
+import { BusinessProvider } from "@/hooks/useBusiness"
 import { Toaster } from "@/components/ui/sonner"
 import { useEffect } from "react"
 
@@ -21,16 +22,18 @@ function ColorProvider({ children }: { children: React.ReactNode }) {
 export function Providers({ children }: { children: React.ReactNode }) {
     return (
         <NextThemesProvider
-            attribute="class"
+            attribute="data-theme"
             defaultTheme="light"
             enableSystem
             disableTransitionOnChange
         >
             <AuthProvider>
-                <ColorProvider>
-                    {children}
-                    <Toaster position="bottom-right" />
-                </ColorProvider>
+                <BusinessProvider>
+                    <ColorProvider>
+                        {children}
+                        <Toaster position="bottom-right" />
+                    </ColorProvider>
+                </BusinessProvider>
             </AuthProvider>
         </NextThemesProvider>
     )

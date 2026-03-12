@@ -9,6 +9,8 @@ import { differenceInDays } from "date-fns"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { OnboardingModal } from "@/components/dashboard/OnboardingModal"
+import { ThemeToggle } from "@/components/dashboard/ThemeToggle"
+import { NotificationBell } from "@/components/dashboard/NotificationBell"
 import { useState, useEffect } from "react"
 import { toast } from "sonner"
 
@@ -75,12 +77,9 @@ export default function DashboardLayout({
                 <span>{getTrialLabel()}</span>
               </Link>
 
-              <div className="flex items-center gap-6">
-                <button className="relative text-pink-700 hover:text-pink-900 transition-colors">
-                  <Bell className="size-6" />
-                  <span className="absolute -top-1 -right-1 size-2 bg-pink-500 rounded-full border-2 border-[#FBCFE8]" />
-                </button>
-
+              <div className="flex items-center gap-4">
+                <ThemeToggle />
+                <NotificationBell />
                 <UserAvatarMenu variant="transparent" />
               </div>
             </header>

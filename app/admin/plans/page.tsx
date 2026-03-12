@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 
 interface Plan {
     id: string
@@ -38,11 +39,9 @@ interface Plan {
     interval: string
     features: string[]
     active: boolean
-    limits: {
-        users: number
-        orders: number
-        recipes: number
-    }
+    max_orders: number
+    max_products: number
+    max_clients: number
 }
 
 export default function PlansManagement() {
@@ -51,11 +50,38 @@ export default function PlansManagement() {
     const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
 
-    const handleSavePlan = (e: React.FormEvent) => {
+    const handleSavePlan = async (e: React.FormEvent) => {
         e.preventDefault()
-        toast.success(selectedPlan ? "Plano editado com sucesso!" : "Novo plano criado com sucesso!")
-        setIsDialogOpen(false)
-        setSelectedPlan(null)
+        try {
+            const formData = new FormData(e.target as HTMLFormElement)
+            const featuresArray = (formData.get('features') as string)
+                .split('\n')
+                .map(f => f.trim())
+                .filter(f => f.length > 0)
+                
+            const updates = {
+                name: formData.get('name') as string,
+                price: parseFloat(formData.get('price') as string),
+                max_clients: parseInt(formData.get('max_clients') as string),
+                max_orders: parseInt(formData.get('max_orders') as string),
+                max_products: parseInt(formData.get('max_products') as string),
+                features: featuresArray
+            }
+
+            if (selectedPlan) {
+                const { error } = await supabase.from('plans').update(updates).eq('id', selectedPlan.id)
+                if (error) throw error
+                toast.success("Plano editado com sucesso!")
+                setPlans(prev => prev.map(p => p.id === selectedPlan.id ? { ...p, ...updates } : p))
+            } else {
+                toast.error("Criação de novos planos deve ser via banco por enquanto.")
+            }
+            setIsDialogOpen(false)
+            setSelectedPlan(null)
+        } catch (error: any) {
+            console.error("Erro ao salvar:", error)
+            toast.error("Erro ao salvar o plano")
+        }
     }
 
     const openNewPlan = () => {
@@ -88,8 +114,10 @@ export default function PlansManagement() {
                 price: p.price,
                 interval: p.interval || 'month',
                 features: p.features || [],
-                active: p.active !== false,
-                limits: p.limits || { users: 1, orders: 100, recipes: 20 }
+                active: p.is_active !== false,
+                max_orders: p.max_orders || 0,
+                max_products: p.max_products || 0,
+                max_clients: p.max_clients || 0
             }))
 
             setPlans(formatted)
@@ -153,17 +181,17 @@ export default function PlansManagement() {
                         <div className="grid grid-cols-3 gap-4 mb-10 pb-10 border-b border-slate-50">
                             <div className="flex flex-col items-center gap-1">
                                 <Users className="size-4 text-slate-300" />
-                                <span className="font-black text-slate-900 text-xs tracking-tighter italic">{plan.limits.users === 999 ? 'ILIM' : plan.limits.users}</span>
-                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Usuários</span>
+                                <span className="font-black text-slate-900 text-xs tracking-tighter italic">{plan.max_clients === 99999 ? 'ILIM' : plan.max_clients}</span>
+                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Clientes</span>
                             </div>
                             <div className="flex flex-col items-center gap-1">
                                 <ShoppingCart className="size-4 text-slate-300" />
-                                <span className="font-black text-slate-900 text-xs tracking-tighter italic">{plan.limits.orders === 9999 ? 'ILIM' : plan.limits.orders}</span>
+                                <span className="font-black text-slate-900 text-xs tracking-tighter italic">{plan.max_orders === 99999 ? 'ILIM' : plan.max_orders}</span>
                                 <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Pedidos</span>
                             </div>
                             <div className="flex flex-col items-center gap-1">
                                 <Database className="size-4 text-slate-300" />
-                                <span className="font-black text-slate-900 text-xs tracking-tighter italic">{plan.limits.recipes === 999 ? 'ILIM' : plan.limits.recipes}</span>
+                                <span className="font-black text-slate-900 text-xs tracking-tighter italic">{plan.max_products === 99999 ? 'ILIM' : plan.max_products}</span>
                                 <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Receitas</span>
                             </div>
                         </div>
@@ -243,26 +271,35 @@ export default function PlansManagement() {
                         <div className="grid grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Nome do Plano</Label>
-                                <Input defaultValue={selectedPlan?.name} placeholder="Ex: Pro, Platinum..." className="h-12 rounded-xl bg-slate-50 border-none font-bold" />
+                                <Input name="name" defaultValue={selectedPlan?.name} placeholder="Ex: Pro, Platinum..." className="h-12 rounded-xl bg-slate-50 border-none font-bold" />
                             </div>
                             <div className="space-y-2">
                                 <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Preço (R$)</Label>
-                                <Input type="number" defaultValue={selectedPlan?.price} placeholder="0.00" className="h-12 rounded-xl bg-slate-50 border-none font-bold" />
+                                <Input name="price" type="number" step="0.01" defaultValue={selectedPlan?.price} placeholder="0.00" className="h-12 rounded-xl bg-slate-50 border-none font-bold" />
                             </div>
                         </div>
                         <div className="grid grid-cols-3 gap-4">
                             <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Vagas Usuários</Label>
-                                <Input type="number" defaultValue={selectedPlan?.limits.users} className="h-12 rounded-xl bg-slate-50 border-none font-bold text-center" />
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Limite Clientes</Label>
+                                <Input name="max_clients" type="number" defaultValue={selectedPlan?.max_clients} className="h-12 rounded-xl bg-slate-50 border-none font-bold text-center" />
                             </div>
                             <div className="space-y-2">
                                 <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Limite Pedidos</Label>
-                                <Input type="number" defaultValue={selectedPlan?.limits.orders} className="h-12 rounded-xl bg-slate-50 border-none font-bold text-center" />
+                                <Input name="max_orders" type="number" defaultValue={selectedPlan?.max_orders} className="h-12 rounded-xl bg-slate-50 border-none font-bold text-center" />
                             </div>
                             <div className="space-y-2">
                                 <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Limite Receitas</Label>
-                                <Input type="number" defaultValue={selectedPlan?.limits.recipes} className="h-12 rounded-xl bg-slate-50 border-none font-bold text-center" />
+                                <Input name="max_products" type="number" defaultValue={selectedPlan?.max_products} className="h-12 rounded-xl bg-slate-50 border-none font-bold text-center" />
                             </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Funcionalidades (uma por linha)</Label>
+                            <Textarea 
+                                name="features" 
+                                defaultValue={selectedPlan?.features?.join('\n')} 
+                                placeholder="Ex: Relatórios Avançados&#10;Suporte 24/7" 
+                                className="min-h-[100px] rounded-xl bg-slate-50 border-none font-bold" 
+                            />
                         </div>
                         <DialogFooter className="gap-2">
                             <Button variant="outline" type="button" onClick={() => setIsDialogOpen(false)} className="h-14 px-8 rounded-2xl font-black uppercase italic text-xs tracking-widest">

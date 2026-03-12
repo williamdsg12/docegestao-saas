@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/hooks/useAuth"
+import { useBusiness } from "@/hooks/useBusiness"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -56,6 +57,7 @@ interface StockItem {
 
 export default function EstoquePage() {
     const { user } = useAuth()
+    const { profile, loadingBusiness } = useBusiness()
     const [stock, setStock] = useState<StockItem[]>([])
     const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState("")
@@ -75,17 +77,19 @@ export default function EstoquePage() {
     })
 
     useEffect(() => {
-        if (user) {
+        if (profile?.company_id) {
             fetchData()
         }
-    }, [user])
+    }, [profile])
 
     async function fetchData() {
+        if (!profile?.company_id) return
         try {
             setLoading(true)
             const { data, error } = await supabase
                 .from('ingredientes')
                 .select('*')
+                .eq('company_id', profile.company_id)
                 .order('nome')
 
             if (error) throw error
@@ -146,6 +150,7 @@ export default function EstoquePage() {
                     .from('ingredientes')
                     .insert({
                         user_id: user?.id,
+                        company_id: profile?.company_id,
                         nome: ingData.nome,
                         categoria: ingData.categoria,
                         quantidade_atual: parseFloat(ingData.quantidade_atual) || 0,
@@ -217,10 +222,10 @@ export default function EstoquePage() {
     )
 
     const stats = [
-        { label: "Itens Cadastrados", value: stock.length, icon: Package, color: "text-primary" },
-        { label: "Em Alerta Crítico", value: stock.filter(s => (s.quantidade_atual || 0) < (s.estoque_minimo || 0)).length, icon: AlertTriangle, color: "text-rose-600" },
-        { label: "Investimento Total", value: `R$ ${stock.reduce((acc: number, curr: any) => acc + (curr.quantidade_atual * (curr.preco_compra / (curr.quantidade_embalagem || 1))), 0).toFixed(2)}`, icon: Wallet, color: "text-green-600" },
-        { label: "Giro de Estoque", value: "1.2x", icon: Calculator, color: "text-blue-600" },
+        { label: "Itens Cadastrados", value: stock.length, icon: Package, color: "text-primary", iconBg: "bg-primary" },
+        { label: "Em Alerta Crítico", value: stock.filter(s => (s.quantidade_atual || 0) < (s.estoque_minimo || 0)).length, icon: AlertTriangle, color: "text-rose-600", iconBg: "bg-rose-500" },
+        { label: "Investimento Total", value: `R$ ${stock.reduce((acc: number, curr: any) => acc + (curr.quantidade_atual * (curr.preco_compra / (curr.quantidade_embalagem || 1))), 0).toFixed(2)}`, icon: Wallet, color: "text-green-600", iconBg: "bg-green-500" },
+        { label: "Giro de Estoque", value: "1.2x", icon: Calculator, color: "text-blue-600", iconBg: "bg-blue-500" },
     ]
 
     return (
@@ -354,7 +359,7 @@ export default function EstoquePage() {
                             <div className="absolute -top-12 -right-12 size-40 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors" />
 
                             <div className="flex items-center justify-between mb-6 relative z-10">
-                                <div className={cn("flex size-14 items-center justify-center rounded-2xl text-white shadow-xl transform group-hover:rotate-6 transition-transform duration-500", stat.color.replace('text-', 'bg-').replace('600', '400').replace('primary', 'bg-primary/80'))}>
+                                <div className={cn("flex size-14 items-center justify-center rounded-2xl text-white shadow-xl transform group-hover:rotate-6 transition-transform duration-500", stat.iconBg)}>
                                     <stat.icon className="size-7" />
                                 </div>
                             </div>
@@ -495,7 +500,7 @@ export default function EstoquePage() {
                         </motion.div>
                         <h3 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic">Nenhum item em estoque</h3>
                         <p className="text-slate-500 mt-4 max-w-sm font-medium">Não encontramos insumos para o filtro pesquisado. Comece cadastrando seus primeiros itens!</p>
-                        <Button className="mt-6 text-primary font-black uppercase tracking-widest text-xs">+ Cadastrar Insumo</Button>
+                        <Button className="mt-6 text-slate-900 font-black uppercase tracking-widest text-xs">+ Cadastrar Insumo</Button>
                     </div>
                 )}
             </div>

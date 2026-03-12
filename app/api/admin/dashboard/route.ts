@@ -49,10 +49,10 @@ export async function GET() {
 
         // Total usuários
         const { count: totalUsers } = await supabaseAdmin
-            .from('profiles') // Usamos profiles pois reflete auth.users no nosso sistema
+            .from('profiles')
             .select('*', { count: 'exact', head: true })
 
-        // Receita Total
+        // 3. Receita e MRR
         const { data: totalRevenueData } = await supabaseAdmin
             .from('payments')
             .select('amount')
@@ -60,9 +60,9 @@ export async function GET() {
         
         const totalRevenue = totalRevenueData?.reduce((acc: number, curr: any) => acc + (curr.amount || 0), 0) || 0
 
-        // Receita Mensal (MRR Simplificado)
         const now = new Date()
         const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+        const firstDayOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
         
         const { data: monthlyRevenueData } = await supabaseAdmin
             .from('payments')
@@ -72,23 +72,43 @@ export async function GET() {
 
         const mrr = monthlyRevenueData?.reduce((acc: number, curr: any) => acc + (curr.amount || 0), 0) || 0
 
-        // Inadimplentes
-        const { count: pastDueCompanies } = await supabaseAdmin
-            .from('subscriptions')
+        // 4. Novos Cadastros (Hoje e Mês)
+        const { count: newUsersToday } = await supabaseAdmin
+            .from('profiles')
             .select('*', { count: 'exact', head: true })
-            .eq('status', 'past_due')
+            .gte('created_at', firstDayOfToday)
 
-        // Assinaturas Ativas
+        const { count: newUsersMonth } = await supabaseAdmin
+            .from('profiles')
+            .select('*', { count: 'exact', head: true })
+            .gte('created_at', firstDayOfMonth)
+
+        // 5. Pedidos Totais da Plataforma
+        const { count: totalOrdersPlatform } = await supabaseAdmin
+            .from('orders')
+            .select('*', { count: 'exact', head: true })
+
+        const { count: ordersToday } = await supabaseAdmin
+            .from('orders')
+            .select('*', { count: 'exact', head: true })
+            .gte('created_at', firstDayOfToday)
+
+        // 6. Assinaturas e Trials
         const { count: activeSubscriptions } = await supabaseAdmin
             .from('subscriptions')
             .select('*', { count: 'exact', head: true })
             .eq('status', 'active')
 
-        // Trial Ativos
         const { count: trialSubscriptions } = await supabaseAdmin
             .from('subscriptions')
             .select('*', { count: 'exact', head: true })
             .eq('status', 'trial')
+
+        const { count: canceledThisMonth } = await supabaseAdmin
+            .from('subscriptions')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', 'canceled')
+            .gte('updated_at', firstDayOfMonth)
 
         return NextResponse.json({
             total_companies: totalCompanies || 0,
@@ -96,10 +116,14 @@ export async function GET() {
             total_users: totalUsers || 0,
             total_revenue: totalRevenue,
             mrr: mrr,
-            past_due: pastDueCompanies || 0,
+            new_users_today: newUsersToday || 0,
+            new_users_month: newUsersMonth || 0,
+            total_orders: totalOrdersPlatform || 0,
+            orders_today: ordersToday || 0,
             active_subscriptions: activeSubscriptions || 0,
             trial_subscriptions: trialSubscriptions || 0,
-            open_tickets: 0 // Mock por enquanto
+            canceled_month: canceledThisMonth || 0,
+            open_tickets: 0 
         })
 
     } catch (error: any) {

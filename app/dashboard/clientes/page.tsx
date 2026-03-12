@@ -25,6 +25,8 @@ import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/hooks/useAuth"
+import { useBusiness } from "@/hooks/useBusiness"
+import { usePlanLimits } from "@/hooks/usePlanLimits"
 import { toast } from "sonner"
 
 interface Client {
@@ -41,6 +43,8 @@ interface Client {
 
 export default function ClientesPage() {
   const { user } = useAuth()
+  const { profile } = useBusiness()
+  const { limits, canAddClient, refreshLimits } = usePlanLimits()
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
@@ -57,17 +61,19 @@ export default function ClientesPage() {
   })
 
   useEffect(() => {
-    if (user) {
+    if (profile?.company_id) {
       fetchClients()
     }
-  }, [user])
+  }, [profile])
 
   async function fetchClients() {
+    if (!profile?.company_id) return
     try {
       setLoading(true)
       const { data, error } = await supabase
         .from('clients')
         .select('*')
+        .eq('company_id', profile.company_id)
         .order('name', { ascending: true })
 
       if (error) throw error
@@ -81,6 +87,11 @@ export default function ClientesPage() {
   }
 
   async function handleSaveClient() {
+    if (!editingClient && !canAddClient()) {
+      toast.error(`Limite do plano ${limits.plan_name} atingido (${limits.max_clients} clientes). Faça upgrade para continuar!`)
+      return
+    }
+
     if (!formData.name) {
       toast.error("O nome é obrigatório")
       return
@@ -107,6 +118,7 @@ export default function ClientesPage() {
           .from('clients')
           .insert({
             user_id: user?.id,
+            company_id: profile?.company_id,
             name: formData.name,
             phone: formData.phone,
             email: formData.email,
@@ -118,6 +130,7 @@ export default function ClientesPage() {
 
         setClients(prev => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)))
         toast.success("Cliente cadastrado com sucesso!")
+        refreshLimits() // Update plan usage
       }
       
       handleCloseModal()
@@ -146,6 +159,7 @@ export default function ClientesPage() {
       if (error) throw error
       setClients(prev => prev.filter(c => c.id !== id))
       toast.success("Cliente excluído!")
+      refreshLimits()
     } catch (error: any) {
       console.error("Error deleting:", error.message || error)
       toast.error("Erro ao excluir cliente")
@@ -167,10 +181,10 @@ export default function ClientesPage() {
   )
 
   const stats = [
-    { label: "Clientes", value: clients.length, icon: UserPlus, color: "text-primary" },
-    { label: "VIPs", value: clients.filter(c => c.is_vip).length, icon: Star, color: "text-amber-600" },
-    { label: "Receita Total", value: `R$ ${clients.reduce((acc: number, curr: any) => acc + (curr.total_spent || 0), 0).toLocaleString()}`, icon: TrendingUp, color: "text-green-600" },
-    { label: "Pedidos", value: clients.reduce((acc: number, curr: any) => acc + (curr.orders_count || 0), 0), icon: Gift, color: "text-pink-500" },
+    { label: "Clientes", value: clients.length, icon: UserPlus, color: "text-primary", iconBg: "bg-primary/80" },
+    { label: "VIPs", value: clients.filter(c => c.is_vip).length, icon: Star, color: "text-amber-600", iconBg: "bg-amber-400" },
+    { label: "Receita Total", value: `R$ ${clients.reduce((acc: number, curr: any) => acc + (curr.total_spent || 0), 0).toLocaleString()}`, icon: TrendingUp, color: "text-green-600", iconBg: "bg-green-400" },
+    { label: "Pedidos", value: clients.reduce((acc: number, curr: any) => acc + (curr.orders_count || 0), 0), icon: Gift, color: "text-pink-500", iconBg: "bg-pink-400" },
   ]
 
   return (
@@ -196,6 +210,11 @@ export default function ClientesPage() {
             <Button className="h-14 px-10 rounded-[20px] bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-widest text-xs shadow-xl shadow-primary/30 transition-all hover:scale-105 active:scale-95">
               <Plus className="mr-2 size-5" />
               Novo Cliente
+              {limits.max_clients < 99999 && (
+                <span className="ml-2 text-[8px] bg-white/20 px-1.5 py-0.5 rounded-md">
+                  {limits.current_clients}/{limits.max_clients}
+                </span>
+              )}
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-xl border-white/60 bg-white/90 backdrop-blur-2xl p-10 rounded-[40px] shadow-2xl overflow-hidden text-slate-900">
@@ -275,7 +294,7 @@ export default function ClientesPage() {
               <div className="absolute -top-12 -right-12 size-40 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors" />
 
               <div className="flex items-center justify-between mb-6 relative z-10">
-                <div className={cn("flex size-14 items-center justify-center rounded-2xl text-white shadow-xl transform group-hover:rotate-6 transition-transform duration-500", stat.color.replace('text-', 'bg-').replace('600', '400').replace('primary', 'bg-primary/80').replace('amber-600', 'bg-amber-400'))}>
+                <div className={cn("flex size-14 items-center justify-center rounded-2xl text-white shadow-xl transform group-hover:rotate-6 transition-transform duration-500", stat.iconBg)}>
                   <stat.icon className="size-7" />
                 </div>
               </div>
@@ -320,7 +339,7 @@ export default function ClientesPage() {
             </div>
             <h3 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic">Cliente não encontrado</h3>
             <p className="text-slate-500 mt-4 max-w-sm font-medium">Não encontramos ninguém com esses termos na sua base atual.</p>
-            <Button className="mt-6 text-primary font-black uppercase tracking-widest text-xs">+ Cadastrar Novo</Button>
+            <Button className="mt-6 text-slate-900 font-black uppercase tracking-widest text-xs">+ Cadastrar Novo</Button>
           </div>
         ) : (
           <AnimatePresence mode="popLayout">

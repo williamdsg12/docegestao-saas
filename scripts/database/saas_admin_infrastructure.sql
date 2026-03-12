@@ -40,14 +40,17 @@ ALTER TABLE public.system_logs ENABLE ROW LEVEL SECURITY;
 
 -- 5. Políticas de Acesso
 -- Usuários veem apenas seus próprios tickets
+DROP POLICY IF EXISTS "Users can view their own tickets" ON public.support_tickets;
 CREATE POLICY "Users can view their own tickets" ON public.support_tickets
 FOR SELECT USING (auth.uid() = user_id);
 
 -- Admins veem todos os tickets e logs
 -- Usando a função public.is_admin que criamos anteriormente
+DROP POLICY IF EXISTS "Admins can view all tickets" ON public.support_tickets;
 CREATE POLICY "Admins can view all tickets" ON public.support_tickets
 FOR ALL USING (public.is_admin(auth.uid()));
 
+DROP POLICY IF EXISTS "Admins can view all logs" ON public.system_logs;
 CREATE POLICY "Admins can view all logs" ON public.system_logs
 FOR SELECT USING (public.is_admin(auth.uid()));
 

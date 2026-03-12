@@ -1,6 +1,8 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
+import { supabase } from "@/lib/supabase"
+import { useBusiness } from "@/hooks/useBusiness"
 import { toast } from "sonner"
 import { motion, AnimatePresence } from "framer-motion"
 import {
@@ -28,15 +30,53 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsToolti
 import { cn } from "@/lib/utils"
 
 export default function RelatoriosPage() {
+    const { profile } = useBusiness()
     const [dateRange, setDateRange] = useState("30")
     const [isExporting, setIsExporting] = useState(false)
+    const [stats, setStats] = useState({
+        faturamento: 0,
+        pedidos: 0,
+        clientes: 0,
+        ticketMedio: 0
+    })
+    const [loading, setLoading] = useState(true)
 
-    const factor = useMemo(() => dateRange === "7" ? 0.25 : dateRange === "90" ? 3 : 1, [dateRange])
+    useEffect(() => {
+        if (profile?.company_id) {
+            fetchStats()
+        }
+    }, [profile, dateRange])
 
-    const valFaturamento = 12450 * factor
-    const valPedidos = Math.floor(84 * factor)
-    const valClientes = Math.floor(26 * factor)
-    const ticketMedio = valFaturamento / valPedidos
+    async function fetchStats() {
+        setLoading(true)
+        try {
+            const days = parseInt(dateRange)
+            const startDate = new Date()
+            startDate.setDate(startDate.getDate() - days)
+
+            const [ordersRes, transRes, clientsRes] = await Promise.all([
+                supabase.from('orders').select('id, total').eq('company_id', profile?.company_id).gte('created_at', startDate.toISOString()),
+                supabase.from('transactions').select('amount').eq('company_id', profile?.company_id).eq('type', 'receita').gte('transaction_date', startDate.toISOString()),
+                supabase.from('clients').select('id', { count: 'exact' }).eq('company_id', profile?.company_id).gte('created_at', startDate.toISOString())
+            ])
+
+            const totalFaturamento = transRes.data?.reduce((acc, t) => acc + t.amount, 0) || 0
+            const totalPedidos = ordersRes.data?.length || 0
+            const totalClientes = clientsRes.count || 0
+            const ticketMedio = totalPedidos > 0 ? totalFaturamento / totalPedidos : 0
+
+            setStats({
+                faturamento: totalFaturamento,
+                pedidos: totalPedidos,
+                clientes: totalClientes,
+                ticketMedio
+            })
+        } catch (e) {
+            console.error(e)
+        } finally {
+            setLoading(false)
+        }
+    }
 
     const handleExport = async () => {
         setIsExporting(true)
@@ -47,14 +87,14 @@ export default function RelatoriosPage() {
     }
 
     const chartData = useMemo(() => [
-      { name: "Seg", faturamento: 400 * factor },
-      { name: "Ter", faturamento: 300 * factor },
-      { name: "Qua", faturamento: 550 * factor },
-      { name: "Qui", faturamento: 450 * factor },
-      { name: "Sex", faturamento: 800 * factor },
-      { name: "Sáb", faturamento: 1200 * factor },
-      { name: "Dom", faturamento: 950 * factor },
-    ], [factor])
+      { name: "Seg", faturamento: 400 },
+      { name: "Ter", faturamento: 300 },
+      { name: "Qua", faturamento: 550 },
+      { name: "Qui", faturamento: 450 },
+      { name: "Sex", faturamento: 800 },
+      { name: "Sáb", faturamento: 1200 },
+      { name: "Dom", faturamento: 950 },
+    ], [])
 
     return (
         <div className="space-y-12 pb-24">
@@ -91,10 +131,10 @@ export default function RelatoriosPage() {
             {/* Premium KPIs Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                 {[
-                    { label: "Faturamento", value: `R$ ${valFaturamento.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, trend: "+18%", icon: DollarSign, color: "rose", bg: "bg-rose-50/50" },
-                    { label: "Ticket Médio", value: `R$ ${ticketMedio.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, trend: "+5%", icon: TrendingUp, color: "amber", bg: "bg-amber-50/50" },
-                    { label: "Pedidos", value: valPedidos.toString(), trend: "+12%", icon: ShoppingBag, color: "indigo", bg: "bg-indigo-50/50" },
-                    { label: "Novos Clientes", value: valClientes.toString(), trend: "+8%", icon: Users, color: "emerald", bg: "bg-emerald-50/50" },
+                    { label: "Faturamento", value: `R$ ${stats.faturamento.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, trend: "+18%", icon: DollarSign, color: "rose", bg: "bg-rose-50/50" },
+                    { label: "Ticket Médio", value: `R$ ${stats.ticketMedio.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, trend: "+5%", icon: TrendingUp, color: "amber", bg: "bg-amber-50/50" },
+                    { label: "Pedidos", value: stats.pedidos.toString(), trend: "+12%", icon: ShoppingBag, color: "indigo", bg: "bg-indigo-50/50" },
+                    { label: "Novos Clientes", value: stats.clientes.toString(), trend: "+8%", icon: Users, color: "emerald", bg: "bg-emerald-50/50" },
                 ].map((kpi, idx) => (
                     <motion.div
                         key={kpi.label}
@@ -214,7 +254,7 @@ export default function RelatoriosPage() {
                                         <span className="text-sm font-black text-slate-800 italic uppercase tracking-tight">{item.name}</span>
                                     </div>
                                     <span className="text-xs font-black text-slate-400 uppercase tracking-widest leading-none">
-                                        {Math.floor(item.sales * factor)} {item.name === "Brigadeiro Belga" ? 'und' : 'unid'}
+                                        {item.sales} {item.name === "Brigadeiro Belga" ? 'und' : 'unid'}
                                     </span>
                                 </div>
                                 <div className="h-4 w-full bg-slate-100 rounded-full overflow-hidden relative border border-white">
@@ -327,10 +367,10 @@ export default function RelatoriosPage() {
                                 <h4 className="text-xl font-black italic uppercase tracking-tighter text-white mb-2">{vip.name}</h4>
                                 <div className="space-y-1 mb-8">
                                     <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Gasto Total</p>
-                                    <p className="text-3xl font-black text-primary tracking-tightest italic">R$ {(parseFloat(vip.spend.replace('R$ ', '').replace('.','')) * factor).toLocaleString('pt-BR')}</p>
+                                    <p className="text-3xl font-black text-primary tracking-tightest italic">R$ {vip.spend}</p>
                                 </div>
                                 <Badge className="bg-white/10 text-white border-none font-black text-[9px] uppercase tracking-widest px-4 py-2 rounded-full">
-                                    {Math.floor(vip.orders * factor)} pedidos registrados
+                                    {vip.orders} pedidos registrados
                                 </Badge>
                             </motion.div>
                         ))}

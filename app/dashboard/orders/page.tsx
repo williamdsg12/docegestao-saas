@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/hooks/useAuth"
+import { useBusiness } from "@/hooks/useBusiness"
 import { 
   ShoppingCart, 
   Search, 
@@ -78,6 +79,7 @@ const statusConfig: Record<string, { label: string, color: string, icon: any }> 
 
 export default function OnlineOrdersPage() {
   const { user } = useAuth()
+  const { profile } = useBusiness()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
@@ -85,21 +87,23 @@ export default function OnlineOrdersPage() {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false)
 
   useEffect(() => {
-    if (user) {
+    if (profile?.company_id) {
       fetchOrders()
       const subscription = subscribeToOrders()
       return () => {
         subscription.unsubscribe()
       }
     }
-  }, [user])
+  }, [profile])
 
   async function fetchOrders() {
+    if (!profile?.company_id) return
     try {
       setLoading(true)
       const { data, error } = await supabase
         .from('menu_orders')
         .select('*, menu_order_items(*)')
+        .eq('company_id', profile.company_id)
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -113,12 +117,14 @@ export default function OnlineOrdersPage() {
   }
 
   function subscribeToOrders() {
+    if (!profile?.company_id) return { unsubscribe: () => {} }
     return supabase
       .channel('menu_orders_realtime')
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
-        table: 'menu_orders' 
+        table: 'menu_orders',
+        filter: `company_id=eq.${profile.company_id}`
       }, (payload: any) => {
         if (payload.eventType === 'INSERT') {
           setOrders(prev => [payload.new as Order, ...prev])

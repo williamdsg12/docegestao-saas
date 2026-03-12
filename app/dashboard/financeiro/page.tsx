@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/hooks/useAuth"
+import { useBusiness } from "@/hooks/useBusiness"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -54,15 +55,16 @@ interface Transaction {
 
 export default function FinanceiroPage() {
     const { user } = useAuth()
+    const { profile } = useBusiness()
     const [transactions, setTransactions] = useState<Transaction[]>([])
     const [loading, setLoading] = useState(true)
     const [monthFilter, setMonthFilter] = useState("")
 
     useEffect(() => {
-        if (user) {
+        if (profile?.company_id) {
             fetchData()
         }
-    }, [user])
+    }, [profile])
 
     const filteredTransactions = transactions.filter(t => {
         if (!monthFilter) return true
@@ -79,11 +81,13 @@ export default function FinanceiroPage() {
     }
 
     async function fetchData() {
+        if (!profile?.company_id) return
         try {
             setLoading(true)
             const { data, error } = await supabase
                 .from('transactions')
                 .select('*')
+                .eq('company_id', profile.company_id)
                 .order('transaction_date', { ascending: false })
 
             if (error) throw error
@@ -98,10 +102,10 @@ export default function FinanceiroPage() {
     }
 
     const stats = [
-        { label: "Saldo Atual", value: `R$ ${totals.saldo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: Wallet, color: "text-primary", bg: "bg-rose-50", trend: "+0%" },
-        { label: "Receita (Total)", value: `R$ ${totals.receita.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: TrendingUp, color: "text-green-600", bg: "bg-green-50", trend: "+0%" },
-        { label: "Custos (CMV)", value: `R$ ${totals.custos.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: TrendingDown, color: "text-red-600", bg: "bg-red-50", trend: "-0%" },
-        { label: "Lucro Líquido", value: `R$ ${(totals.receita - totals.custos).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: Activity, color: "text-blue-600", bg: "bg-blue-50", trend: "+0%" },
+        { label: "Saldo Atual", value: `R$ ${totals.saldo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: Wallet, color: "text-primary", bg: "bg-rose-50", iconBg: "bg-primary", trend: "+0%" },
+        { label: "Receita (Total)", value: `R$ ${totals.receita.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: TrendingUp, color: "text-green-600", bg: "bg-green-50", iconBg: "bg-green-500", trend: "+0%" },
+        { label: "Custos (CMV)", value: `R$ ${totals.custos.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: TrendingDown, color: "text-red-600", bg: "bg-red-50", iconBg: "bg-red-500", trend: "-0%" },
+        { label: "Lucro Líquido", value: `R$ ${(totals.receita - totals.custos).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: Activity, color: "text-blue-600", bg: "bg-blue-50", iconBg: "bg-blue-500", trend: "+0%" },
     ]
 
     const chartData = transactions.reduce((acc: any[], curr) => {
@@ -139,6 +143,7 @@ export default function FinanceiroPage() {
                 .from('transactions')
                 .insert({
                     user_id: user?.id,
+                    company_id: profile?.company_id,
                     description: txForm.description,
                     amount: parseFloat(txForm.amount),
                     type: txForm.type,
@@ -307,7 +312,7 @@ export default function FinanceiroPage() {
                             <div className="absolute -top-12 -right-12 size-40 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors" />
 
                             <div className="flex items-center justify-between mb-6 relative z-10">
-                                <div className={cn("flex size-14 items-center justify-center rounded-2xl text-white shadow-xl transform group-hover:rotate-6 transition-transform duration-500", stat.bg.replace('bg-', 'bg-').replace('50', '400'))}>
+                                <div className={cn("flex size-14 items-center justify-center rounded-2xl text-white shadow-xl transform group-hover:rotate-6 transition-transform duration-500", stat.iconBg)}>
                                     <stat.icon className="size-7" />
                                 </div>
                                 <Badge className="bg-white/50 text-[10px] font-black border-none px-3 py-1 text-slate-500 uppercase">{stat.trend}</Badge>

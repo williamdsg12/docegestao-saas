@@ -30,6 +30,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { useAuth } from "@/hooks/useAuth"
+import { useBusiness } from "@/hooks/useBusiness"
 import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -37,6 +38,7 @@ import { QRCodeSVG } from "qrcode.react"
 
 export function ProfileTabs() {
   const { user, updateProfile } = useAuth()
+  const { profile } = useBusiness()
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab ] = useState("perfil")
   const [copied, setCopied] = useState(false)
@@ -110,10 +112,11 @@ export function ProfileTabs() {
       }))
       
       const fetchBusinessData = async () => {
+        if (!profile?.company_id) return
         const { data: companyData } = await supabase
           .from("companies")
           .select("*")
-          .eq("owner_id", user.id)
+          .eq("id", profile.company_id)
           .maybeSingle()
 
         if (companyData) {
@@ -146,7 +149,7 @@ export function ProfileTabs() {
       }
       fetchBusinessData()
     }
-  }, [user])
+  }, [user, profile])
 
   const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
@@ -170,8 +173,8 @@ export function ProfileTabs() {
 
       setFormData(prev => ({ ...prev, logoUrl: publicUrl }))
       
-      if (user) {
-        await supabase.from("companies").update({ logo_url: publicUrl }).eq("owner_id", user.id)
+      if (user && profile?.company_id) {
+        await supabase.from("companies").update({ logo_url: publicUrl }).eq("id", profile.company_id)
         await updateProfile({ logo_url: publicUrl })
       }
       toast.success("Logo atualizada!")
@@ -214,13 +217,7 @@ export function ProfileTabs() {
   const handleSaveBusiness = async () => {
     setLoading(true)
     try {
-      const { data: companyData } = await supabase
-        .from("companies")
-        .select("id")
-        .eq("owner_id", user?.id)
-        .single()
-
-      if (companyData) {
+      if (profile?.company_id) {
         const { error } = await supabase.from("companies").update({
           name: formData.storeName,
           instagram: formData.instagram,
@@ -240,7 +237,7 @@ export function ProfileTabs() {
           menu_banner_text: formData.menuBannerText,
           menu_enabled_features: formData.menuEnabledFeatures,
           opening_hours: { description: formData.openingHours }
-        }).eq("id", companyData.id)
+        }).eq("id", profile.company_id)
 
         if (error) throw error
         toast.success("Alterações publicadas com sucesso!")

@@ -1,2 +1,3 @@
-2026/03/11-17:53:15.557 49fc Creating DB D:\app\sistema confeitaria\.wwebjs_auth\session\Default\Site Characteristics Database since it was missing.
-2026/03/11-17:53:17.180 49fc Reusing MANIFEST D:\app\sistema confeitaria\.wwebjs_auth\session\Default\Site Characteristics Database/MANIFEST-000001
+2026/03/11-18:19:13.020 3cd4 Reusing MANIFEST D:\app\sistema confeitaria\.wwebjs_auth\session\Default\Site Characteristics Database/MANIFEST-000001
+2026/03/11-18:19:13.021 3cd4 Recovering log #3
+2026/03/11-18:19:13.021 3cd4 Reusing old log D:\app\sistema confeitaria\.wwebjs_auth\session\Default\Site Characteristics Database/000003.log 
