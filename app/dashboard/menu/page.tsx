@@ -118,6 +118,25 @@ export default function DigitalMenuPage() {
     }
   }, [user, profile?.company_id])
 
+  // draft persistence
+  useEffect(() => {
+    const draft = localStorage.getItem("product_draft")
+    if (draft && !isProductDialogOpen) {
+      try {
+        const parsed = JSON.parse(draft)
+        setProductData(parsed)
+      } catch (e) {
+        console.error("Error loading draft", e)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (isProductDialogOpen) {
+      localStorage.setItem("product_draft", JSON.stringify(productData))
+    }
+  }, [productData, isProductDialogOpen])
+
   // Robustly resolve or self-heal company_id
   async function resolveCompanyId() {
     // 1. Check current state
@@ -262,6 +281,7 @@ export default function DigitalMenuPage() {
       }
       setIsProductDialogOpen(false)
       setProductData({ name: "", description: "", price: "", category_id: "", image_url: "", active: true })
+      localStorage.removeItem("product_draft")
       setEditingProduct(null)
       fetchData()
     } catch (error: any) {
@@ -406,27 +426,34 @@ export default function DigitalMenuPage() {
     }
   }
 
-  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement> | React.DragEvent) {
+    let file: File | undefined
+
+    if ('files' in e.target && e.target.files) {
+      file = e.target.files[0]
+    } else if ('dataTransfer' in e && e.dataTransfer.files) {
+      file = e.dataTransfer.files[0]
+    }
+
     if (!file) return
 
     try {
       setIsUploading(true)
       const companyId = await resolveCompanyId()
-      if (!companyId) throw new Error("ID da empresa não encontrado")
+      if (!companyId || !user) throw new Error("ID da empresa ou usuário não encontrado")
 
       const fileExt = file.name.split('.').pop()
-      const fileName = `${companyId}/${Math.random().toString(36).substring(2)}.${fileExt}`
-      const filePath = `${fileName}`
+      const fileName = `${user.id}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
+      const filePath = `products/${fileName}`
 
       const { error: uploadError } = await supabase.storage
-        .from('products')
+        .from('product-images')
         .upload(filePath, file)
 
       if (uploadError) throw uploadError
 
       const { data: { publicUrl } } = supabase.storage
-        .from('products')
+        .from('product-images')
         .getPublicUrl(filePath)
 
       setProductData(prev => ({ ...prev, image_url: publicUrl }))
@@ -695,22 +722,47 @@ export default function DigitalMenuPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Link da Imagem</Label>
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <Input 
-                        placeholder="https://..." 
-                        className="h-12 rounded-xl bg-slate-50 border-none font-medium pr-10"
-                        value={productData.image_url}
-                        onChange={e => setProductData({...productData, image_url: e.target.value})}
-                      />
-                      {productData.image_url && (
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2 size-6 rounded-lg overflow-hidden border border-slate-100">
-                          <img src={productData.image_url} alt="" className="size-full object-cover" />
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Imagem do Produto</Label>
+                  <div className="flex flex-col gap-4">
+                    <div 
+                      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                      onDrop={(e) => { e.preventDefault(); e.stopPropagation(); handleImageUpload(e as any); }}
+                      className={cn(
+                        "relative h-40 rounded-[24px] border-2 border-dashed flex flex-col items-center justify-center transition-all bg-slate-50",
+                        isUploading ? "border-primary animate-pulse" : "border-slate-200 hover:border-primary hover:bg-slate-50/50"
+                      )}
+                    >
+                      {productData.image_url ? (
+                        <div className="relative size-full p-2">
+                          <img src={productData.image_url} alt="" className="size-full object-contain rounded-xl" />
+                          <Button 
+                            variant="destructive" 
+                            size="icon" 
+                            className="absolute top-4 right-4 size-8 rounded-lg"
+                            onClick={(e) => { e.stopPropagation(); setProductData({...productData, image_url: ""}); }}
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
                         </div>
+                      ) : (
+                        <label htmlFor="product-image-upload" className="flex flex-col items-center gap-2 cursor-pointer w-full h-full justify-center">
+                          <div className="size-12 rounded-2xl bg-white flex items-center justify-center shadow-sm text-slate-400">
+                             <ImageIcon className="size-6" />
+                          </div>
+                          <div className="text-center">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-900 block">Arraste a foto aqui</span>
+                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">ou clique para selecionar</span>
+                          </div>
+                        </label>
                       )}
                     </div>
                     <div className="relative">
+                      <Input 
+                        placeholder="Ou cole o link da imagem aqui..." 
+                        className="h-12 rounded-xl bg-slate-50 border-none font-medium px-4"
+                        value={productData.image_url}
+                        onChange={e => setProductData({...productData, image_url: e.target.value})}
+                      />
                       <input 
                         type="file" 
                         accept="image/*" 
@@ -719,18 +771,6 @@ export default function DigitalMenuPage() {
                         onChange={handleImageUpload}
                         disabled={isUploading}
                       />
-                      <Button 
-                        asChild 
-                        variant="outline" 
-                        className={cn(
-                          "h-12 w-12 rounded-xl border-dashed border-slate-200 cursor-pointer",
-                          isUploading && "animate-pulse opacity-50 pointer-events-none"
-                        )}
-                      >
-                        <label htmlFor="product-image-upload">
-                          <ImageIcon className="size-5 text-slate-400" />
-                        </label>
-                      </Button>
                     </div>
                   </div>
                 </div>
