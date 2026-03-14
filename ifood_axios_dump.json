@@ -1,0 +1,577 @@
+{
+  "props": {
+    "isServer": true,
+    "initialState": {
+      "account": {
+        "requestStatus": "initial",
+        "orderAttributes": {},
+        "merchants": {},
+        "userFavorites": [],
+        "contactMethods": [],
+        "credentialMethods": {}
+      },
+      "accountUpdate": {
+        "isLoading": false
+      },
+      "address": {
+        "location": {
+          "initialLoad": true
+        },
+        "country": "BR",
+        "coords": {},
+        "isLoading": false
+      },
+      "addressModal": {
+        "open": false,
+        "keepCurrentPageAfterSelect": false
+      },
+      "addressSearch": {
+        "search": {
+          "isLoading": false,
+          "isLoadingSelected": false,
+          "isLoadingEditing": false,
+          "results": [],
+          "coords": {},
+          "isEditing": false
+        },
+        "customer": {
+          "isLoading": false,
+          "addresses": []
+        },
+        "states": {
+          "options": [],
+          "cities": {},
+          "isLoadingStates": false
+        },
+        "addressSetForConfirmation": null,
+        "geolocation": null,
+        "form": {
+          "values": {},
+          "isUsingForm": false
+        },
+        "modalAddressNotFound": {
+          "isOpen": false
+        }
+      },
+      "chat": {
+        "isChatSupportSlaEnable": false,
+        "chatSupportSlaTimeoutInMinutes": {},
+        "finishChatSupportButtonConfig": false,
+        "isEndServiceDialogOpen": false,
+        "finishChatSupportComponentTimeInMinutes": {},
+        "chatStoreScreeningContactReasonEnabledConfig": false,
+        "sendbirdAuthenticationEnabled": false,
+        "chatStoreScreeningContactReasonListConfig": [],
+        "isChatOffline": false,
+        "chatStoreRedirectToSupport": {},
+        "isChatInboxV2Enabled": false
+      },
+      "checkout": {},
+      "configs": {
+        "pwa": {
+          "tableauProduct": "webapp"
+        },
+        "restaurant": {},
+        "testUser": {},
+        "experience": {
+          "marketHintView": false,
+          "multiCategoriesHintView": false,
+          "handshakeOrders": [],
+          "handshakeOnboardingDismissed": false,
+          "expressOnboardingModalDismissed": false
+        }
+      },
+      "contextCard": {
+        "address": {
+          "isOpened": false
+        },
+        "checkout": {
+          "isOpened": false
+        }
+      },
+      "customerPlaces": {
+        "places": [],
+        "isLoading": false,
+        "loadingPlaces": []
+      },
+      "dishModal": {
+        "isOpen": false,
+        "restaurantSlug": {}
+      },
+      "downloadAppModal": {
+        "isOpen": false
+      },
+      "group": {
+        "isLoading": false,
+        "addressOutOfRange": false
+      },
+      "lastRestaurants": {
+        "list": [],
+        "requestStatus": "initial"
+      },
+      "loyalty": {
+        "cards": [],
+        "requestStatus": "initial"
+      },
+      "loyaltyNotification": {
+        "loyaltyCard": [],
+        "requestStatus": "initial"
+      },
+      "orderCheckout": {
+        "orderCheckout": {},
+        "isLoading": false
+      },
+      "orders": {
+        "requestStatus": "initial",
+        "requestStatusOrderDetails": "initial",
+        "hasMore": true,
+        "page": 0,
+        "ordersList": [],
+        "withDetails": false
+      },
+      "statuses": {
+        "ordersStatuses": {},
+        "requestStatus": "initial"
+      },
+      "overviewOrders": {
+        "hasOnGoingOrders": 0
+      },
+      "promotion": {
+        "isPromotion": {},
+        "violation": {
+          "violationCodes": [],
+          "restaurantOrder": {}
+        }
+      },
+      "promotions": {
+        "tags": {
+          "requestStatus": "initial",
+          "hasError": false,
+          "tagsInfo": []
+        },
+        "takeXPayY": {
+          "requestStatus": "initial",
+          "hasError": false,
+          "items": []
+        },
+        "benefits": {
+          "requestStatus": "initial"
+        }
+      },
+      "restaurant": {
+        "menu": [],
+        "reorderItems": [],
+        "uuid": null,
+        "pixelUuid": null,
+        "evaluations": {
+          "ratings": [],
+          "page": 0,
+          "hasNextPage": false
+        },
+        "details": {
+          "mainCategory": {},
+          "features": [],
+          "name": "",
+          "deliveryEstimated": "",
+          "deliveryTime": 0,
+          "distance": 0,
+          "priceRange": "",
+          "superRestaurant": false,
+          "evaluationAverage": 0,
+          "recent": false
+        },
+        "paymentTypes": [],
+        "deliveryFee": {},
+        "deliveryInfo": {
+          "deliversAtLocation": null
+        },
+        "isLoading": {
+          "menu": false,
+          "details": false,
+          "paymentTypes": false,
+          "deliveryInfo": false,
+          "evaluations": false,
+          "reorderItems": false,
+          "filteredCatalog": false
+        },
+        "errorStatusCode": {
+          "menu": null,
+          "details": null,
+          "paymentTypes": null,
+          "deliveryInfo": null,
+          "evaluations": null,
+          "reorderItems": null,
+          "filteredCatalog": null
+        },
+        "cache": {},
+        "deliveryMethods": [],
+        "scheduling": {
+          "deliveryMethod": {}
+        },
+        "filteredCatalog": [],
+        "filteredCatalogAisle": [],
+        "categories": []
+      },
+      "restaurantsByCity": {
+        "list": [],
+        "isLoading": false,
+        "hasMore": true
+      },
+      "restaurantsSearch": {
+        "isLoading": false,
+        "error": null,
+        "page": 0,
+        "restaurants": [],
+        "hasMore": true
+      },
+      "router": {
+        "previousRoute": "",
+        "nextChangeIsGoBack": false,
+        "listUrl": [],
+        "currentRoute": "",
+        "subHomeActiveRoute": "home-multicategory"
+      },
+      "search": {
+        "merchants": {
+          "isLoading": false,
+          "data": [],
+          "total": 0
+        },
+        "catalogItems": {
+          "isLoading": false,
+          "data": [],
+          "total": 0
+        },
+        "currentSearchValue": "",
+        "lastSearchValue": "",
+        "showSuggestion": false,
+        "elementIdFocus": -1,
+        "searchAutocompleteValue": [],
+        "searchTab": ""
+      },
+      "searchHistory": [],
+      "session": {},
+      "signIn": {
+        "signin": {
+          "user": {},
+          "signup": false
+        },
+        "isLoading": {
+          "createOtp": false,
+          "provider": false,
+          "signin": false
+        },
+        "otpToken": {
+          "isLoadingToken": false,
+          "isLoadingChallenge": false,
+          "isLoadingOtpKey": false,
+          "signup": false
+        },
+        "providers": {
+          "requestStatus": "initial",
+          "enabledProviders": {
+            "facebook": false,
+            "google": false,
+            "otpEmail": false,
+            "otpPhone": false
+          }
+        },
+        "hasCredentialPhoneNumber": {
+          "value": true,
+          "signInFulfilledData": {}
+        }
+      },
+      "signUp": {
+        "isLoading": false,
+        "error": null
+      },
+      "states": {
+        "list": {},
+        "isLoading": false
+      },
+      "toastr": {
+        "message": "",
+        "timeout": 3000,
+        "toastType": "error"
+      },
+      "userNotifications": {
+        "loyalty": {
+          "seen": [],
+          "unseen": []
+        },
+        "voucher": {
+          "seen": [],
+          "unseen": []
+        }
+      },
+      "wallet": {
+        "currentCard": {},
+        "currentCardToken": {},
+        "currentOnlinePaymentMethod": {},
+        "paymentCard": {
+          "cards": [],
+          "requestStatus": "initial"
+        },
+        "paymentMethods": {
+          "methods": [],
+          "requestStatus": "initial"
+        },
+        "deleteCard": {
+          "requestStatus": "initial"
+        },
+        "activeCard": {
+          "requestStatus": "initial"
+        },
+        "isCheckoutListOpen": false,
+        "walletAccounts": {
+          "accounts": [],
+          "requestStatus": "initial"
+        },
+        "splitPayments": {
+          "isMovilePayActive": false,
+          "movilePayWalletBalance": {}
+        },
+        "isWalletBalanceEnough": false
+      },
+      "voucherWallet": {
+        "error": "",
+        "isLoading": false,
+        "vouchers": [],
+        "active": {},
+        "inactive": {},
+        "isCheckoutListOpen": false
+      },
+      "floatingBox": {},
+      "oauth": {
+        "isLoading": false,
+        "hasError": false
+      },
+      "persistedPaymentMethods": {
+        "paymentMethods": []
+      },
+      "cartShuffleModal": {
+        "isOpen": false,
+        "newCart": {}
+      },
+      "inbox": {
+        "isOpen": false,
+        "status": "empty",
+        "summaryStatus": "initial",
+        "channels": [],
+        "isFabVisible": false
+      },
+      "channel": {
+        "current": null,
+        "metadata": null,
+        "messages": [],
+        "status": "initial",
+        "isOpen": false,
+        "ces": null,
+        "isCESReviewDialogOpen": false
+      },
+      "multiCategories": {
+        "category": "restaurant",
+        "isLoading": false,
+        "error": false,
+        "hasRequestFailed": false
+      },
+      "merchandise": {
+        "merchantUuid": null,
+        "code": null,
+        "isLoading": false,
+        "details": {},
+        "error": false
+      },
+      "newsFeature": {
+        "notificationsViewed": [],
+        "lastViewd": ""
+      },
+      "cart": {
+        "id": "",
+        "summary": {
+          "total": 0,
+          "subTotal": 0,
+          "deliveryFee": 0,
+          "feeTotal": 0,
+          "benefitsTotal": 0
+        },
+        "cartType": "",
+        "items": [],
+        "merchant": {
+          "id": "",
+          "name": "",
+          "deliveryMethods": []
+        },
+        "fees": {
+          "values": []
+        },
+        "voucher": {},
+        "paymentMethod": {},
+        "address": {
+          "coordinates": {}
+        },
+        "delivery": {
+          "schedule": {}
+        },
+        "deliveryMethod": {}
+      },
+      "cartResponseSigned": {
+        "cartResponse": {
+          "id": "",
+          "summary": {
+            "total": 0,
+            "subTotal": 0,
+            "grossSubTotal": 0,
+            "deliveryFee": 0,
+            "feeTotal": 0,
+            "benefitsTotal": 0,
+            "voucherTotal": 0,
+            "benefits": []
+          },
+          "cartType": "",
+          "items": [],
+          "fees": {
+            "values": []
+          },
+          "merchant": {
+            "id": "",
+            "name": "",
+            "type": "",
+            "deliveryMethods": [],
+            "tags": [],
+            "address": {
+              "name": "",
+              "number": "",
+              "complement": "",
+              "coordinates": {}
+            },
+            "logoFileName": "",
+            "zone": ""
+          },
+          "benefits": [],
+          "voucher": {},
+          "currency": {
+            "name": "",
+            "prefix": ""
+          },
+          "delivery": {
+            "id": "",
+            "pricingMode": "",
+            "title": "",
+            "subtitle": "",
+            "deliveredBy": "",
+            "zoneId": "",
+            "schedule": {
+              "timeSlots": [],
+              "selectedTimeSlot": {
+                "id": "",
+                "endTime": "",
+                "endDateTime": "",
+                "startDateTime": "",
+                "startTime": ""
+              }
+            },
+            "type": "",
+            "code": "",
+            "scope": [],
+            "state": "",
+            "scheduling": "",
+            "presetTimeSlot": {
+              "id": "",
+              "endTime": "",
+              "endDateTime": "",
+              "startDateTime": "",
+              "startTime": ""
+            },
+            "logisticProvider": ""
+          },
+          "paymentMethods": [],
+          "address": {
+            "id": "",
+            "dropPointId": "",
+            "streetName": "",
+            "streetNumber": "",
+            "neighborhood": "",
+            "establishment": "",
+            "complement": "",
+            "reference": "",
+            "state": "",
+            "city": "",
+            "country": "",
+            "zipCode": "",
+            "coordinates": {}
+          }
+        },
+        "signature": ""
+      },
+      "addressInvalidDialog": {
+        "open": false
+      },
+      "similarItems": {
+        "items": [],
+        "isLoading": false,
+        "error": null
+      },
+      "searchCatalogHistory": [],
+      "crossSell": {
+        "uuid": null,
+        "itemsUuid": [],
+        "items": [],
+        "isLoading": false
+      },
+      "catalogCategory": {
+        "uuid": null,
+        "code": null,
+        "isLoading": false,
+        "items": [],
+        "page": 0,
+        "completed": false,
+        "error": false
+      },
+      "aisleModal": {
+        "code": null,
+        "name": "",
+        "isOpen": false,
+        "items": []
+      },
+      "deliveryByContext": {
+        "currentMerchant": {
+          "route": "",
+          "params": {}
+        }
+      },
+      "topMerchants": {
+        "requestStatus": "initial",
+        "merchants": {}
+      },
+      "reorder": {
+        "requestStatus": "initial",
+        "merchants": {},
+        "merchantId": "",
+        "isMobile": false
+      },
+      "cardstackConfig": {
+        "loading": true,
+        "loadingFilter": false,
+        "error": {},
+        "data": {}
+      }
+    },
+    "initialProps": {
+      "pageProps": {},
+      "query": {},
+      "currentUrl": "https://www.ifood.com.br/"
+    }
+  },
+  "page": "/Landing/Landing",
+  "query": {},
+  "buildId": "nc5dwn5qAVyIR_xPdoY_1",
+  "isFallback": false,
+  "dynamicIds": [
+    51777
+  ],
+  "customServer": true,
+  "gip": true,
+  "appGip": true,
+  "scriptLoader": []
+}

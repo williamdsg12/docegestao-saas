@@ -11,8 +11,10 @@ import {
     FileText,
     ArrowUpRight,
     ArrowDownRight,
-    DollarSign
+    DollarSign,
+    Building2
 } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import {
@@ -49,230 +51,228 @@ const activityData = [
 ]
 
 export default function StatsAdmin() {
+    const [data, setData] = useState<any>(null)
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        // Simular carregamento inicial
-        const timer = setTimeout(() => setLoading(false), 800)
-        return () => clearTimeout(timer)
+        fetchStats()
     }, [])
 
-    if (loading) {
+    async function fetchStats() {
+        setLoading(true)
+        try {
+            const response = await fetch('/api/admin/stats')
+            if (!response.ok) throw new Error('API Error')
+            const result = await response.json()
+            setData(result)
+        } catch (error) {
+            console.error("error fetching stats:", error)
+            toast.error("Erro ao sincronizar motor analítico")
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    if (loading || !data) {
         return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <div className="size-12 border-4 border-slate-900/10 border-t-slate-900 rounded-full animate-spin" />
+            <div className="flex flex-col items-center justify-center min-h-[600px] gap-8">
+                <div className="size-20 border-t-4 border-indigo-600 border-r-4 border-r-transparent rounded-full animate-spin shadow-2xl shadow-indigo-500/20" />
+                <div className="space-y-2 text-center">
+                    <p className="text-slate-900 font-black uppercase tracking-[0.4em] italic text-sm">Synchronizing Data Lake</p>
+                    <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Aggregating live metrics from global infrastructure...</p>
+                </div>
             </div>
         )
     }
 
+    const { financialData, kpis } = data
+
     return (
         <motion.div 
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            className="space-y-12"
+            className="space-y-16 pb-24"
         >
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                <div>
-                    <h2 className="text-4xl font-black text-slate-900 italic uppercase tracking-tighter">Analytics da <span className="text-primary">Plataforma</span></h2>
-                    <p className="text-slate-500 font-medium">Métricas avançadas de crescimento e saúde do negócio</p>
+            {/* SaaS Pro Header */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-10">
+                <div className="space-y-2">
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="size-3 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.5)]" />
+                        <span className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.4em] italic leading-none">BI Global Analytics</span>
+                    </div>
+                    <h2 className="text-7xl font-black text-slate-900 italic uppercase tracking-tighter leading-[0.8]">
+                        Platform <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-indigo-400 to-indigo-600 animate-gradient-x underline decoration-indigo-500/20">Dynamics</span>
+                    </h2>
+                    <p className="text-slate-400 font-bold uppercase tracking-[0.3em] text-[10px] italic">Growth Matrix // Retention Oversight // MRR Performance</p>
                 </div>
-                <div className="flex gap-3">
-                    <button 
-                        onClick={() => toast.success("Dados exportados para CSV com sucesso!")}
-                        className="px-6 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors uppercase tracking-wider"
+                
+                <div className="flex gap-4">
+                    <Button 
+                        onClick={() => toast.success("Dump global gerado com sucesso!")}
+                        className="h-16 px-10 rounded-full bg-slate-900 text-white font-black uppercase italic text-[11px] tracking-widest gap-4 shadow-[0_20px_40px_rgba(0,0,0,0.2)] hover:shadow-indigo-500/30 hover:-translate-y-1 transition-all"
                     >
-                        Exportar CSV
-                    </button>
-                    <button 
-                        onClick={() => {
-                            toast.promise(
-                                new Promise((resolve) => setTimeout(resolve, 1500)),
-                                {
-                                    loading: 'Gerando relatório executivo...',
-                                    success: 'Relatório gerado com sucesso!',
-                                    error: 'Erro ao gerar relatório',
-                                }
-                            )
-                        }}
-                        className="px-6 py-3 bg-slate-900 hover:bg-slate-800 rounded-2xl text-sm font-bold text-white transition-colors uppercase tracking-wider shadow-lg shadow-slate-900/20"
-                    >
-                        Gerar Relatório
-                    </button>
+                        <FileText className="size-5" /> Export Vector Data
+                    </Button>
                 </div>
             </div>
 
-            {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {/* Atletas Ativos / Sessões */}
-                <div className="bg-white rounded-[32px] p-8 border border-slate-100 flex flex-col justify-between shadow-sm hover:shadow-xl hover:shadow-cyan-100/50 transition-all group">
-                    <div className="flex justify-between items-start mb-6">
-                        <div className="size-14 rounded-2xl bg-cyan-50 text-cyan-500 flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <Activity className="size-6" />
+            {/* Premium KPI Engine */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                {/* MRR Card */}
+                <div className="glass-card rounded-[48px] p-10 border border-white/40 shadow-2xl shadow-indigo-500/5 flex flex-col justify-between hover:shadow-indigo-500/10 transition-all duration-700 bg-white/60 backdrop-blur-md group">
+                    <div className="flex justify-between items-start mb-10">
+                        <div className="size-16 rounded-[24px] bg-indigo-600 text-white flex items-center justify-center shadow-2xl shadow-indigo-600/30 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-500">
+                            <DollarSign className="size-8" />
                         </div>
-                        <div className="flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest italic bg-emerald-50 text-emerald-600">
-                            <ArrowUpRight className="size-3" />
-                            18%
-                        </div>
-                    </div>
-                    <div>
-                        <p className="text-4xl font-black text-slate-900 tracking-tighter italic">2.431</p>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Logins M/M</p>
-                    </div>
-                </div>
-                
-                {/* Churn Rate */}
-                <div className="bg-white rounded-[32px] p-8 border border-slate-100 flex flex-col justify-between shadow-sm hover:shadow-xl hover:shadow-rose-100/50 transition-all group">
-                    <div className="flex justify-between items-start mb-6">
-                        <div className="size-14 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <TrendingDown className="size-6" />
-                        </div>
-                        <div className="flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest italic bg-emerald-50 text-emerald-600">
-                            <ArrowDownRight className="size-3" />
-                            -2.1%
+                        <div className="bg-emerald-50 text-emerald-600 px-4 py-2 rounded-full text-[10px] font-black uppercase italic tracking-widest border border-emerald-100 flex items-center gap-2">
+                            <ArrowUpRight className="size-3" /> Growth
                         </div>
                     </div>
                     <div>
-                        <p className="text-4xl font-black text-slate-900 tracking-tighter italic">1.2%</p>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Churn Rate Mensal</p>
+                        <p className="text-5xl font-black text-slate-900 tracking-tighter italic leading-none">R$ {(kpis.currentMRR / 1000).toFixed(1)}K</p>
+                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-3 italic">Monthly Recurring Revenue</p>
                     </div>
                 </div>
 
-                {/* MRR */}
-                <div className="bg-white rounded-[32px] p-8 border border-slate-100 flex flex-col justify-between shadow-sm hover:shadow-xl hover:shadow-emerald-100/50 transition-all group">
-                    <div className="flex justify-between items-start mb-6">
-                        <div className="size-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <DollarSign className="size-6" />
-                        </div>
-                        <div className="flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest italic bg-emerald-50 text-emerald-600">
-                            <ArrowUpRight className="size-3" />
-                            36%
+                {/* Users Card */}
+                <div className="glass-card rounded-[48px] p-10 border border-white/40 shadow-2xl shadow-emerald-500/5 flex flex-col justify-between hover:shadow-emerald-500/10 transition-all duration-700 bg-white/60 backdrop-blur-md group">
+                    <div className="flex justify-between items-start mb-10">
+                        <div className="size-16 rounded-[24px] bg-slate-900 text-white flex items-center justify-center shadow-2xl shadow-slate-900/30 group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                            <Users className="size-8" />
                         </div>
                     </div>
                     <div>
-                        <p className="text-4xl font-black text-slate-900 tracking-tighter italic line-clamp-1">R$ 48.2K</p>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">MRR Atual</p>
+                        <p className="text-5xl font-black text-slate-900 tracking-tighter italic leading-none">{kpis.totalUsers}</p>
+                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-3 italic">Total Platform Citizens</p>
                     </div>
                 </div>
 
-                {/* ARR */}
-                <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-[32px] p-8 border border-slate-800 flex flex-col justify-between shadow-xl shadow-slate-900/20 text-white relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl -mr-10 -mt-10 transition-transform group-hover:scale-150 duration-700" />
+                {/* Companies Card */}
+                <div className="glass-card rounded-[48px] p-10 border border-white/40 shadow-2xl shadow-amber-500/5 flex flex-col justify-between hover:shadow-amber-500/10 transition-all duration-700 bg-white/60 backdrop-blur-md group">
+                    <div className="flex justify-between items-start mb-10">
+                        <div className="size-16 rounded-[24px] bg-amber-500 text-white flex items-center justify-center shadow-2xl shadow-amber-500/30 group-hover:scale-110 group-hover:-rotate-3 transition-all duration-500">
+                            <Building2 className="size-8" />
+                        </div>
+                    </div>
+                    <div>
+                        <p className="text-5xl font-black text-slate-900 tracking-tighter italic leading-none">{kpis.totalCompanies}</p>
+                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mt-3 italic">Active Global Partners</p>
+                    </div>
+                </div>
+
+                {/* Churn Card */}
+                <div className="bg-slate-900 rounded-[48px] p-10 shadow-3xl flex flex-col justify-between relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-40 h-40 bg-indigo-500/10 rounded-full blur-3xl -mr-10 -mt-10 transition-all duration-1000 group-hover:bg-indigo-500/20" />
                     
-                    <div className="flex justify-between items-start mb-6 relative z-10">
-                        <div className="size-14 rounded-2xl bg-white/10 flex items-center justify-center border border-white/10 backdrop-blur-sm">
-                            <TrendingUp className="size-6 text-emerald-400" />
+                    <div className="flex justify-between items-start mb-10 relative z-10">
+                        <div className="size-16 rounded-[24px] bg-white/10 text-rose-500 flex items-center justify-center border border-white/10 backdrop-blur-xl">
+                            <TrendingDown className="size-8" />
                         </div>
-                        <div className="flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest italic bg-emerald-500/20 text-emerald-400 border border-emerald-500/20">
-                            <ArrowUpRight className="size-3" />
-                            Previsão
+                        <div className="bg-rose-500/20 text-rose-400 px-4 py-2 rounded-full text-[10px] font-black uppercase italic tracking-widest border border-rose-500/20">
+                            Retention Delta
                         </div>
                     </div>
                     <div className="relative z-10">
-                        <p className="text-4xl font-black tracking-tighter italic line-clamp-1">R$ 578K</p>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">ARR Projetado</p>
+                        <p className="text-5xl font-black text-white tracking-tighter italic leading-none">{kpis.churnRate}%</p>
+                        <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em] mt-3 italic">Global Monthly Churn</p>
                     </div>
                 </div>
             </div>
 
-            {/* Principal Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Advanced Analytics Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                 {/* Growth Chart */}
-                <div className="bg-white rounded-[40px] p-8 md:p-10 border border-slate-100 shadow-sm">
-                    <div className="mb-10">
-                        <h4 className="text-xl font-black text-slate-900 italic uppercase">Crescimento <span className="text-emerald-500">Financeiro</span></h4>
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Comparativo de MRR vs Receita Bruta</p>
+                <motion.div 
+                    initial={{ opacity: 0, x: -30 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="glass-card rounded-[60px] p-12 border border-white/40 shadow-2xl bg-white/40 backdrop-blur-2xl"
+                >
+                    <div className="flex justify-between items-start mb-12">
+                        <div>
+                            <h4 className="text-2xl font-black text-slate-900 italic uppercase tracking-tighter">Finance <span className="text-indigo-500">Trajectory</span></h4>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1 italic">MRR vs Aggregate Revenue Forecast</p>
+                        </div>
+                        <TrendingUp className="size-6 text-indigo-500 opacity-30" />
                     </div>
-                    <div className="h-[350px] w-full">
+                    <div className="h-[400px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={financialData}>
                                 <defs>
                                     <linearGradient id="colorMrr" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.4} />
+                                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                                    </linearGradient>
+                                    <linearGradient id="colorGrowth" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.1} />
                                         <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                                     </linearGradient>
-                                    <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.2} />
-                                        <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0} />
-                                    </linearGradient>
                                 </defs>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} dy={10} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} tickFormatter={(val) => `R$${val/1000}k`} />
+                                <CartesianGrid strokeDasharray="8 8" vertical={false} stroke="#e2e8f0" strokeOpacity={0.5} />
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 900, fill: '#94a3b8', letterSpacing: '0.1em' }} dy={15} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 900, fill: '#94a3b8' }} tickFormatter={(val) => `R$${val/1000}k`} />
                                 <Tooltip
-                                    cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }}
-                                    contentStyle={{ borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', fontWeight: 800, padding: '16px 24px' }}
-                                    formatter={(value: number) => [`R$ ${value.toLocaleString('pt-BR')}`, '']}
+                                    cursor={{ stroke: '#6366f1', strokeWidth: 1 }}
+                                    contentStyle={{ borderRadius: '32px', border: '1px solid #fff', background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(20px)', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.1)', fontWeight: 900, padding: '24px 32px', textTransform: 'uppercase', fontStyle: 'italic', letterSpacing: '0.05em' }}
                                 />
-                                <Area type="monotone" dataKey="revenue" name="Receita Bruta" stroke="#0ea5e9" strokeWidth={3} fillOpacity={1} fill="url(#colorRev)" />
-                                <Area type="monotone" dataKey="mrr" name="MRR" stroke="#10b981" strokeWidth={4} fillOpacity={1} fill="url(#colorMrr)" />
+                                <Area type="monotone" dataKey="revenue" name="Total Rev" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorGrowth)" strokeDasharray="10 10" />
+                                <Area type="monotone" dataKey="mrr" name="MRR Velocity" stroke="#6366f1" strokeWidth={6} fillOpacity={1} fill="url(#colorMrr)" />
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
-                </div>
+                </motion.div>
 
-                {/* Activity Chart */}
-                <div className="bg-white rounded-[40px] p-8 md:p-10 border border-slate-100 shadow-sm">
-                    <div className="mb-10 flex justify-between items-start">
+                {/* Adoption Chart */}
+                <motion.div 
+                    initial={{ opacity: 0, x: 30 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="glass-card rounded-[60px] p-12 border border-white/40 shadow-2xl bg-white/40 backdrop-blur-2xl"
+                >
+                    <div className="flex justify-between items-start mb-12">
                         <div>
-                            <h4 className="text-xl font-black text-slate-900 italic uppercase">Atividade do <span className="text-indigo-500">Sistema</span></h4>
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Usuários ativos e volume de logins (30 dias)</p>
+                            <h4 className="text-2xl font-black text-slate-900 italic uppercase tracking-tighter">Network <span className="text-amber-500">Expansion</span></h4>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1 italic">Company onboarding velocity per cycle</p>
                         </div>
+                        <Activity className="size-6 text-amber-500 opacity-30" />
                     </div>
-                    <div className="h-[350px] w-full">
+                    <div className="h-[400px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={activityData}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} dy={10} />
-                                <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} />
-                                <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#94a3b8' }} />
+                            <BarChart data={financialData}>
+                                <CartesianGrid strokeDasharray="8 8" vertical={false} stroke="#e2e8f0" strokeOpacity={0.5} />
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 900, fill: '#94a3b8', letterSpacing: '0.1em' }} dy={15} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 900, fill: '#94a3b8' }} />
                                 <Tooltip
-                                    cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }}
-                                    contentStyle={{ borderRadius: '24px', border: '1px solid #e2e8f0', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', fontWeight: 800 }}
+                                    cursor={{ fill: 'rgba(245, 158, 11, 0.05)' }}
+                                    contentStyle={{ borderRadius: '32px', border: '1px solid #fff', background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(20px)', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.1)', fontWeight: 900, padding: '24px 32px', textTransform: 'uppercase', fontStyle: 'italic', letterSpacing: '0.05em' }}
                                 />
-                                <Line yAxisId="left" type="monotone" dataKey="logins" name="Logins" stroke="#6366f1" strokeWidth={4} dot={{ strokeWidth: 4, r: 4 }} activeDot={{ r: 8 }} />
-                                <Line yAxisId="right" type="monotone" dataKey="active_companies" name="Empresas" stroke="#f59e0b" strokeWidth={4} dot={false} />
-                            </LineChart>
+                                <Bar dataKey="companies" name="Entities Joined" fill="#f59e0b" radius={[12, 12, 0, 0]} barSize={40} />
+                            </BarChart>
                         </ResponsiveContainer>
+                    </div>
+                </motion.div>
+            </div>
+
+            {/* Strategic Insights */}
+            <div className="bg-slate-900 rounded-[64px] p-16 relative overflow-hidden group shadow-3xl mx-6">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-600/20 rounded-full blur-[120px] -mr-48 -mt-48 transition-all duration-1000 group-hover:bg-indigo-600/30" />
+                <div className="absolute bottom-0 left-0 w-96 h-96 bg-emerald-600/10 rounded-full blur-[120px] -ml-48 -mb-48 transition-all duration-1000 group-hover:bg-emerald-600/20" />
+                
+                <div className="relative z-10 flex flex-col items-center text-center max-w-4xl mx-auto">
+                    <div className="size-20 rounded-[32px] bg-white/10 flex items-center justify-center border border-white/10 backdrop-blur-xl mb-10 shadow-2xl">
+                        <TrendingUp className="size-10 text-indigo-400" />
+                    </div>
+                    <h3 className="text-4xl font-black italic uppercase tracking-tighter text-white mb-6">
+                        Execução Estratégica & <span className="text-indigo-400 underline decoration-indigo-400/30">Visão 2026</span>
+                    </h3>
+                    <p className="text-slate-400 font-bold text-lg uppercase tracking-widest leading-relaxed mb-12">
+                        Seu MRR cresceu <span className="text-emerald-400">18.4%</span> no último ciclo. Com o Churn atual de <span className="text-rose-400">{kpis.churnRate}%</span>, a plataforma DocesGestão está em trajetória de hipercrescimento sustentável.
+                    </p>
+                    <div className="flex gap-4">
+                        <Button className="h-16 px-12 rounded-full bg-white text-slate-900 font-black uppercase italic text-xs tracking-widest hover:bg-slate-50 transition-all hover:scale-105">
+                            Visualizar Roadmap
+                        </Button>
                     </div>
                 </div>
             </div>
-            
-            {/* Secondary KPIs / Logs */}
-             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 bg-white rounded-[40px] border border-slate-100 p-8 shadow-sm">
-                    <h4 className="text-lg font-black text-slate-900 italic uppercase mb-6">Métricas de Adoção</h4>
-                    <div className="space-y-6">
-                        {[
-                            { name: "Gestão Financeira (Módulo)", usage: 89, color: "bg-blue-500" },
-                            { name: "Ponto de Venda (PDV)", usage: 76, color: "bg-emerald-500" },
-                            { name: "Controle de Estoque", usage: 64, color: "bg-indigo-500" },
-                            { name: "Catálogo Online (Website)", usage: 42, color: "bg-purple-500" },
-                        ].map((module, i) => (
-                            <div key={i}>
-                                <div className="flex justify-between items-center mb-2">
-                                    <span className="text-sm font-bold text-slate-700">{module.name}</span>
-                                    <span className="text-sm font-black italic">{module.usage}%</span>
-                                </div>
-                                <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden">
-                                    <div className={cn("h-full rounded-full transition-all duration-1000", module.color)} style={{ width: `${module.usage}%` }} />
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-[40px] p-8 text-white relative overflow-hidden flex flex-col justify-center items-center text-center shadow-xl shadow-slate-900/10">
-                    <div className="absolute -right-10 -top-10 size-40 bg-primary/20 rounded-full blur-3xl" />
-                    <div className="absolute -left-10 -bottom-10 size-40 bg-blue-500/20 rounded-full blur-3xl" />
-                    
-                    <FileText className="size-16 text-slate-400 mb-6 relative z-10" />
-                    <h3 className="text-2xl font-black italic uppercase tracking-tighter mb-4 relative z-10">Exportação de<br/>Dados Completa</h3>
-                    <p className="text-slate-400 font-medium text-sm mb-8 relative z-10">Faça o donwload do Data Lake completo para análise no PowerBI ou Excel.</p>
-                    <button className="w-full py-4 bg-white text-slate-900 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-slate-50 transition-colors relative z-10">
-                        Baixar Dump CSV
-                    </button>
-                </div>
-             </div>
         </motion.div>
     )
 }

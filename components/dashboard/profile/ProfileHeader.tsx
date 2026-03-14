@@ -2,13 +2,14 @@
 
 import { useAuth } from "@/hooks/useAuth"
 import { motion } from "framer-motion"
-import { Trophy, TrendingUp, Users, BookOpen, ShoppingCart, Star } from "lucide-react"
+import { Trophy, TrendingUp, Users, BookOpen, ShoppingCart, Star, Camera } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { supabase } from "@/lib/supabase"
 import { useState, useEffect } from "react"
+import Link from "next/link"
 
 export function ProfileHeader() {
   const { user, updateProfile } = useAuth()
@@ -50,9 +51,12 @@ export function ProfileHeader() {
         user.user_metadata?.full_name,
         user.user_metadata?.phone,
         user.user_metadata?.city,
+        user.user_metadata?.state,
         user.user_metadata?.specialty,
+        user.user_metadata?.experience_years,
         user.user_metadata?.store_name,
-        user.user_metadata?.instagram
+        user.user_metadata?.instagram,
+        user.user_metadata?.bio
       ]
       const filled = fields.filter(f => !!f).length
       setCompleteness(Math.round((filled / fields.length) * 100))
@@ -129,9 +133,29 @@ export function ProfileHeader() {
         </div>
 
         {/* Actions */}
-        <div className="flex gap-4 shrink-0">
-          <Button variant="outline" className="h-14 rounded-2xl border-2 border-slate-100 font-bold text-sm px-8">Configurações</Button>
-          <Button className="h-14 rounded-2xl bg-indigo-900 hover:bg-indigo-950 text-white font-bold text-sm px-8 shadow-lg shadow-indigo-100">Ver Perfil Público</Button>
+        <div className="flex flex-col sm:flex-row gap-4 shrink-0 w-full lg:w-auto">
+          <Link href="/dashboard/configuracoes" className="flex-1 lg:flex-none">
+            <Button 
+              variant="outline" 
+              className="w-full h-14 rounded-2xl border-2 border-slate-100 font-bold text-sm px-8 hover:bg-slate-50 transition-all active:scale-95"
+            >
+              Configurações
+            </Button>
+          </Link>
+          <Link href={`/menu/${user?.user_metadata?.slug || ""}`} className="flex-1 lg:flex-none">
+            <Button 
+              className="w-full h-14 rounded-2xl bg-indigo-900 hover:bg-indigo-950 text-white font-bold text-sm px-8 shadow-lg shadow-indigo-100 transition-all active:scale-95 group"
+            >
+              Ver Perfil Público
+              <motion.span
+                className="ml-2 inline-block"
+                animate={{ x: [0, 4, 0] }}
+                transition={{ repeat: Infinity, duration: 1.5 }}
+              >
+                →
+              </motion.span>
+            </Button>
+          </Link>
         </div>
       </div>
 
@@ -157,11 +181,3 @@ export function ProfileHeader() {
   )
 }
 
-function Camera({ className }: { className?: string }) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
-      <circle cx="12" cy="13" r="3" />
-    </svg>
-  )
-}

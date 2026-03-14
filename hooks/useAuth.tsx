@@ -14,6 +14,7 @@ interface AuthContextType {
     updateProfile: (metadata: any) => Promise<{ error: any }>
     subscription: any | null
     isAdmin: boolean
+    role: string | null
     loadingSubscription: boolean
     logout: () => Promise<void>
 }
@@ -24,6 +25,7 @@ const AuthContext = createContext<AuthContextType>({
     loading: true,
     subscription: null,
     isAdmin: false,
+    role: null,
     loadingSubscription: true,
     signInWithGoogle: async () => { },
     signInWithEmail: async () => ({ error: null }),
@@ -38,6 +40,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [loading, setLoading] = useState(true)
     const [subscription, setSubscription] = useState<any | null>(null)
     const [isAdmin, setIsAdmin] = useState(false)
+    const [role, setRole] = useState<string | null>(null)
     const [loadingSubscription, setLoadingSubscription] = useState(true)
 
     const fetchSubscription = async (userId: string) => {
@@ -50,10 +53,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 .eq('user_id', userId)
                 .maybeSingle()
 
-            // Fetch Admin Status from profiles
+            // Fetch Admin Status and Role from profiles
             const profilePromise = supabase
                 .from('profiles')
-                .select('is_admin')
+                .select('is_admin, role')
                 .eq('id', userId)
                 .maybeSingle()
 
@@ -79,11 +82,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }
 
             if (profRes.data) {
-                console.log("DEBUG AUTH: Profile found, is_admin:", profRes.data.is_admin)
-                setIsAdmin(profRes.data.is_admin)
+                console.log("DEBUG AUTH: Profile found, role:", profRes.data.role)
+                const isSystemAdmin = profRes.data.role === 'admin' || profRes.data.is_admin === true
+                setIsAdmin(isSystemAdmin)
+                setRole(profRes.data.role || (profRes.data.is_admin ? 'admin' : 'user'))
             } else {
                 console.warn("DEBUG AUTH: No profile found for user ID:", userId)
                 setIsAdmin(false)
+                setRole(null)
             }
         } catch (error: any) {
             console.error("Error fetching auth data:", error.message || error)
@@ -226,6 +232,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             loading,
             subscription,
             isAdmin,
+            role,
             loadingSubscription,
             signInWithGoogle,
             signInWithEmail,

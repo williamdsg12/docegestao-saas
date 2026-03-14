@@ -8,7 +8,7 @@ import { motion } from "framer-motion"
 import { useRouter } from "next/navigation"
 
 export function AdminGuard({ children }: { children: React.ReactNode }) {
-    const { isAdmin, loading, user } = useAuth()
+    const { isAdmin, role, loading, user } = useAuth()
     const router = useRouter()
 
     if (loading) {
@@ -22,7 +22,7 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
         )
     }
 
-    if (!user || !isAdmin) {
+    if (!user || (!isAdmin && role !== 'admin')) {
         return (
             <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/40 backdrop-blur-md p-4">
                 <motion.div

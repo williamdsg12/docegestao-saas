@@ -19,6 +19,34 @@ DO $$ BEGIN
     -- We make them nullable first if missing to avoid data failures, then trigger will fill them.
 END $$;
 
+-- 1.1 Ensure plans table has all necessary columns
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='plans' AND column_name='interval') THEN
+        ALTER TABLE public.plans ADD COLUMN interval text DEFAULT 'month';
+    END IF;
+    
+    -- Ensuring features column exists as well
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='plans' AND column_name='features') THEN
+        ALTER TABLE public.plans ADD COLUMN features jsonb DEFAULT '[]'::jsonb;
+    END IF;
+
+    -- Add is_active if missing
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='plans' AND column_name='is_active') THEN
+        ALTER TABLE public.plans ADD COLUMN is_active boolean DEFAULT true;
+    END IF;
+
+    -- Add limit columns if missing
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='plans' AND column_name='max_orders') THEN
+        ALTER TABLE public.plans ADD COLUMN max_orders integer;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='plans' AND column_name='max_products') THEN
+        ALTER TABLE public.plans ADD COLUMN max_products integer;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='plans' AND column_name='max_clients') THEN
+        ALTER TABLE public.plans ADD COLUMN max_clients integer;
+    END IF;
+END $$;
+
 -- 2. First, we need to update any subscriptions pointing to old plans to point to the new 'iniciante' to avoid foreign key violations when we delete old plans
 DO $$ 
 DECLARE
@@ -86,4 +114,11 @@ ON CONFLICT (slug) DO UPDATE SET
 
 -- Update the app's default trigger to use 'iniciante' instead of 'basico'/'premium' terminology
 -- (Usually done in the registration_robust_fix.sql trigger, but let's ensure 'iniciante' is the default)
+-- Drop the outdated plan check constraint if it exists to allow new plan names
+DO $$ BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.constraint_column_usage WHERE table_name = 'profiles' AND constraint_name = 'profiles_plan_check') THEN
+        ALTER TABLE public.profiles DROP CONSTRAINT profiles_plan_check;
+    END IF;
+END $$;
+
 UPDATE public.profiles SET plan = 'iniciante' WHERE plan IN ('basico', 'free', 'trial');

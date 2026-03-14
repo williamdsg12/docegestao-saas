@@ -4,27 +4,30 @@ import { Card, CardContent } from "@/components/ui/card"
 import { TrendingUp, DollarSign, ShoppingBag, Star, CheckCircle2, ArrowRight } from "lucide-react"
 import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
+import { FinanceiroMock } from "./mock-screens/finance-mock"
+import { PedidosMock } from "./mock-screens/pedidos-mock"
+import { FichaMock } from "./mock-screens/ficha-mock"
 
 const features = [
   {
     title: "Gestão de pedidos profissional",
     description: "Abandone o papel e as conversas perdidas no WhatsApp. Organize toda sua produção em um único lugar, com controle de status, prazos de entrega e lembretes automáticos.",
     badge: "Eficiência total",
-    image: "/mockups/pedidos.png", // Example path, will use a styled div as mockup
+    mock: <PedidosMock />,
     reversed: false,
   },
   {
     title: "Ficha técnica e custos automáticos",
     description: "Saiba exatamente quanto custa cada grama do seu doce. O sistema calcula automaticamente o custo de insumos, embalagens e mão de obra, sugerindo o preço ideal de venda.",
     badge: "Lucratividade garantida",
-    image: "/mockups/ficha.png",
+    mock: <FichaMock />,
     reversed: true,
   },
   {
     title: "Financeiro inteligente e simplificado",
     description: "Tenha clareza total sobre o que entra e o que sai. Relatórios de lucro real, controle de entradas e visão geral da saúde financeira do seu negócio sem complicação.",
     badge: "Saúde financeira",
-    image: "/mockups/financeiro.png",
+    mock: <FinanceiroMock />,
     reversed: false,
   },
 ]
@@ -79,26 +82,10 @@ export function DashboardPreview() {
                       <div className="size-2.5 rounded-full bg-slate-200" />
                     </div>
                   </div>
-                  <div className="p-4 lg:p-10 aspect-[16/10] bg-slate-50/30 flex items-center justify-center">
-                    {/* Abstract Interface elements representing the specific feature */}
-                    <div className="w-full space-y-6">
-                      <div className="h-4 w-48 rounded bg-slate-200/60" />
-                      <div className="grid grid-cols-3 gap-4">
-                        <div className="h-24 rounded-2xl bg-white border border-slate-100 shadow-sm" />
-                        <div className="h-24 rounded-2xl bg-white border border-slate-100 shadow-sm" />
-                        <div className="h-24 rounded-2xl bg-white border border-slate-100 shadow-sm" />
-                      </div>
-                      <div className="h-40 rounded-3xl bg-white border border-slate-100 shadow-sm overflow-hidden p-6">
-                        <div className="space-y-3">
-                          <div className="h-3 w-full rounded bg-slate-100" />
-                          <div className="h-3 w-5/6 rounded bg-slate-100" />
-                          <div className="h-3 w-4/6 rounded bg-slate-100" />
-                        </div>
-                        <div className="mt-8 flex justify-end">
-                          <div className="h-10 w-28 rounded-xl bg-primary/10 border border-primary/10" />
-                        </div>
-                      </div>
-                    </div>
+                  <div className="aspect-[16/10] bg-slate-50/30 flex items-center justify-center relative overflow-hidden">
+                    {feature.mock}
+                    {/* Subtle Overlay to enhance crispness */}
+                    <div className="absolute inset-0 ring-1 ring-inset ring-slate-900/5 rounded-b-[32px]" />
                   </div>
                 </div>
 

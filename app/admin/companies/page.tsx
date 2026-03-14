@@ -56,10 +56,7 @@ export default function CompaniesManagement() {
             const data = await response.json()
 
             if (!data || data.length === 0) {
-                setCompanies([
-                    { id: '1', name: 'Confeitaria Master', responsible_name: 'Ana Silva', email: 'ana@exemplo.com', phone: '(11) 98888-7777', document: 'N/A', created_at: new Date().toISOString(), plan_name: 'Premium', status: 'active' },
-                    { id: '2', name: 'Doces do Céu', responsible_name: 'Beto Costa', email: 'beto@exemplo.com', phone: '(11) 97777-6666', document: 'N/A', created_at: new Date().toISOString(), plan_name: 'Basic', status: 'trial' }
-                ])
+                setCompanies([])
                 return
             }
 
@@ -71,17 +68,14 @@ export default function CompaniesManagement() {
                 phone: c.phone || 'Sem Telefone',
                 document: 'N/A',
                 created_at: c.created_at,
-                plan_name: 'Mensal', // Simplificado
+                plan_name: c.plans?.name || 'Iniciante',
                 status: (c.status || 'active') as any
             }))
 
             setCompanies(formatted)
         } catch (error: any) {
-            console.warn("⚠️ API Companies failed, using fallbacks:", error.message)
-            setCompanies([
-                { id: '1', name: 'Confeitaria Master (Demo)', responsible_name: 'Ana Silva', email: 'ana@exemplo.com', phone: '(11) 98888-7777', document: 'N/A', created_at: new Date().toISOString(), plan_name: 'Premium', status: 'active' },
-                { id: '2', name: 'Doces do Céu (Demo)', responsible_name: 'Beto Costa', email: 'beto@exemplo.com', phone: '(11) 97777-6666', document: 'N/A', created_at: new Date().toISOString(), plan_name: 'Basic', status: 'trial' }
-            ])
+            console.error("error fetching companies:", error)
+            toast.error("Erro ao carregar empresas reais. Verifique o console.")
         } finally {
             setLoading(false)
         }
@@ -97,11 +91,11 @@ export default function CompaniesManagement() {
 
     const getStatusStyle = (status: string) => {
         switch (status) {
-            case 'active': return "bg-emerald-50 text-emerald-600 border-emerald-100"
-            case 'trial': return "bg-amber-50 text-amber-600 border-amber-100"
-            case 'blocked': return "bg-slate-900 text-white border-slate-900"
-            case 'past_due': return "bg-rose-50 text-rose-600 border-rose-100"
-            case 'canceled': return "bg-slate-100 text-slate-500 border-slate-200"
+            case 'active': return "bg-emerald-50 text-emerald-600 border-emerald-100/50 shadow-sm shadow-emerald-500/5"
+            case 'trial': return "bg-amber-50 text-amber-600 border-amber-100/50 shadow-sm shadow-amber-500/5"
+            case 'blocked': return "bg-slate-900 text-white border-slate-900 shadow-lg shadow-black/10"
+            case 'past_due': return "bg-rose-50 text-rose-600 border-rose-100/50 shadow-sm shadow-rose-500/5"
+            case 'canceled': return "bg-slate-100 text-slate-500 border-slate-200/50 shadow-sm"
             default: return "bg-slate-50 text-slate-400 border-slate-100"
         }
     }
@@ -111,148 +105,174 @@ export default function CompaniesManagement() {
             case 'active': return "Ativa"
             case 'trial': return "Teste"
             case 'blocked': return "Bloqueada"
-            case 'past_due': return "Inadimplente"
+            case 'past_due': return "Atrasado"
             case 'canceled': return "Cancelada"
             default: return status
         }
     }
 
     return (
-        <div className="space-y-10">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div>
-                    <h2 className="text-4xl font-black text-slate-900 italic uppercase tracking-tighter">Gestão de <span className="text-primary">Empresas</span></h2>
-                    <p className="text-slate-500 font-medium">Controle todas as confeitarias da plataforma</p>
+        <div className="space-y-12 pb-20">
+            {/* Header Area */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 relative z-10">
+                <div className="space-y-1">
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="size-2 bg-indigo-500 rounded-full animate-pulse" />
+                        <span className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.3em] italic">Network Overview</span>
+                    </div>
+                    <h2 className="text-6xl font-black text-slate-900 italic uppercase tracking-tighter leading-[0.8]">
+                        Gestão <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-indigo-400">B2B</span>
+                    </h2>
+                    <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] italic">Ecosystem Audit // Confeitarias Cadastradas</p>
                 </div>
-                <Button 
-                    onClick={() => {
-                        toast.promise(
-                            new Promise((resolve) => setTimeout(resolve, 2000)),
-                            {
-                                loading: 'Gerando relatório de empresas...',
-                                success: 'Relatório exportado com sucesso!',
-                                error: 'Erro ao exportar relatório',
-                            }
-                        )
-                    }}
-                    className="h-14 px-8 rounded-2xl bg-slate-900 text-white font-black uppercase italic shadow-xl shadow-slate-900/20 hover:scale-105 transition-transform"
-                >
-                    Exportar Relatório
-                </Button>
+                
+                <div className="flex items-center gap-4">
+                    <div className="flex flex-col text-right mr-4">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total de Parceiros</p>
+                        <p className="text-2xl font-black text-slate-900 italic">{companies.length}</p>
+                    </div>
+                    <Button 
+                        onClick={() => {
+                            toast.promise(
+                                new Promise((resolve) => setTimeout(resolve, 2000)),
+                                {
+                                    loading: 'Gerando relatório B2B...',
+                                    success: 'Manifesto exportado com sucesso!',
+                                    error: 'Falha na exportação',
+                                }
+                            )
+                        }}
+                        className="h-16 px-10 rounded-[32px] bg-slate-900 text-white font-black uppercase italic tracking-widest text-xs shadow-2xl shadow-slate-900/20 hover:scale-105 transition-all group"
+                    >
+                        Export Log <ChevronRight className="size-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                    </Button>
+                </div>
             </div>
 
-            {/* Filters Bar */}
-            <div className="flex flex-col lg:flex-row gap-4">
-                <div className="relative flex-1 group">
-                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 size-5 text-slate-400 group-focus-within:text-primary transition-colors" />
+            {/* Filter & Search Dashboard */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <div className="lg:col-span-2 relative group">
+                    <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors">
+                        <Search className="size-6" />
+                    </div>
                     <input
                         type="text"
-                        placeholder="Buscar por nome, email ou responsável..."
-                        className="w-full h-16 pl-16 pr-6 bg-white border border-slate-100 rounded-[24px] text-sm font-bold shadow-sm focus:ring-4 focus:ring-primary/5 focus:border-primary outline-none transition-all"
+                        placeholder="BUSCAR POR NOME, EMAIL OU RESPONSÁVEL..."
+                        className="w-full h-20 pl-16 pr-6 bg-white border border-slate-100 rounded-[32px] text-xs font-black uppercase tracking-widest shadow-xl shadow-indigo-500/5 focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-300 italic"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <div className="flex gap-4 scroll-x-auto pb-2 lg:pb-0">
-                    {['all', 'active', 'trial', 'past_due', 'blocked', 'canceled'].map((s) => (
+                
+                <div className="lg:col-span-2 flex items-center gap-3 overflow-x-auto pb-4 lg:pb-0 scrollbar-hide">
+                    {['all', 'active', 'trial', 'past_due', 'blocked'].map((s) => (
                         <button
                             key={s}
                             onClick={() => setStatusFilter(s)}
                             className={cn(
-                                "h-16 px-8 rounded-[24px] font-black uppercase italic text-xs tracking-widest border transition-all whitespace-nowrap",
+                                "h-20 px-8 rounded-[32px] font-black uppercase italic text-[10px] tracking-widest border transition-all whitespace-nowrap flex flex-col items-center justify-center gap-1 min-w-[120px]",
                                 statusFilter === s 
-                                    ? "bg-slate-900 text-white border-slate-900 shadow-lg shadow-slate-900/20" 
-                                    : "bg-white text-slate-400 border-slate-100 hover:border-slate-300"
+                                    ? "bg-slate-900 text-white border-slate-900 shadow-2xl shadow-slate-900/30 -translate-y-1" 
+                                    : "bg-white text-slate-400 border-slate-100 hover:border-slate-300 hover:text-slate-600"
                             )}
                         >
-                            {s === 'all' ? 'Ver Todos' : getStatusLabel(s)}
+                            <span className="opacity-60">{s === 'all' ? 'Ver' : 'Filtro'}</span>
+                            <span className="text-xs">{s === 'all' ? 'Todos' : getStatusLabel(s)}</span>
                         </button>
                     ))}
                 </div>
             </div>
 
-            {/* Table Area */}
-            <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-hidden">
+            {/* Premium Table Content */}
+            <motion.div 
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="glass-card rounded-[48px] border border-white/40 shadow-2xl shadow-indigo-500/5 overflow-hidden bg-white/60 backdrop-blur-md"
+            >
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="border-b border-slate-50 bg-slate-50/50">
-                                <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Confeitaria</th>
-                                <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Responsável</th>
-                                <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Plano</th>
-                                <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-                                <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Ações</th>
+                            <tr className="bg-slate-50/30">
+                                <th className="px-10 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Parceiro / Cadastro</th>
+                                <th className="px-10 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Responsável / Contact</th>
+                                <th className="px-10 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest italic text-center">Plan Tier</th>
+                                <th className="px-10 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Status</th>
+                                <th className="px-10 py-8 text-[10px] font-black text-slate-400 uppercase tracking-widest italic text-right">Administrative</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-50">
+                        <tbody className="divide-y divide-slate-100/50">
                             <AnimatePresence mode="popLayout">
                                 {loading ? (
                                     Array.from({ length: 5 }).map((_, i) => (
                                         <tr key={i} className="animate-pulse">
-                                            <td colSpan={5} className="px-8 py-6"><div className="h-6 bg-slate-100 rounded-lg w-full" /></td>
+                                            <td colSpan={5} className="px-10 py-8">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="size-16 bg-slate-100 rounded-3xl" />
+                                                    <div className="space-y-2 flex-1">
+                                                        <div className="h-4 bg-slate-100 rounded w-1/3" />
+                                                        <div className="h-2 bg-slate-50 rounded w-1/4" />
+                                                    </div>
+                                                </div>
+                                            </td>
                                         </tr>
                                     ))
                                 ) : filteredCompanies.length > 0 ? (
-                                    filteredCompanies.map((c, idx) => (
+                                    filteredCompanies.map((c) => (
                                         <motion.tr
                                             layout
                                             initial={{ opacity: 0 }}
                                             animate={{ opacity: 1 }}
                                             exit={{ opacity: 0 }}
                                             key={c.id}
-                                            className="hover:bg-slate-50/50 transition-colors group"
+                                            className="hover:bg-indigo-50/30 transition-all group relative"
                                         >
-                                            <td className="px-8 py-6">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="size-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 shrink-0 group-hover:bg-primary group-hover:text-white transition-all">
-                                                        <Building2 className="size-6" />
+                                            <td className="px-10 py-8">
+                                                <div className="flex items-center gap-5">
+                                                    <div className="size-16 rounded-[24px] bg-gradient-to-br from-slate-100 to-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 shrink-0 group-hover:from-indigo-600 group-hover:to-indigo-500 group-hover:text-white group-hover:shadow-xl group-hover:shadow-indigo-500/20 group-hover:-rotate-3 transition-all duration-500">
+                                                        <Building2 className="size-8" />
                                                     </div>
                                                     <div className="flex flex-col">
-                                                        <span className="font-black text-slate-900 italic uppercase tracking-tighter">{c.name}</span>
-                                                        <span className="text-[10px] text-slate-400 font-bold flex items-center gap-1 uppercase tracking-widest mt-1">
+                                                        <span className="font-black text-slate-900 italic uppercase tracking-tighter text-lg">{c.name}</span>
+                                                        <span className="text-[10px] text-slate-400 font-black flex items-center gap-1 uppercase tracking-[0.2em] mt-1 italic">
                                                             <Calendar className="size-3" />
                                                             {new Date(c.created_at).toLocaleDateString()}
                                                         </span>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-8 py-6">
+                                            <td className="px-10 py-8">
                                                 <div className="flex flex-col gap-1">
-                                                    <span className="font-bold text-slate-700 text-sm">{c.responsible_name}</span>
-                                                    <div className="flex items-center gap-3 text-[10px] text-slate-400 font-black uppercase italic tracking-widest">
+                                                    <span className="font-black text-slate-900 italic uppercase tracking-tighter text-xs">{c.responsible_name}</span>
+                                                    <div className="flex items-center gap-3 text-[10px] text-slate-400 font-bold uppercase tracking-widest opacity-60">
                                                         <span className="flex items-center gap-1"><Mail className="size-3" /> {c.email}</span>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-8 py-6">
-                                                <div className="flex flex-col">
+                                            <td className="px-10 py-8 text-center">
+                                                <div className="inline-flex flex-col items-center px-4 py-2 rounded-2xl bg-slate-100/50 group-hover:bg-white group-hover:shadow-sm transition-all">
                                                     <span className="font-black text-slate-900 italic uppercase tracking-widest text-[11px]">{c.plan_name}</span>
-                                                    <span className="text-[10px] text-slate-400 font-bold uppercase mt-1">Mensal</span>
+                                                    <span className="text-[8px] text-slate-400 font-black uppercase mt-1 tracking-[0.2em]">Tier Level</span>
                                                 </div>
                                             </td>
-                                            <td className="px-8 py-6">
+                                            <td className="px-10 py-8">
                                                 <div className={cn(
-                                                    "inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest italic border",
+                                                    "inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] italic border transition-all duration-500",
                                                     getStatusStyle(c.status)
                                                 )}>
-                                                    <div className={cn("size-1.5 rounded-full animate-pulse", c.status === 'blocked' ? "bg-white" : "bg-current")} />
+                                                    <div className={cn("size-2 rounded-full", (c.status === 'active' || c.status === 'trial') ? "bg-current animate-pulse" : "bg-current opacity-60")} />
                                                     {getStatusLabel(c.status)}
                                                 </div>
                                             </td>
-                                            <td className="px-8 py-6">
-                                                <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <button title="Acessar Sistema (Impersonar)" className="size-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all shadow-sm">
+                                            <td className="px-10 py-8">
+                                                <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0 transition-all duration-500">
+                                                    <button title="Acessar Sistema" className="size-11 rounded-2xl bg-white border border-slate-100 text-slate-900 flex items-center justify-center hover:bg-slate-900 hover:text-white shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all">
                                                         <ExternalLink className="size-5" />
                                                     </button>
-                                                    <button title="Ver/Editar Empresa" className="size-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center hover:bg-emerald-600 hover:text-white transition-all shadow-sm">
+                                                    <button title="Editar Empresa" className="size-11 rounded-2xl bg-white border border-slate-100 text-indigo-600 flex items-center justify-center hover:bg-indigo-600 hover:text-white shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all">
                                                         <Edit3 className="size-5" />
                                                     </button>
-                                                    <button title="Suspender Acesso" className="size-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center hover:bg-rose-600 hover:text-white transition-all shadow-sm">
+                                                    <button title="Suspender Acesso" className="size-11 rounded-2xl bg-white border border-slate-100 text-rose-500 flex items-center justify-center hover:bg-rose-500 hover:text-white shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all">
                                                         <Ban className="size-5" />
-                                                    </button>
-                                                    <button title="Mais Ações (Planos, Senha)" className="size-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center hover:bg-slate-900 hover:text-white transition-all shadow-sm">
-                                                        <MoreHorizontal className="size-5" />
                                                     </button>
                                                 </div>
                                             </td>
@@ -260,12 +280,15 @@ export default function CompaniesManagement() {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan={5} className="px-8 py-20 text-center">
-                                            <div className="flex flex-col items-center gap-4">
-                                                <div className="size-20 rounded-[32px] bg-slate-50 flex items-center justify-center text-slate-200">
-                                                    <SearchX className="size-10" />
+                                        <td colSpan={5} className="px-10 py-32 text-center bg-slate-50/10">
+                                            <div className="flex flex-col items-center gap-6">
+                                                <div className="size-24 rounded-[40px] bg-white border border-slate-100 flex items-center justify-center text-slate-100 shadow-xl shadow-indigo-500/5">
+                                                    <SearchX className="size-12" />
                                                 </div>
-                                                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic">Nenhuma empresa encontrada com estes filtros</p>
+                                                <div className="space-y-1">
+                                                    <p className="text-slate-900 font-black uppercase tracking-widest text-sm italic">Parceiros não encontrados</p>
+                                                    <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">Tente ajustar os critérios de busca ou filtros</p>
+                                                </div>
                                             </div>
                                         </td>
                                     </tr>
@@ -275,21 +298,27 @@ export default function CompaniesManagement() {
                     </table>
                 </div>
 
-                {/* Pagination */}
-                <div className="px-8 py-6 border-t border-slate-50 flex items-center justify-between bg-slate-50/30">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                        Exibindo {filteredCompanies.length} de {companies.length} empresas
-                    </p>
-                    <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" className="rounded-xl border-slate-200 text-slate-400 hover:text-slate-900 transition-all font-black uppercase text-[10px] px-4 gap-2">
-                            <ChevronLeft className="size-3" /> Anterior
-                        </Button>
-                        <Button variant="outline" size="sm" className="rounded-xl border-slate-200 text-slate-400 hover:text-slate-900 transition-all font-black uppercase text-[10px] px-4 gap-2">
-                            Próximo <ChevronRight className="size-3" />
-                        </Button>
+                {/* Footnote Stats */}
+                <div className="px-10 py-8 border-t border-slate-100/50 flex flex-col sm:flex-row items-center justify-between bg-slate-50/10 gap-6">
+                    <div className="flex items-center gap-3">
+                        <div className="size-10 rounded-xl bg-slate-900 flex items-center justify-center text-white text-[10px] font-black italic">
+                            {filteredCompanies.length}
+                        </div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">
+                            Entidades sob governança ativa
+                        </p>
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                        <button className="h-12 px-6 rounded-2xl bg-white border border-slate-200 text-[10px] font-black uppercase text-slate-400 hover:text-slate-900 hover:border-slate-400 transition-all flex items-center gap-2">
+                            <ChevronLeft className="size-4" /> Anterior
+                        </button>
+                        <button className="h-12 px-6 rounded-2xl bg-white border border-slate-200 text-[10px] font-black uppercase text-slate-400 hover:text-slate-900 hover:border-slate-400 transition-all flex items-center gap-2">
+                            Próximo <ChevronRight className="size-4" />
+                        </button>
                     </div>
                 </div>
-            </div>
+            </motion.div>
         </div>
     )
 }

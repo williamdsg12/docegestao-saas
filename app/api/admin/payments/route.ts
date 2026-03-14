@@ -2,25 +2,22 @@ import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { getServerUser } from '@/lib/supabaseAuth'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
     try {
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        const supabase = createClient(supabaseUrl, supabaseAnonKey)
-
-        const { data: { user } } = await supabase.auth.getUser()
+        const user = await getServerUser()
         if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
-        const { data: profile } = await supabase
+        const { data: profile } = await supabaseAdmin
             .from('profiles')
-            .select('is_admin')
+            .select('role')
             .eq('id', user.id)
             .single()
 
-        if (!profile?.is_admin) {
+        if (profile?.role !== 'admin') {
             return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
         }
 
@@ -30,6 +27,7 @@ export async function GET() {
                 *,
                 subscriptions (
                     companies ( name ),
+                    profiles ( business_name ),
                     plans ( name )
                 )
             `)

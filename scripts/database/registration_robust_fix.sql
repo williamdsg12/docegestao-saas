@@ -126,7 +126,8 @@ BEGIN
             email,
             plan,
             trial_ends_at,
-            is_admin
+            is_admin,
+            company_id
         )
         VALUES (
             new.id,
@@ -135,7 +136,8 @@ BEGIN
             new.email,
             CASE WHEN is_admin_user THEN 'premium' ELSE 'basico' END,
             now() + interval '14 days',
-            is_admin_user
+            is_admin_user,
+            new_company_id
         );
     EXCEPTION WHEN OTHERS THEN
         RAISE WARNING 'Falha ao criar perfil para o usuário %: %', new.id, SQLERRM;

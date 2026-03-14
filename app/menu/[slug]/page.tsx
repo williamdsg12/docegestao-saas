@@ -16,7 +16,13 @@ import {
   CheckCircle2,
   AlertCircle,
   CreditCard,
-  QrCode
+  QrCode,
+  Search,
+  Share2,
+  Star,
+  Heart,
+  ArrowRight,
+  MessageCircle
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -47,7 +53,12 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false)
   const [deliveryFee, setDeliveryFee] = useState(0)
-  const [isClosed, setIsClosed] = useState(false)
+  
+  // New State for Redesign
+  const [searchTerm, setSearchTerm] = useState("")
+  const [filteredProducts, setFilteredProducts] = useState<any[]>([])
+  const [selectedProduct, setSelectedProduct] = useState<any>(null)
+  const [activeCategory, setActiveCategory] = useState<string>("all")
   
   // Checkout Form
   const [customerInfo, setCustomerInfo] = useState({
@@ -78,10 +89,13 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
       const { data: compData, error: compError } = await supabase
         .from('companies')
         .select('*')
-        .eq('slug', slug)
+        .eq('menu_slug', slug)
         .single()
       
-      if (compError) throw compError
+      if (compError) {
+        console.error("Supabase error fetching company:", compError)
+        throw compError
+      }
       setCompany(compData)
 
       // 2. Fetch Categories & Products
@@ -92,6 +106,7 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
 
       setCategories(catRes.data || [])
       setProducts(prodRes.data || [])
+      setFilteredProducts(prodRes.data || [])
     } catch (error: any) {
       console.error("Error fetching menu:", error.message)
       toast.error("Cardápio não encontrado ou indisponível.")
@@ -99,6 +114,24 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    let result = products
+
+    if (activeCategory !== "all") {
+      result = result.filter(p => p.category_id === activeCategory)
+    }
+
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase()
+      result = result.filter(p => 
+        p.name.toLowerCase().includes(term) || 
+        p.description?.toLowerCase().includes(term)
+      )
+    }
+
+    setFilteredProducts(result)
+  }, [searchTerm, activeCategory, products])
 
   const addToCart = (product: any) => {
     setCart(prev => {
@@ -130,8 +163,8 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
       return
     }
 
-    if (subtotal < parseFloat(company.min_order || "0")) {
-      toast.error(`O pedido mínimo é de R$ ${parseFloat(company.min_order).toFixed(2)}`, {
+    if (subtotal < parseFloat(company.min_order_value || "0")) {
+      toast.error(`O pedido mínimo é de R$ ${parseFloat(company.min_order_value || "0").toFixed(2)}`, {
         icon: <AlertCircle className="size-4 text-rose-500" />
       })
       return
@@ -186,192 +219,409 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-white">
-      <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }} className="size-10 border-4 border-primary border-t-transparent rounded-full" />
+      <div className="relative">
+        <motion.div 
+          animate={{ rotate: 360 }} 
+          transition={{ repeat: Infinity, duration: 1, ease: "linear" }} 
+          className="size-16 border-4 border-[#FF4D6D]/20 border-t-[#FF4D6D] rounded-full" 
+        />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="size-2 bg-[#FF4D6D] rounded-full animate-ping" />
+        </div>
+      </div>
     </div>
   )
 
   if (!company) return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-white p-6 text-center">
-      <AlertCircle className="size-16 text-slate-200 mb-4" />
-      <h1 className="text-2xl font-black text-slate-900 uppercase italic">Oops!</h1>
-      <p className="text-slate-500">Este cardápio não está disponível no momento.</p>
+      <div className="size-24 bg-rose-50 rounded-full flex items-center justify-center mb-6">
+        <AlertCircle className="size-12 text-[#FF4D6D]" />
+      </div>
+      <h1 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter">Oooops!</h1>
+      <p className="text-slate-500 mt-2 max-w-xs">Este cardápio não está disponível ou o link está incorreto.</p>
+      <Button className="mt-8 rounded-2xl bg-[#FF4D6D] hover:bg-[#FF4D6D]/90 px-8" onClick={() => window.location.href = '/'}>
+        Voltar para Home
+      </Button>
     </div>
   )
 
   return (
-    <div className="min-h-screen bg-slate-50 relative pb-32">
-      {/* Promotional Banner */}
-      {company.promo_banner && (
-        <div className="bg-primary text-white py-2 px-6 text-center">
-          <p className="text-[10px] font-black uppercase tracking-widest animate-pulse">
-            ✨ {company.promo_banner} ✨
-          </p>
-        </div>
-      )}
-
-      {/* Hero / Header */}
-      <div className="bg-white border-b border-slate-200 sticky top-0 z-40">
-        <div className="max-w-4xl mx-auto px-6 py-6 flex items-center gap-4">
-          <div className="size-16 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0 shadow-sm overflow-hidden">
-            {company.logo_url ? <img src={company.logo_url} className="size-full object-cover" /> : <Plus className="size-8 text-slate-300" />}
-          </div>
-          <div className="flex-1">
-            <h1 className="font-black text-xl text-slate-900 uppercase italic tracking-tighter leading-none">{company.name}</h1>
-            <div className="flex items-center gap-3 mt-1.5 overflow-hidden">
-              <span className={cn(
-                "flex items-center gap-1 text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full",
-                company.business_hours?.includes("Fechado") ? "bg-rose-50 text-rose-600" : "bg-emerald-50 text-emerald-600"
-              )}>
-                <CheckCircle2 className="size-3" /> {company.business_hours?.includes("Fechado") ? "Fechado" : "Aberto"}
-              </span>
-              <span className="text-[10px] font-bold text-slate-400 uppercase whitespace-nowrap"><MapPin className="size-3 inline mr-1" /> {company.address?.split(',')[2] || "Sua Cidade"}</span>
-              {company.business_hours && (
-                 <span className="text-[10px] font-bold text-slate-400 uppercase whitespace-nowrap flex items-center gap-1">
-                   <Clock className="size-3" /> {company.business_hours}
-                 </span>
-              )}
-            </div>
-          </div>
-          <Button variant="ghost" size="icon" className="relative" onClick={() => setIsCartOpen(true)}>
-            <ShoppingCart className="size-6 text-slate-900" />
-            {cart.length > 0 && (
-              <span className="absolute -top-1 -right-1 size-5 bg-primary text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-md">
-                {cart.reduce((acc, i) => acc + i.quantity, 0)}
-              </span>
-            )}
+    <div className="min-h-screen bg-[#FAFAFA] font-sans text-slate-900 pb-32">
+      {/* 1️⃣ HEADER MODERNO DO RESTAURANTE */}
+      <div className="relative h-64 md:h-80 w-full overflow-hidden">
+        <motion.img 
+          initial={{ scale: 1.2 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 1.5 }}
+          src={company.cover_url || "https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&q=80&w=1000"} 
+          className="size-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+        
+        <div className="absolute top-6 left-6 right-6 flex justify-between items-center">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="bg-white/20 backdrop-blur-md rounded-2xl hover:bg-white/40 text-white"
+            onClick={() => window.history.back()}
+          >
+            <ChevronRight className="size-6 rotate-180" />
           </Button>
-        </div>
-      </div>
-
-      <div className="max-w-4xl mx-auto px-6 py-8 space-y-12">
-        {/* Categories Carousel (Simple) */}
-        <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-none">
-          {categories.map(cat => (
-            <button 
-              key={cat.id} 
-              className="px-5 py-2.5 rounded-2xl bg-white border border-slate-200 font-black text-[10px] uppercase tracking-widest text-slate-500 hover:text-primary hover:border-primary/20 hover:bg-slate-50 transition-all whitespace-nowrap shadow-sm"
+          <div className="flex gap-2">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="bg-white/20 backdrop-blur-md rounded-2xl hover:bg-white/40 text-white"
             >
-              {cat.name}
-            </button>
-          ))}
-        </div>
-
-        {/* Products by Category */}
-        {categories.map(cat => (
-          <div key={cat.id} className="space-y-6">
-            <h2 className="text-2xl font-black text-slate-900 uppercase italic tracking-tighter flex items-center gap-3">
-              <span className="h-px flex-1 bg-slate-200" />
-              {cat.name}
-              <span className="h-px flex-1 bg-slate-200" />
-            </h2>
-            <div className="grid md:grid-cols-2 gap-4">
-              {products.filter(p => p.category_id === cat.id).map(prod => (
-                <motion.div 
-                  key={prod.id} 
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  className="bg-white p-4 rounded-3xl border border-slate-200 flex gap-4 cursor-pointer hover:border-primary/20 transition-all group"
-                  onClick={() => addToCart(prod)}
-                >
-                  <div className="size-24 rounded-2xl bg-slate-50 overflow-hidden shrink-0 border border-slate-100 group-hover:scale-105 transition-transform duration-500">
-                    {prod.image_url ? (
-                      <img src={prod.image_url} alt={prod.name} className="size-full object-cover" />
-                    ) : (
-                      <div className="size-full flex items-center justify-center text-slate-300">
-                        <Plus className="size-8" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 flex flex-col justify-between py-1">
-                    <div>
-                      <h3 className="font-black text-slate-900 uppercase italic leading-tight mb-1">{prod.name}</h3>
-                      <p className="text-[10px] text-slate-500 font-medium line-clamp-2 leading-relaxed">{prod.description}</p>
-                    </div>
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-lg font-black text-primary italic tracking-tighter">R$ {prod.price.toFixed(2)}</span>
-                      <div className="size-8 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all">
-                        <Plus className="size-4" />
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+              <Share2 className="size-5" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="bg-white/20 backdrop-blur-md rounded-2xl hover:bg-white/40 text-white"
+            >
+              <Heart className="size-5" />
+            </Button>
           </div>
-        ))}
+        </div>
       </div>
 
-      {/* Floating Cart Button (Mobile) */}
+      {/* Store Info Card */}
+      <div className="max-w-4xl mx-auto px-6 -mt-20 relative z-10">
+        <div className="bg-white rounded-[40px] p-8 shadow-xl shadow-slate-200/50 border border-slate-100">
+          <div className="flex flex-col md:flex-row gap-6 items-start md:items-center">
+            <div className="size-24 md:size-32 rounded-[32px] bg-white p-1 shadow-lg -mt-16 md:-mt-24 border border-slate-50 shrink-0">
+              <div className="size-full rounded-[28px] overflow-hidden bg-slate-50 flex items-center justify-center">
+                {company.logo_url ? (
+                  <img src={company.logo_url} className="size-full object-cover" />
+                ) : (
+                  <Star className="size-12 text-[#FF4D6D] fill-[#FF4D6D]/10" />
+                )}
+              </div>
+            </div>
+            
+            <div className="flex-1 space-y-2">
+              <div className="flex flex-wrap items-center gap-3">
+                <h1 className="text-3xl font-black tracking-tighter uppercase italic text-slate-900">
+                  {company.name}
+                </h1>
+                <Badge className="bg-emerald-50 text-emerald-600 border-none px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
+                  ● Aberto
+                </Badge>
+              </div>
+              
+              <div className="flex flex-wrap items-center gap-6 text-slate-500 font-bold text-xs uppercase tracking-widest">
+                <div className="flex items-center gap-2">
+                  <Star className="size-4 text-amber-400 fill-amber-400" />
+                  <span className="text-slate-900">4.9</span>
+                  <span className="opacity-40">(100+)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="size-4 text-[#FF4D6D]" />
+                  <span>{company.production_time || "30-45 min"}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <MapPin className="size-4 text-[#FF4D6D]" />
+                  <span>{company.address_city || "Sua Cidade"}</span>
+                </div>
+              </div>
+            </div>
+
+            <Button 
+              className="rounded-2xl bg-[#25D366] hover:bg-[#20ba59] text-white px-6 h-12 flex gap-3 font-bold shadow-lg shadow-emerald-100 transition-all active:scale-95"
+              onClick={() => window.open(`https://wa.me/55${company.phone?.replace(/\D/g, '')}`, '_blank')}
+            >
+              <MessageCircle className="size-5" />
+              WhatsApp
+            </Button>
+          </div>
+        </div>
+
+        {/* 2️⃣ BARRA DE BUSCA INTELIGENTE */}
+        <div className="mt-8 sticky top-4 z-50">
+          <div className="relative group">
+            <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none">
+              <Search className="size-5 text-slate-400 group-focus-within:text-[#FF4D6D] transition-colors" />
+            </div>
+            <Input 
+              placeholder="Buscar no cardápio..." 
+              className="h-16 pl-14 pr-6 rounded-3xl bg-white border-none shadow-lg shadow-slate-200/50 text-base font-medium transition-all focus-visible:ring-2 focus-visible:ring-[#FF4D6D]/20"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto px-6 py-12 space-y-16">
+        {/* 3️⃣ MENU DE CATEGORIAS FIXO (SCROLL HORIZONTAL) */}
+        <div className="sticky top-24 z-40 -mx-6 px-6 py-4 bg-[#FAFAFA]/95 backdrop-blur-md border-b border-slate-100 overflow-x-auto no-scrollbar">
+          <div className="flex gap-3 min-w-max">
+            <button 
+              onClick={() => setActiveCategory("all")}
+              className={cn(
+                "px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-sm",
+                activeCategory === "all" ? "bg-[#FF4D6D] text-white" : "bg-white text-slate-400 hover:text-slate-600 border border-slate-100"
+              )}
+            >
+              Todos
+            </button>
+            {categories.map(cat => (
+              <button 
+                key={cat.id} 
+                onClick={() => setActiveCategory(cat.id)}
+                className={cn(
+                  "px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-sm",
+                  activeCategory === cat.id ? "bg-[#FF4D6D] text-white" : "bg-white text-slate-400 hover:text-slate-600 border border-slate-100"
+                )}
+              >
+                {cat.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 4️⃣ LISTA DE PRODUTOS EM CARDS MODERNOS */}
+        <div className="space-y-12">
+          {categories
+            .filter(cat => activeCategory === "all" || cat.id === activeCategory)
+            .map(cat => {
+              const categoryProducts = filteredProducts.filter(p => p.category_id === cat.id)
+              if (categoryProducts.length === 0) return null
+
+              return (
+                <div key={cat.id} className="space-y-8">
+                  <div className="flex items-center gap-4">
+                    <h2 className="text-2xl font-black text-slate-900 uppercase italic tracking-tighter">
+                      {cat.name}
+                    </h2>
+                    <div className="h-px flex-1 bg-slate-100" />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {categoryProducts.map(prod => (
+                      <motion.div 
+                        key={prod.id} 
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        whileHover={{ y: -4 }}
+                        className="bg-white p-6 rounded-[32px] border border-slate-100 flex gap-6 cursor-pointer hover:shadow-xl hover:shadow-slate-200/50 transition-all group relative overflow-hidden"
+                        onClick={() => setSelectedProduct(prod)}
+                      >
+                        {/* Status Badge */}
+                        {prod.price > 50 && (
+                          <div className="absolute top-0 left-0 bg-[#FF4D6D] text-white text-[8px] font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-br-2xl z-10">
+                            🔥 Destaque
+                          </div>
+                        )}
+
+                        <div className="flex-1 flex flex-col justify-between py-1">
+                          <div className="space-y-2">
+                            <h3 className="font-black text-slate-900 uppercase italic leading-tight text-lg group-hover:text-[#FF4D6D] transition-colors">{prod.name}</h3>
+                            <p className="text-xs text-slate-500 font-medium line-clamp-2 leading-relaxed">{prod.description}</p>
+                          </div>
+                          <div className="flex items-center justify-between mt-6">
+                            <span className="text-xl font-black text-slate-900 italic tracking-tighter">R$ {prod.price.toFixed(2)}</span>
+                            <Button 
+                              size="sm"
+                              className="rounded-xl bg-[#FFF0F3] text-[#FF4D6D] hover:bg-[#FF4D6D] hover:text-white font-black uppercase text-[10px] tracking-widest px-4 h-9 shadow-none border-none transition-all active:scale-95"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                addToCart(prod)
+                              }}
+                            >
+                              Adicionar
+                            </Button>
+                          </div>
+                        </div>
+
+                        <div className="size-28 md:size-32 rounded-3xl bg-slate-50 overflow-hidden shrink-0 border border-slate-100 relative group-hover:scale-105 transition-transform duration-700">
+                          {prod.image_url ? (
+                            <img src={prod.image_url} alt={prod.name} className="size-full object-cover" />
+                          ) : (
+                            <div className="size-full flex items-center justify-center text-slate-200">
+                              <Star className="size-10" />
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+        </div>
+      </div>
+
+      {/* 6️⃣ CARRINHO FLUTUANTE */}
       <AnimatePresence>
         {cart.length > 0 && !isCartOpen && (
           <motion.div 
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
-            className="fixed bottom-6 left-6 right-6 z-50 md:max-w-sm md:left-auto"
+            className="fixed bottom-8 left-6 right-6 z-50 md:max-w-md md:left-1/2 md:-translate-x-1/2"
           >
-            <Button onClick={() => setIsCartOpen(true)} className="w-full h-16 rounded-3xl bg-slate-900 text-white shadow-2xl flex items-center justify-between px-8 group">
-              <div className="flex items-center gap-3">
-                <div className="size-8 rounded-xl bg-white/10 flex items-center justify-center font-black italic">
-                   {cart.reduce((acc, i) => acc + i.quantity, 0)}
+            <Button 
+              onClick={() => setIsCartOpen(true)} 
+              className="w-full h-16 rounded-[32px] bg-slate-900 text-white shadow-2xl flex items-center justify-between px-8 group active:scale-95 transition-all outline-none ring-offset-2 ring-slate-900 focus:ring-2"
+            >
+              <div className="flex items-center gap-4">
+                <div className="size-10 rounded-2xl bg-white/10 flex items-center justify-center relative">
+                   <ShoppingCart className="size-5" />
+                   <span className="absolute -top-1.5 -right-1.5 size-5 bg-[#FF4D6D] text-white text-[10px] items-center justify-center flex font-black rounded-full border-2 border-slate-900">
+                    {cart.reduce((acc, i) => acc + i.quantity, 0)}
+                   </span>
                 </div>
-                <span className="font-black uppercase italic tracking-widest text-xs">Ver Carrinho</span>
+                <div className="text-left">
+                  <span className="block font-black uppercase italic tracking-widest text-[10px] leading-none mb-1 text-slate-400">Ver sacola</span>
+                  <span className="block font-black italic tracking-tighter text-lg leading-none">R$ {subtotal.toFixed(2)}</span>
+                </div>
               </div>
-              <span className="font-black italic tracking-tighter text-lg">R$ {subtotal.toFixed(2)}</span>
+              <div className="flex items-center gap-2 font-black uppercase italic text-[10px] tracking-widest">
+                Revisar 
+                <ArrowRight className="size-4 group-hover:translate-x-1 transition-transform" />
+              </div>
             </Button>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Cart Drawer Simulation */}
-      <AnimatePresence>
-        {isCartOpen && (
-          <>
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsCartOpen(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
-            />
-            <motion.div 
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-white z-[101] shadow-2xl flex flex-col"
-            >
-              <div className="p-8 border-b border-slate-100 flex items-center justify-between">
-                <h2 className="text-2xl font-black italic uppercase italic tracking-tighter">Meu <span className="text-primary italic">Carrinho</span></h2>
-                <Button variant="ghost" size="icon" onClick={() => setIsCartOpen(false)} className="rounded-xl">
+      {/* 5️⃣ MODAL DO PRODUTO */}
+      <Dialog open={!!selectedProduct} onOpenChange={() => setSelectedProduct(null)}>
+        <DialogContent className="sm:max-w-2xl rounded-[40px] p-0 overflow-hidden border-none shadow-2xl">
+          {selectedProduct && (
+            <div className="flex flex-col">
+              <div className="relative h-64 md:h-80 w-full">
+                {selectedProduct.image_url ? (
+                  <img src={selectedProduct.image_url} className="size-full object-cover" />
+                ) : (
+                  <div className="size-full bg-slate-50 flex items-center justify-center text-slate-100 italic font-black text-4xl">
+                    DOCE GESTÃO
+                  </div>
+                )}
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="absolute top-6 right-6 bg-black/20 backdrop-blur-md rounded-2xl hover:bg-black/40 text-white"
+                  onClick={() => setSelectedProduct(null)}
+                >
                   <X className="size-6" />
                 </Button>
               </div>
               
-              <div className="flex-1 overflow-y-auto p-8 space-y-6">
+              <div className="p-10 space-y-8">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-start gap-4">
+                    <h2 className="text-3xl font-black italic uppercase tracking-tighter text-slate-900 leading-none">
+                      {selectedProduct.name}
+                    </h2>
+                    <span className="text-3xl font-black text-[#FF4D6D] italic tracking-tighter shrink-0">
+                      R$ {selectedProduct.price.toFixed(2)}
+                    </span>
+                  </div>
+                  <p className="text-slate-500 font-medium leading-relaxed">
+                    {selectedProduct.description || "Sem descrição disponível."}
+                  </p>
+                </div>
+
+                <div className="h-px bg-slate-100" />
+
+                <div className="flex items-center justify-between gap-6">
+                  <div className="flex items-center bg-slate-50 rounded-2xl p-1 shrink-0 border border-slate-100">
+                    <button 
+                      className="size-12 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-white hover:shadow-sm transition-all active:scale-90"
+                      onClick={() => updateQuantity(selectedProduct.id, -1)}
+                    >
+                      <Minus className="size-5" />
+                    </button>
+                    <span className="w-12 text-center font-black text-lg">
+                      {cart.find(i => i.id === selectedProduct.id)?.quantity || 1}
+                    </span>
+                    <button 
+                      className="size-12 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-white hover:shadow-sm transition-all active:scale-90"
+                      onClick={() => addToCart(selectedProduct)}
+                    >
+                      <Plus className="size-5" />
+                    </button>
+                  </div>
+
+                  <Button 
+                    className="flex-1 h-14 rounded-2xl bg-[#FF4D6D] hover:bg-[#FF4D6D]/90 text-white font-black uppercase italic tracking-widest shadow-lg shadow-pink-100 transition-all active:scale-95"
+                    onClick={() => {
+                      addToCart(selectedProduct)
+                      setSelectedProduct(null)
+                    }}
+                  >
+                    Adicionar ao Pedido
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* 7️⃣ CHECKOUT RÁPIDO / CARRINHO */}
+      <AnimatePresence>
+        {isCartOpen && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setIsCartOpen(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]"
+            />
+            <motion.div 
+              initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-white z-[101] shadow-2xl flex flex-col"
+            >
+              <div className="p-8 border-b border-slate-100 flex items-center justify-between">
+                <div className="space-y-1">
+                  <h2 className="text-2xl font-black italic uppercase tracking-tighter">Sua <span className="text-[#FF4D6D]">Sacola</span></h2>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{cart.length} itens selecionados</p>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => setIsCartOpen(false)} 
+                  className="rounded-2xl bg-slate-50 hover:bg-slate-100"
+                >
+                  <X className="size-6 text-slate-400" />
+                </Button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-8 space-y-8 scrollbar-none">
                 {cart.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-center opacity-40">
-                    <ShoppingCart className="size-20 mb-4 stroke-1" />
-                    <p className="font-black uppercase tracking-widest text-[10px]">Seu carrinho está vazio</p>
+                  <div className="h-full flex flex-col items-center justify-center text-center opacity-30">
+                    <div className="size-24 bg-slate-50 rounded-[32px] flex items-center justify-center mb-6">
+                      <ShoppingCart className="size-10 stroke-1" />
+                    </div>
+                    <p className="font-black uppercase tracking-widest text-xs italic">Sua sacola está vazia</p>
                   </div>
                 ) : (
                   cart.map(item => (
-                    <div key={item.id} className="flex gap-4">
-                      <div className="size-20 rounded-2xl bg-slate-50 border border-slate-100 shrink-0 overflow-hidden">
-                        {item.image_url ? <img src={item.image_url} className="size-full object-cover" /> : <div className="size-full flex items-center justify-center text-slate-300"><Plus className="size-6" /></div>}
+                    <div key={item.id} className="flex gap-6 group">
+                      <div className="size-20 rounded-3xl bg-slate-50 border border-slate-100 shrink-0 overflow-hidden relative">
+                        {item.image_url ? <img src={item.image_url} className="size-full object-cover" /> : <Star className="size-8 text-slate-200" />}
                       </div>
-                      <div className="flex-1 space-y-2">
-                        <div className="flex justify-between">
+                      <div className="flex-1 space-y-3">
+                        <div className="flex justify-between items-start gap-4">
                           <h4 className="font-black text-slate-900 uppercase text-xs italic leading-tight">{item.name}</h4>
-                          <span className="font-black text-slate-900 italic text-sm">R$ {(item.price * item.quantity).toFixed(2)}</span>
+                          <span className="font-black text-slate-900 italic text-sm shrink-0">R$ {(item.price * item.quantity).toFixed(2)}</span>
                         </div>
                         <div className="flex items-center gap-3">
-                          <button onClick={() => updateQuantity(item.id, -1)} className="size-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-100 transition-colors">
-                            <Minus className="size-4" />
-                          </button>
-                          <span className="font-black text-xs text-slate-900">{item.quantity}</span>
-                          <button onClick={() => updateQuantity(item.id, 1)} className="size-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-slate-100 transition-colors">
-                            <Plus className="size-4" />
-                          </button>
+                          <div className="flex items-center bg-slate-50 rounded-xl p-0.5 border border-slate-100">
+                            <button onClick={() => updateQuantity(item.id, -1)} className="size-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-white transition-all">
+                              <Minus className="size-3" />
+                            </button>
+                            <span className="w-8 text-center font-black text-xs">{item.quantity}</span>
+                            <button onClick={() => updateQuantity(item.id, 1)} className="size-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-white transition-all">
+                              <Plus className="size-3" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -380,23 +630,18 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
               </div>
 
               {cart.length > 0 && (
-                <div className="p-8 border-t border-slate-100 bg-slate-50/50 space-y-6">
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-[10px] font-black uppercase text-slate-400">
-                      <span>Subtotal</span>
-                      <span>R$ {subtotal.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-[10px] font-black uppercase text-slate-400">
-                      <span>Entrega Estimada</span>
-                      <span>R$ {deliveryFee.toFixed(2)}</span>
-                    </div>
-                    <div className="pt-3 border-t border-slate-200 flex justify-between items-center">
-                      <span className="font-black uppercase text-slate-900 italic tracking-widest text-sm">Total</span>
-                      <span className="text-3xl font-black text-primary italic tracking-tighter">R$ {total.toFixed(2)}</span>
+                <div className="p-8 border-t border-slate-100 bg-[#FAFAFA] space-y-6 rounded-t-[40px] shadow-[0_-20px_50px_rgba(0,0,0,0.05)]">
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center px-2">
+                      <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Total do pedido</span>
+                      <span className="text-3xl font-black text-slate-900 italic tracking-tighter">R$ {total.toFixed(2)}</span>
                     </div>
                   </div>
-                  <Button onClick={() => setIsCheckoutOpen(true)} className="w-full h-16 rounded-[32px] bg-slate-900 text-white font-black uppercase italic tracking-widest shadow-xl flex items-center justify-center gap-3 active:scale-95 transition-all">
-                    Finalizar Pedido <ChevronRight className="size-5" />
+                  <Button 
+                    onClick={() => setIsCheckoutOpen(true)} 
+                    className="w-full h-16 rounded-[32px] bg-[#FF4D6D] text-white font-black uppercase italic tracking-[0.2em] shadow-xl shadow-pink-100 flex items-center justify-center gap-4 active:scale-95 transition-all outline-none"
+                  >
+                    Confirmar Pedido <ArrowRight className="size-5" />
                   </Button>
                 </div>
               )}
@@ -405,76 +650,64 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
         )}
       </AnimatePresence>
 
-      {/* Checkout Modal */}
+      {/* Checkout Dialog remains mostly same but styled */}
       <Dialog open={isCheckoutOpen} onOpenChange={setIsCheckoutOpen}>
         <DialogContent className="sm:max-w-xl rounded-[40px] p-0 overflow-hidden border-none shadow-2xl">
-          <div className="p-8 bg-slate-900 text-white relative">
+          <div className="p-10 bg-slate-900 text-white relative overflow-hidden">
+             <div className="absolute top-0 right-0 size-32 bg-[#FF4D6D] rounded-full blur-[80px] opacity-20" />
              <div className="relative z-10">
-                <h2 className="text-2xl font-black italic uppercase tracking-tighter mb-2">Quase <span className="text-primary italic">Pronto!</span></h2>
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Confirme seus dados para entrega</p>
+                <h2 className="text-3xl font-black italic uppercase tracking-tighter mb-2 leading-none">Finalizar <span className="text-[#FF4D6D]">Pedido</span></h2>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em]">Só mais alguns detalhes</p>
              </div>
           </div>
-          <div className="p-8 space-y-6 bg-white overflow-y-auto max-h-[70vh]">
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Seu Nome</Label>
-                <Input placeholder="Como te chamamos?" className="h-12 rounded-xl bg-slate-50 border-none font-bold" value={customerInfo.name} onChange={e => setCustomerInfo({...customerInfo, name: e.target.value})} />
+          <div className="p-10 space-y-8 bg-white overflow-y-auto max-h-[70vh] no-scrollbar">
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Nome</Label>
+                <Input placeholder="Seu nome" className="h-14 rounded-2xl bg-slate-50 border-none font-bold px-6 focus-visible:ring-1 focus-visible:ring-[#FF4D6D]/20" value={customerInfo.name} onChange={e => setCustomerInfo({...customerInfo, name: e.target.value})} />
               </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">WhatsApp</Label>
-                <Input placeholder="(00) 00000-0000" className="h-12 rounded-xl bg-slate-50 border-none font-bold" value={customerInfo.phone} onChange={e => setCustomerInfo({...customerInfo, phone: e.target.value})} />
+              <div className="space-y-3">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">WhatsApp</Label>
+                <Input placeholder="(00) 00000-0000" className="h-14 rounded-2xl bg-slate-50 border-none font-bold px-6 focus-visible:ring-1 focus-visible:ring-[#FF4D6D]/20" value={customerInfo.phone} onChange={e => setCustomerInfo({...customerInfo, phone: e.target.value})} />
               </div>
             </div>
             
-            <div className="space-y-4">
-              <div className="grid grid-cols-3 gap-4">
-                 <div className="space-y-2 col-span-1">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">CEP</Label>
-                  <Input placeholder="00000-000" className="h-12 rounded-xl bg-slate-50 border-none font-bold" value={customerInfo.cep} onChange={e => setCustomerInfo({...customerInfo, cep: e.target.value})} />
-                </div>
-                <div className="space-y-2 col-span-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Endereço de Entrega</Label>
-                  <Input placeholder="Rua, Número, Bairro" className="h-12 rounded-xl bg-slate-50 border-none font-bold" value={customerInfo.address} onChange={e => setCustomerInfo({...customerInfo, address: e.target.value})} />
-                </div>
-              </div>
+            <div className="space-y-3">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Endereço de Entrega</Label>
+              <Input placeholder="Rua, Número, Bairro, Cidade" className="h-14 rounded-2xl bg-slate-50 border-none font-bold px-6 focus-visible:ring-1 focus-visible:ring-[#FF4D6D]/20" value={customerInfo.address} onChange={e => setCustomerInfo({...customerInfo, address: e.target.value})} />
             </div>
 
-            <div className="space-y-3">
-               <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Forma de Pagamento</Label>
-               <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-4">
+               <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Pagamento</Label>
+               <div className="grid grid-cols-2 gap-4">
                   <button 
                     onClick={() => setCustomerInfo({...customerInfo, payment_method: "pix"})}
                     className={cn(
-                      "flex items-center gap-3 p-4 rounded-2xl border-2 transition-all",
-                      customerInfo.payment_method === "pix" ? "border-primary bg-pink-50 text-primary" : "border-slate-100 bg-white text-slate-400"
+                      "flex items-center flex-col gap-3 p-6 rounded-3xl border-2 transition-all",
+                      customerInfo.payment_method === "pix" ? "border-[#FF4D6D] bg-[#FFF0F3] text-[#FF4D6D]" : "border-slate-50 bg-slate-50 text-slate-400"
                     )}
                   >
-                    <QrCode className="size-5" />
+                    <QrCode className="size-6" />
                     <span className="font-black uppercase text-[10px] tracking-widest">PIX</span>
                   </button>
                   <button 
                     onClick={() => setCustomerInfo({...customerInfo, payment_method: "card"})}
                     className={cn(
-                      "flex items-center gap-3 p-4 rounded-2xl border-2 transition-all",
-                      customerInfo.payment_method === "card" ? "border-primary bg-pink-50 text-primary" : "border-slate-100 bg-white text-slate-400"
+                      "flex items-center flex-col gap-3 p-6 rounded-3xl border-2 transition-all",
+                      customerInfo.payment_method === "card" ? "border-[#FF4D6D] bg-[#FFF0F3] text-[#FF4D6D]" : "border-slate-50 bg-slate-50 text-slate-400"
                     )}
                   >
-                    <CreditCard className="size-5" />
+                    <CreditCard className="size-6" />
                     <span className="font-black uppercase text-[10px] tracking-widest">Cartão</span>
                   </button>
                </div>
             </div>
 
-            <div className="p-6 bg-slate-900 rounded-[32px] text-white">
-               <div className="flex justify-between items-center mb-1">
-                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Valor com Entrega</span>
-                 <Badge className="bg-primary text-white font-black italic">R$ {total.toFixed(2)}</Badge>
-               </div>
-               <p className="text-[8px] font-bold text-slate-600 uppercase tracking-tighter">* Confirmaremos o prazo via WhatsApp</p>
-            </div>
-            
-            <Button onClick={handleSubmitOrder} className="w-full h-16 rounded-3xl bg-primary hover:bg-primary/90 text-white font-black uppercase italic tracking-[0.2em] shadow-xl transition-all active:scale-95">
-              Enviar Pedido Agora 🚀
+            <Button 
+              onClick={handleSubmitOrder} 
+              className="w-full h-18 rounded-[32px] bg-[#FF4D6D] hover:bg-[#FF4D6D]/90 text-white font-black uppercase italic tracking-[0.2em] shadow-2xl transition-all active:scale-95 py-8"
+            >
+              Enviar para o WhatsApp 🚀
             </Button>
           </div>
         </DialogContent>

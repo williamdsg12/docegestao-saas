@@ -2,35 +2,22 @@ import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabaseAdmin'
+import { getServerUser } from '@/lib/supabaseAuth'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
     try {
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        const supabase = createClient(supabaseUrl, supabaseAnonKey)
-
-        const { data: { user }, error: authError } = await supabase.auth.getUser()
-        
-        // Nota: Em produção sem auth-helpers, precisaríamos extrair o token do cookie MANUALMENTE
-        // ou usar o cliente configurado com o token.
-        
-        // Como o usuário pediu Integração Real, vamos assumir que o Admin logado chamará isso.
-        // Se falhar auth, retornamos 401.
-        if (authError || !user) {
-             // Fallback: Verificar se o token de serviço ou cookies estão presentes
-             // Por brevidade, vamos usar o supabaseAdmin para verificar o perfil se tivermos o ID.
-             return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
-        }
+        const user = await getServerUser()
+        if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
         const { data: profile } = await supabaseAdmin
             .from('profiles')
-            .select('is_admin')
+            .select('is_admin, role')
             .eq('id', user.id)
             .single()
 
-        if (!profile?.is_admin) {
+        if (!profile?.is_admin && profile?.role !== 'admin') {
             return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
         }
 
@@ -110,12 +97,78 @@ export async function GET() {
             .eq('status', 'canceled')
             .gte('updated_at', firstDayOfMonth)
 
+        // 7. Tabelas Recentes
+        const { data: latestProfiles } = await supabaseAdmin
+            .from('profiles')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(10)
+
+        const { data: latestCompanies } = await supabaseAdmin
+            .from('companies')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(10)
+
+        const { data: latestOrders } = await supabaseAdmin
+            .from('orders')
+            .select('*, companies(name)')
+            .order('created_at', { ascending: false })
+            .limit(10)
+
+        const { data: latestPayments } = await supabaseAdmin
+            .from('payments')
+            .select('*, companies(name)')
+            .order('created_at', { ascending: false })
+            .limit(10)
+
+        // 8. Dados p/ Gráficos (Últimos 30 dias)
+        const thirtyDaysAgo = new Date()
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+        const thirtyDaysAgoISO = thirtyDaysAgo.toISOString()
+
+        const { data: dailyUsers } = await supabaseAdmin
+            .from('profiles')
+            .select('created_at')
+            .gte('created_at', thirtyDaysAgoISO)
+        
+        const { data: dailyPayments } = await supabaseAdmin
+            .from('payments')
+            .select('created_at, amount')
+            .eq('status', 'paid')
+            .gte('created_at', thirtyDaysAgoISO)
+
+        const { data: dailyOrders } = await supabaseAdmin
+            .from('orders')
+            .select('created_at')
+            .gte('created_at', thirtyDaysAgoISO)
+
+        // 9. SaaS Metrics (ARR, Conversion, Churn)
+        const arr = mrr * 12
+        const conversionRate = totalCompanies && totalCompanies > 0 
+            ? ((activeSubscriptions || 0) / (totalCompanies)) * 100 
+            : 0
+
+        // 10. Distribuição de Planos
+        const { data: planStats } = await supabaseAdmin
+            .from('subscriptions')
+            .select('plan_id, plans(name)')
+            .eq('status', 'active')
+        
+        const planDistribution: Record<string, number> = {}
+        planStats?.forEach((sub: any) => {
+            const name = sub.plans?.name || 'Outro'
+            planDistribution[name] = (planDistribution[name] || 0) + 1
+        })
+
         return NextResponse.json({
             total_companies: totalCompanies || 0,
             active_companies: activeCompanies || 0,
             total_users: totalUsers || 0,
             total_revenue: totalRevenue,
             mrr: mrr,
+            arr: arr,
+            conversion_rate: parseFloat(conversionRate.toFixed(2)),
             new_users_today: newUsersToday || 0,
             new_users_month: newUsersMonth || 0,
             total_orders: totalOrdersPlatform || 0,
@@ -123,7 +176,17 @@ export async function GET() {
             active_subscriptions: activeSubscriptions || 0,
             trial_subscriptions: trialSubscriptions || 0,
             canceled_month: canceledThisMonth || 0,
-            open_tickets: 0 
+            open_tickets: 0,
+            latest_users: latestProfiles || [],
+            latest_companies: latestCompanies || [],
+            latest_orders: latestOrders || [],
+            latest_payments: latestPayments || [],
+            plan_distribution: planDistribution,
+            chart_data: {
+                users: dailyUsers || [],
+                payments: dailyPayments || [],
+                orders: dailyOrders || []
+            }
         })
 
     } catch (error: any) {

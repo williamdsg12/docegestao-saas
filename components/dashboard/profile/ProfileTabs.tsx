@@ -36,6 +36,20 @@ import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { QRCodeSVG } from "qrcode.react"
 
+const SEGMENTS = [
+  "Confeitaria Gourmet", "Bolos Artesanais", "Doces de Festa", "Bolos de Casamento",
+  "Sobremesas de Pote", "Pães e Massas", "Salgados e Cafés", "Gelateria", "Outro"
+]
+
+const SPECIALTIES = [
+  "Bolos Decorados", "Doces Finos", "Confeitaria Vegana", "Pães Artesanais",
+  "Chocolataria", "Bolos de Pote", "Kit Festa", "Sobremesas Gourmet"
+]
+
+const EXPERIENCE_LEVELS = [
+  "Iniciante (menos de 1 ano)", "1 a 3 anos", "3 a 5 anos", "Mais de 5 anos (Expert)"
+]
+
 export function ProfileTabs() {
   const { user, updateProfile } = useAuth()
   const { profile } = useBusiness()
@@ -77,14 +91,18 @@ export function ProfileTabs() {
   const [formData, setFormData] = useState({
     fullName: "",
     personalWhatsapp: "",
+    personalPhone: "",
+    personalCity: "",
+    personalState: "",
     bio: "",
     specialty: "",
     experience: "",
     storeName: "",
     instagram: "",
+    segment: "Confeitaria Gourmet",
     businessBio: "",
     cep: "",
-    address: { street: "", number: "", neighborhood: "", city: "", state: "" },
+    address: { street: "", number: "", complement: "", neighborhood: "", city: "", state: "" },
     deliveryRadius: "5",
     atendeDelivery: true,
     acceptPix: true,
@@ -105,6 +123,9 @@ export function ProfileTabs() {
         ...prev,
         fullName: user.user_metadata?.full_name || user.user_metadata?.owner_name || "",
         personalWhatsapp: user.user_metadata?.whatsapp || "",
+        personalPhone: user.user_metadata?.phone || "",
+        personalCity: user.user_metadata?.city || "",
+        personalState: user.user_metadata?.state || "",
         bio: user.user_metadata?.bio || "",
         specialty: user.user_metadata?.specialty || "",
         experience: user.user_metadata?.experience_years || "",
@@ -123,11 +144,13 @@ export function ProfileTabs() {
           setFormData(prev => ({
             ...prev,
             instagram: companyData.instagram || "",
+            segment: companyData.segment || "Confeitaria Gourmet",
             businessBio: companyData.description || "",
             cep: companyData.address_zip || "",
             address: {
               street: companyData.address_street || "",
               number: companyData.address_number || "",
+              complement: companyData.address_complement || "",
               neighborhood: companyData.address_neighborhood || "",
               city: companyData.address_city || "",
               state: companyData.address_state || ""
@@ -186,7 +209,7 @@ export function ProfileTabs() {
   }
 
   const copyToClipboard = () => {
-    const url = `docegestao.com/menu/${formData.menuSlug || 'sua-loja'}`
+    const url = `docesgestao.netlify.app/menu/${formData.menuSlug || 'sua-loja'}`
     navigator.clipboard.writeText(url)
     setCopied(true)
     toast.success("Link copiado!")
@@ -196,16 +219,38 @@ export function ProfileTabs() {
   const handleSaveProfile = async () => {
     setLoading(true)
     try {
-      const { error } = await updateProfile({
+      // 1. Update Auth User Metadata
+      const { error: authError } = await updateProfile({
         full_name: formData.fullName,
         owner_name: formData.fullName,
         whatsapp: formData.personalWhatsapp,
+        phone: formData.personalPhone,
+        city: formData.personalCity,
+        state: formData.personalState,
         bio: formData.bio,
         specialty: formData.specialty,
         experience_years: formData.experience,
-        store_name: formData.storeName
+        store_name: formData.storeName,
+        instagram: formData.instagram
       })
-      if (error) throw error
+      if (authError) throw authError
+
+      // 2. Direct DB Sync to 'profiles'
+      if (user?.id) {
+        const { error: dbError } = await supabase.from("profiles").update({
+          owner_name: formData.fullName,
+          phone: formData.personalPhone,
+          whatsapp: formData.personalWhatsapp,
+          city: formData.personalCity,
+          state: formData.personalState,
+          bio: formData.bio,
+          specialty: formData.specialty,
+          experience_years: formData.experience
+        }).eq("id", user.id)
+        
+        if (dbError) throw dbError
+      }
+
       toast.success("Perfil atualizado!")
     } catch (e: any) {
       toast.error("Erro: " + e.message)
@@ -217,14 +262,22 @@ export function ProfileTabs() {
   const handleSaveBusiness = async () => {
     setLoading(true)
     try {
-      if (profile?.company_id) {
-        const { error } = await supabase.from("companies").update({
+      // Determine the filter to use (company_id is preferred, user.id is fallback)
+      const companyFilter = profile?.company_id 
+        ? { column: "id", value: profile.company_id } 
+        : { column: "owner_id", value: user?.id };
+
+      if (companyFilter.value) {
+        // Update Database (Companies Table)
+        const { error: dbError, data: dbData } = await supabase.from("companies").update({
           name: formData.storeName,
           instagram: formData.instagram,
+          segment: formData.segment,
           description: formData.businessBio,
           address_zip: formData.cep,
           address_street: formData.address.street,
           address_number: formData.address.number,
+          address_complement: formData.address.complement,
           address_neighborhood: formData.address.neighborhood,
           address_city: formData.address.city,
           address_state: formData.address.state,
@@ -237,10 +290,26 @@ export function ProfileTabs() {
           menu_banner_text: formData.menuBannerText,
           menu_enabled_features: formData.menuEnabledFeatures,
           opening_hours: { description: formData.openingHours }
-        }).eq("id", profile.company_id)
+        }).eq(companyFilter.column, companyFilter.value).select()
 
-        if (error) throw error
+        if (dbError) throw dbError
+        
+        // Check if anything was actually updated
+        if (!dbData || dbData.length === 0) {
+          throw new Error("Nenhuma empresa encontrada para atualizar. Por favor, tente recarregar a página.")
+        }
+
+        // Update SaaS/Auth Metadata (Synchronization)
+        const { error: authError } = await updateProfile({
+          store_name: formData.storeName,
+          instagram: formData.instagram
+        })
+        
+        if (authError) throw authError
+
         toast.success("Alterações publicadas com sucesso!")
+      } else {
+        throw new Error("Não foi possível identificar sua empresa. Tente fazer login novamente.")
       }
     } catch (e: any) {
       toast.error("Erro ao salvar: " + e.message)
@@ -260,8 +329,8 @@ export function ProfileTabs() {
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-      <div className="px-8 border-b border-slate-100">
-        <TabsList className="bg-transparent h-20 gap-8">
+      <div className="px-8 border-b border-slate-100 overflow-x-auto no-scrollbar">
+        <TabsList className="bg-transparent h-24 gap-4 flex items-center min-w-max">
           {[
             { id: "perfil", label: "Perfil", icon: User },
             { id: "negocio", label: "Meu Negócio", icon: Store },
@@ -273,10 +342,21 @@ export function ProfileTabs() {
             <TabsTrigger 
               key={tab.id} 
               value={tab.id} 
-              className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-[#FF2F81] data-[state=active]:border-b-4 data-[state=active]:border-[#FF2F81] rounded-none h-full px-0 flex items-center gap-3 font-bold text-slate-500 uppercase tracking-widest text-[10px]"
+              className={cn(
+                "relative rounded-2xl h-14 px-6 flex items-center gap-3 font-black uppercase tracking-widest text-[10px] transition-all duration-300",
+                "data-[state=active]:bg-[#FF2F81]/5 data-[state=active]:text-[#FF2F81] data-[state=active]:shadow-none",
+                "hover:bg-slate-50 text-slate-400"
+              )}
             >
               <tab.icon className="size-4" />
               {tab.label}
+              {activeTab === tab.id && (
+                <motion.div
+                  layoutId="activeTab"
+                  className="absolute inset-0 border-2 border-[#FF2F81] rounded-2xl pointer-events-none"
+                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                />
+              )}
             </TabsTrigger>
           ))}
         </TabsList>
@@ -301,6 +381,44 @@ export function ProfileTabs() {
                        <Label className="text-[11px] font-black uppercase text-slate-400 ml-2">WhatsApp</Label>
                        <Input value={formData.personalWhatsapp} onChange={e => setFormData({...formData, personalWhatsapp: e.target.value})} className="h-14 rounded-2xl border-2 border-slate-100" />
                     </div>
+                    <div className="space-y-3">
+                       <Label className="text-[11px] font-black uppercase text-slate-400 ml-2">Telefone (Opcional)</Label>
+                       <Input value={formData.personalPhone} onChange={e => setFormData({...formData, personalPhone: e.target.value})} className="h-14 rounded-2xl border-2 border-slate-100" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                       <div className="space-y-3">
+                          <Label className="text-[11px] font-black uppercase text-slate-400 ml-2">Cidade</Label>
+                          <Input value={formData.personalCity} onChange={e => setFormData({...formData, personalCity: e.target.value})} className="h-14 rounded-2xl border-2 border-slate-100" />
+                       </div>
+                       <div className="space-y-3">
+                          <Label className="text-[11px] font-black uppercase text-slate-400 ml-2">Estado</Label>
+                          <Input value={formData.personalState} onChange={e => setFormData({...formData, personalState: e.target.value})} className="h-14 rounded-2xl border-2 border-slate-100" placeholder="UF" />
+                       </div>
+                    </div>
+
+                    <div className="md:col-span-2 space-y-4">
+                       <Label className="text-[11px] font-black uppercase text-slate-400 ml-2 italic">Sua Especialidade Principal</Label>
+                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                         {SPECIALTIES.map(s => (
+                           <button key={s} onClick={() => setFormData({...formData, specialty: s})} className={cn("p-4 rounded-2xl border-2 transition-all font-bold text-[10px] uppercase", formData.specialty === s ? "border-[#FF2F81] bg-[#FF2F81]/5 text-[#FF2F81]" : "border-slate-100 bg-slate-50 text-slate-500")}>
+                             {s}
+                           </button>
+                         ))}
+                       </div>
+                    </div>
+
+                    <div className="md:col-span-2 space-y-4">
+                       <Label className="text-[11px] font-black uppercase text-slate-400 ml-2 italic">Tempo de Experiência</Label>
+                       <div className="grid md:grid-cols-2 gap-3">
+                         {EXPERIENCE_LEVELS.map(exp => (
+                           <button key={exp} onClick={() => setFormData({...formData, experience: exp})} className={cn("w-full p-4 rounded-2xl border-2 transition-all flex items-center justify-between group", formData.experience === exp ? "border-[#FF2F81] bg-[#FF2F81]/5" : "border-slate-100 bg-slate-50")}>
+                             <span className={cn("font-bold text-xs", formData.experience === exp ? "text-[#FF2F81]" : "text-slate-500")}>{exp}</span>
+                             <div className={cn("size-4 rounded-full border-2", formData.experience === exp ? "border-[#FF2F81] bg-[#FF2F81]" : "border-slate-300")} />
+                           </button>
+                         ))}
+                       </div>
+                    </div>
+
                     <div className="md:col-span-2 space-y-3">
                        <Label className="text-[11px] font-black uppercase text-slate-400 ml-2">Sobre Você (Bio)</Label>
                        <Textarea value={formData.bio} onChange={e => setFormData({...formData, bio: e.target.value})} className="min-h-[120px] rounded-2xl border-2 border-slate-100 p-6" />
@@ -334,6 +452,26 @@ export function ProfileTabs() {
                      <div className="md:col-span-2 space-y-3">
                         <Label className="text-[11px] font-black uppercase text-slate-400 ml-2">Descrição Curta (Slogan)</Label>
                         <Textarea value={formData.businessBio} onChange={e => setFormData({...formData, businessBio: e.target.value})} className="min-h-[100px] rounded-2xl border-2 border-slate-100 focus:border-primary p-6" />
+                     </div>
+
+                     <div className="md:col-span-2 space-y-6">
+                        <Label className="text-[11px] font-black uppercase text-slate-400 ml-2 italic">Segmento de Atuação</Label>
+                        <div className="flex flex-wrap gap-3">
+                           {SEGMENTS.map(seg => (
+                             <button 
+                               key={seg} 
+                               onClick={() => setFormData({...formData, segment: seg})} 
+                               className={cn(
+                                 "px-6 py-3 rounded-full border-2 transition-all font-black text-[9px] uppercase tracking-widest", 
+                                 formData.segment === seg 
+                                   ? "border-[#FF2F81] bg-[#FF2F81] text-white" 
+                                   : "border-slate-100 bg-slate-50 text-slate-500 hover:border-slate-200"
+                               )}
+                             >
+                               {seg}
+                             </button>
+                           ))}
+                        </div>
                      </div>
                   </div>
 
@@ -407,21 +545,24 @@ export function ProfileTabs() {
                      {/* URL Section */}
                      <div className="space-y-6">
                         <Label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 italic">URL DO SEU CARDÁPIO</Label>
-                        <div className="relative group">
-                           <div className="absolute left-6 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                              <span className="text-slate-300 font-bold text-lg">docegestao.com/menu/</span>
+                        <div className="flex h-20 items-center rounded-[32px] border-2 border-slate-100 bg-slate-50/50 px-8 transition-all focus-within:border-[#FF2F81] focus-within:bg-white shadow-sm overflow-hidden">
+                           <div className="flex items-center gap-2 shrink-0">
+                              <span className="text-slate-300 font-bold text-lg select-none">docesgestao.netlify.app/menu/</span>
                            </div>
-                           <Input 
+                           <input 
                              value={formData.menuSlug} 
                              onChange={e => setFormData({...formData, menuSlug: e.target.value.toLowerCase().replace(/\s/g, '-')})} 
                              placeholder="sua-loja" 
-                             className="h-20 rounded-[32px] border-2 border-slate-100 bg-slate-50/50 pl-[185px] pr-20 font-black text-2xl focus:border-[#FF2F81] focus:bg-white transition-all shadow-sm" 
+                             className="flex-1 h-full bg-transparent border-none focus:ring-0 font-black text-2xl text-slate-800 placeholder:text-slate-200" 
                            />
-                           <button onClick={copyToClipboard} className="absolute right-6 top-1/2 -translate-y-1/2 size-10 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center text-slate-400 hover:text-[#FF2F81] transition-all">
-                              {copied ? <Check className="size-5 text-emerald-500" /> : <Copy className="size-5" />}
+                           <button 
+                             onClick={copyToClipboard} 
+                             className="ml-4 shrink-0 size-12 rounded-2xl bg-white shadow-sm border border-slate-100 flex items-center justify-center text-slate-400 hover:text-[#FF2F81] hover:scale-105 active:scale-95 transition-all"
+                           >
+                              {copied ? <Check className="size-6 text-emerald-500" /> : <Copy className="size-6" />}
                            </button>
                         </div>
-                        <p className="text-[10px] text-slate-400 font-bold italic uppercase tracking-wider ml-1">* ESTE SERÁ O ENDEREÇO QUE VOCÊ VAI COLOCAR NA SUA BIO DO INSTAGRAM.</p>
+                        <p className="text-[10px] text-slate-400 font-bold italic uppercase tracking-wider ml-4">* ESTE SERÁ O ENDEREÇO QUE VOCÊ VAI COLOCAR NA SUA BIO DO INSTAGRAM.</p>
                      </div>
 
                      {/* Rules Section */}
@@ -477,7 +618,7 @@ export function ProfileTabs() {
                      <div className="bg-gradient-to-br from-[#1E293B] to-[#0F172A] rounded-[56px] p-16 flex flex-col items-center justify-center text-center shadow-2xl relative overflow-hidden group">
                         <div className="absolute top-0 right-0 size-64 bg-primary/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2" />
                         <div className="bg-white p-6 rounded-[40px] shadow-2xl mb-10 transition-transform group-hover:scale-110 duration-500">
-                           <QRCodeSVG value={`https://docegestao.com/menu/${formData.menuSlug || 'sua-loja'}`} size={180} />
+                           <QRCodeSVG value={`https://docesgestao.netlify.app/menu/${formData.menuSlug || 'sua-loja'}`} size={180} />
                         </div>
                         <h4 className="text-white font-black italic uppercase text-lg tracking-widest mb-2">QR CODE DE <span className="text-[#FF2F81]">BALCÃO</span></h4>
                         <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest leading-relaxed mb-10">IMPRA E COLOQUE NA SUA LOJA<br/>PARA PEDIDOS RÁPIDOS.</p>
@@ -612,6 +753,10 @@ export function ProfileTabs() {
                      <div className="space-y-3">
                         <Label className="text-[11px] font-black uppercase text-slate-400 ml-2">Número</Label>
                         <Input value={formData.address.number} onChange={e => setFormData({...formData, address: {...formData.address, number: e.target.value}})} className="h-14 rounded-2xl border-2 border-slate-100" />
+                     </div>
+                     <div className="space-y-3">
+                        <Label className="text-[11px] font-black uppercase text-slate-400 ml-2">Complemento</Label>
+                        <Input value={formData.address.complement} onChange={e => setFormData({...formData, address: {...formData.address, complement: e.target.value}})} className="h-14 rounded-2xl border-2 border-slate-100" placeholder="Ex: Apto 101, Bloco B" />
                      </div>
                      <div className="space-y-3">
                         <Label className="text-[11px] font-black uppercase text-slate-400 ml-2">Bairro</Label>
