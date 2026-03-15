@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth"
 import { useBusiness } from "@/hooks/useBusiness"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
+import { useRouter } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -79,6 +80,7 @@ interface Product {
 export default function DigitalMenuPage() {
   const { user } = useAuth()
   const { profile } = useBusiness()
+  const router = useRouter()
   const [categories, setCategories] = useState<Category[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
@@ -220,6 +222,12 @@ export default function DigitalMenuPage() {
     if (!categoryName) return
     
     try {
+      const companyId = await resolveCompanyId()
+      if (!companyId) {
+        toast.error("Erro ao identificar empresa")
+        return
+      }
+
       if (editingCategory) {
         const { error } = await supabase
           .from('menu_categories')
@@ -230,7 +238,7 @@ export default function DigitalMenuPage() {
       } else {
         const { error } = await supabase
           .from('menu_categories')
-          .insert({ name: categoryName, company_id: (user as any)?.company_id })
+          .insert({ name: categoryName, company_id: companyId })
         if (error) throw error
         toast.success("Categoria criada!")
       }
@@ -239,6 +247,7 @@ export default function DigitalMenuPage() {
       setEditingCategory(null)
       fetchData()
     } catch (error: any) {
+      console.error("Error saving category:", error.message)
       toast.error("Erro ao salvar categoria")
     }
   }
@@ -639,6 +648,14 @@ export default function DigitalMenuPage() {
               </div>
             </DialogContent>
           </Dialog>
+
+          <Button 
+            onClick={() => router.push('/dashboard/menu-editor')}
+            variant="outline" 
+            className="h-12 rounded-xl border-primary/20 bg-primary/5 text-primary font-bold hover:bg-primary/10 gap-2 transition-all hover:scale-105 active:scale-95"
+          >
+            <LayoutGrid className="size-4" /> Personalizar Cardápio
+          </Button>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

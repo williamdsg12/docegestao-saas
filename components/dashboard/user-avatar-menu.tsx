@@ -24,12 +24,23 @@ import {
 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { useTheme } from "next-themes"
+import { useUserSettings } from "@/hooks/useUserSettings"
 import { cn } from "@/lib/utils"
 
 export function UserAvatarMenu({ variant = "default" }: { variant?: "default" | "transparent" }) {
     const { user, logout, isAdmin } = useAuth()
     const router = useRouter()
-    const [isDarkMode, setIsDarkMode] = useState(false)
+    const { theme, setTheme } = useTheme()
+    const { updateSettings } = useUserSettings()
+
+    const toggleTheme = async () => {
+        const newTheme = theme === 'dark' ? 'light' : 'dark'
+        setTheme(newTheme)
+        if (user) {
+            await updateSettings({ theme: newTheme })
+        }
+    }
 
     if (!user) return null
 
@@ -125,19 +136,31 @@ export function UserAvatarMenu({ variant = "default" }: { variant?: "default" | 
                 </DropdownMenuLabel>
                 
                 <div className="px-2 pb-2 space-y-1">
-                    <DropdownMenuItem className="rounded-[18px] px-4 py-3 text-[11px] font-black text-slate-600 uppercase tracking-widest italic focus:bg-slate-50 focus:text-primary cursor-pointer gap-3 transition-all">
+                    <DropdownMenuItem 
+                        onClick={() => router.push("/dashboard/profile")}
+                        className="rounded-[18px] px-4 py-3 text-[11px] font-black text-slate-600 uppercase tracking-widest italic focus:bg-slate-50 focus:text-primary cursor-pointer gap-3 transition-all"
+                    >
                         <User className="size-4 text-primary/50" />
                         Meu Perfil
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="rounded-[18px] px-4 py-3 text-[11px] font-black text-slate-600 uppercase tracking-widest italic focus:bg-slate-50 focus:text-primary cursor-pointer gap-3 transition-all">
+                    <DropdownMenuItem 
+                        onClick={() => router.push("/dashboard/settings")}
+                        className="rounded-[18px] px-4 py-3 text-[11px] font-black text-slate-600 uppercase tracking-widest italic focus:bg-slate-50 focus:text-primary cursor-pointer gap-3 transition-all"
+                    >
                         <Settings className="size-4 text-primary/50" />
                         Configurações
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="rounded-[18px] px-4 py-3 text-[11px] font-black text-slate-600 uppercase tracking-widest italic focus:bg-slate-50 focus:text-primary cursor-pointer gap-3 transition-all">
+                    <DropdownMenuItem 
+                        onClick={() => router.push("/dashboard/notificacoes")}
+                        className="rounded-[18px] px-4 py-3 text-[11px] font-black text-slate-600 uppercase tracking-widest italic focus:bg-slate-50 focus:text-primary cursor-pointer gap-3 transition-all"
+                    >
                         <Bell className="size-4 text-primary/50" />
                         Notificações
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="rounded-[18px] px-4 py-3 text-[11px] font-black text-slate-600 uppercase tracking-widest italic focus:bg-slate-50 focus:text-primary cursor-pointer gap-3 transition-all">
+                    <DropdownMenuItem 
+                        onClick={() => router.push("/dashboard/security")}
+                        className="rounded-[18px] px-4 py-3 text-[11px] font-black text-slate-600 uppercase tracking-widest italic focus:bg-slate-50 focus:text-primary cursor-pointer gap-3 transition-all"
+                    >
                         <Shield className="size-4 text-primary/50" />
                         Segurança
                     </DropdownMenuItem>
@@ -147,20 +170,20 @@ export function UserAvatarMenu({ variant = "default" }: { variant?: "default" | 
                 
                 <div className="px-2 pb-2 space-y-1">
                     <div 
-                        onClick={() => setIsDarkMode(!isDarkMode)}
+                        onClick={toggleTheme}
                         className="flex items-center justify-between rounded-[18px] px-4 py-3 text-[11px] font-black text-slate-600 uppercase tracking-widest italic hover:bg-slate-50 hover:text-primary cursor-pointer transition-all"
                     >
                         <div className="flex items-center gap-3">
-                            {isDarkMode ? <Sun className="size-4 text-amber-500" /> : <Moon className="size-4 text-indigo-500" />}
+                            {theme === 'dark' ? <Sun className="size-4 text-amber-500" /> : <Moon className="size-4 text-indigo-500" />}
                             Modo Escuro
                         </div>
                         <div className={cn(
                             "w-10 h-5 rounded-full relative transition-colors duration-300 p-1",
-                            isDarkMode ? "bg-slate-900" : "bg-slate-200"
+                            theme === 'dark' ? "bg-slate-900" : "bg-slate-200"
                         )}>
                             <div className={cn(
                                 "size-3 bg-white rounded-full shadow-sm transition-transform duration-300",
-                                isDarkMode ? "translate-x-5" : "translate-x-0"
+                                theme === 'dark' ? "translate-x-5" : "translate-x-0"
                             )} />
                         </div>
                     </div>

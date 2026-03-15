@@ -59,6 +59,16 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
   const [filteredProducts, setFilteredProducts] = useState<any[]>([])
   const [selectedProduct, setSelectedProduct] = useState<any>(null)
   const [activeCategory, setActiveCategory] = useState<string>("all")
+  const [menuSettings, setMenuSettings] = useState<any>({
+    primary_color: "#FF4D6D",
+    background_color: "#FAFAFA",
+    button_color: "#FF4D6D",
+    text_color: "#0f172a",
+    button_text: "Pedir no WhatsApp",
+    button_style: "rounded",
+    menu_layout: "grid",
+    animation_style: "fade"
+  })
   
   // Checkout Form
   const [customerInfo, setCustomerInfo] = useState({
@@ -98,20 +108,55 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
       }
       setCompany(compData)
 
-      // 2. Fetch Categories & Products
+      // 2. Fetch Settings
+      const { data: settingsData } = await supabase
+        .from('digital_menu_settings')
+        .select('*')
+        .eq('company_id', compData.id)
+        .maybeSingle()
+
+      if (settingsData) {
+        setMenuSettings((prev: any) => ({ ...prev, ...settingsData }))
+      }
+
+      // 3. Fetch Categories & Products
       const [catRes, prodRes] = await Promise.all([
         supabase.from('menu_categories').select('*').eq('company_id', compData.id).eq('active', true).order('position'),
-        supabase.from('menu_products').select('*').eq('company_id', compData.id).eq('active', true)
+        supabase.from('menu_products').select('*').eq('company_id', compData.id).eq('active', true).order('position', { ascending: true })
       ])
 
       setCategories(catRes.data || [])
       setProducts(prodRes.data || [])
       setFilteredProducts(prodRes.data || [])
+
+      // 4. Track View
+      trackView(compData.id)
     } catch (error: any) {
       console.error("Error fetching menu:", error.message)
       toast.error("Cardápio não encontrado ou indisponível.")
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function trackView(companyId: string) {
+    try {
+      await supabase.from('menu_views').insert({
+        company_id: companyId,
+        user_agent: navigator.userAgent
+      })
+    } catch (err) {
+      console.error("Tracking view error:", err)
+    }
+  }
+
+  async function trackClick(productId: string) {
+    try {
+      await supabase.from('product_clicks').insert({
+        product_id: productId
+      })
+    } catch (err) {
+      console.error("Tracking click error:", err)
     }
   }
 
@@ -246,14 +291,14 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
   )
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] font-sans text-slate-900 pb-32">
+    <div className="min-h-screen font-sans text-slate-900 pb-32" style={{ backgroundColor: menuSettings.background_color }}>
       {/* 1️⃣ HEADER MODERNO DO RESTAURANTE */}
       <div className="relative h-64 md:h-80 w-full overflow-hidden">
         <motion.img 
           initial={{ scale: 1.2 }}
           animate={{ scale: 1 }}
           transition={{ duration: 1.5 }}
-          src={company.cover_url || "https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&q=80&w=1000"} 
+          src={menuSettings.menu_cover || company.cover_url || "https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&q=80&w=1000"} 
           className="size-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
@@ -292,10 +337,10 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
           <div className="flex flex-col md:flex-row gap-6 items-start md:items-center">
             <div className="size-24 md:size-32 rounded-[32px] bg-white p-1 shadow-lg -mt-16 md:-mt-24 border border-slate-50 shrink-0">
               <div className="size-full rounded-[28px] overflow-hidden bg-slate-50 flex items-center justify-center">
-                {company.logo_url ? (
-                  <img src={company.logo_url} className="size-full object-cover" />
+                {menuSettings.menu_logo || company.logo_url ? (
+                  <img src={menuSettings.menu_logo || company.logo_url} className="size-full object-cover" />
                 ) : (
-                  <Star className="size-12 text-[#FF4D6D] fill-[#FF4D6D]/10" />
+                  <Star className="size-12" style={{ color: menuSettings.primary_color }} />
                 )}
               </div>
             </div>
@@ -303,7 +348,7 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
             <div className="flex-1 space-y-2">
               <div className="flex flex-wrap items-center gap-3">
                 <h1 className="text-3xl font-black tracking-tighter uppercase italic text-slate-900">
-                  {company.name}
+                  {menuSettings.store_name || company.name}
                 </h1>
                 <Badge className="bg-emerald-50 text-emerald-600 border-none px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
                   ● Aberto
@@ -317,11 +362,11 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
                   <span className="opacity-40">(100+)</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Clock className="size-4 text-[#FF4D6D]" />
+                  <Clock className="size-4" style={{ color: menuSettings.primary_color }} />
                   <span>{company.production_time || "30-45 min"}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <MapPin className="size-4 text-[#FF4D6D]" />
+                  <MapPin className="size-4" style={{ color: menuSettings.primary_color }} />
                   <span>{company.address_city || "Sua Cidade"}</span>
                 </div>
               </div>
@@ -361,8 +406,9 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
               onClick={() => setActiveCategory("all")}
               className={cn(
                 "px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-sm",
-                activeCategory === "all" ? "bg-[#FF4D6D] text-white" : "bg-white text-slate-400 hover:text-slate-600 border border-slate-100"
+                activeCategory === "all" ? "text-white" : "bg-white text-slate-400 hover:text-slate-600 border border-slate-100"
               )}
+              style={activeCategory === "all" ? { backgroundColor: menuSettings.primary_color } : {}}
             >
               Todos
             </button>
@@ -372,8 +418,9 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
                 onClick={() => setActiveCategory(cat.id)}
                 className={cn(
                   "px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-sm",
-                  activeCategory === cat.id ? "bg-[#FF4D6D] text-white" : "bg-white text-slate-400 hover:text-slate-600 border border-slate-100"
+                  activeCategory === cat.id ? "text-white" : "bg-white text-slate-400 hover:text-slate-600 border border-slate-100"
                 )}
+                style={activeCategory === cat.id ? { backgroundColor: menuSettings.primary_color } : {}}
               >
                 {cat.name}
               </button>
@@ -407,31 +454,47 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
                         viewport={{ once: true }}
                         whileHover={{ y: -4 }}
                         className="bg-white p-6 rounded-[32px] border border-slate-100 flex gap-6 cursor-pointer hover:shadow-xl hover:shadow-slate-200/50 transition-all group relative overflow-hidden"
-                        onClick={() => setSelectedProduct(prod)}
+                        onClick={() => {
+                          setSelectedProduct(prod)
+                          trackClick(prod.id)
+                        }}
                       >
                         {/* Status Badge */}
-                        {prod.price > 50 && (
-                          <div className="absolute top-0 left-0 bg-[#FF4D6D] text-white text-[8px] font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-br-2xl z-10">
+                        {prod.is_highlight && (
+                          <div 
+                            className="absolute top-0 left-0 text-white text-[8px] font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-br-2xl z-10"
+                            style={{ backgroundColor: menuSettings.primary_color }}
+                          >
                             🔥 Destaque
                           </div>
                         )}
 
                         <div className="flex-1 flex flex-col justify-between py-1">
                           <div className="space-y-2">
-                            <h3 className="font-black text-slate-900 uppercase italic leading-tight text-lg group-hover:text-[#FF4D6D] transition-colors">{prod.name}</h3>
+                            <h3 
+                              className="font-black text-slate-900 uppercase italic leading-tight text-lg transition-colors"
+                              style={{ color: menuSettings.text_color }}
+                            >
+                              {prod.name}
+                            </h3>
                             <p className="text-xs text-slate-500 font-medium line-clamp-2 leading-relaxed">{prod.description}</p>
                           </div>
                           <div className="flex items-center justify-between mt-6">
-                            <span className="text-xl font-black text-slate-900 italic tracking-tighter">R$ {prod.price.toFixed(2)}</span>
+                            <span className="text-xl font-black text-slate-900 italic tracking-tighter">R$ {parseFloat(prod.price).toFixed(2)}</span>
                             <Button 
                               size="sm"
-                              className="rounded-xl bg-[#FFF0F3] text-[#FF4D6D] hover:bg-[#FF4D6D] hover:text-white font-black uppercase text-[10px] tracking-widest px-4 h-9 shadow-none border-none transition-all active:scale-95"
+                              className={cn(
+                                "font-black uppercase text-[10px] tracking-widest px-4 h-9 shadow-none border-none transition-all active:scale-95",
+                                menuSettings.button_style === 'rounded' ? "rounded-full" : "rounded-xl"
+                              )}
+                              style={{ backgroundColor: menuSettings.button_color, color: '#fff' }}
                               onClick={(e) => {
                                 e.stopPropagation()
                                 addToCart(prod)
+                                trackClick(prod.id)
                               }}
                             >
-                              Adicionar
+                              {menuSettings.button_text.split(' ')[0]}
                             </Button>
                           </div>
                         </div>
@@ -471,7 +534,10 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
               <div className="flex items-center gap-4">
                 <div className="size-10 rounded-2xl bg-white/10 flex items-center justify-center relative">
                    <ShoppingCart className="size-5" />
-                   <span className="absolute -top-1.5 -right-1.5 size-5 bg-[#FF4D6D] text-white text-[10px] items-center justify-center flex font-black rounded-full border-2 border-slate-900">
+                   <span 
+                    className="absolute -top-1.5 -right-1.5 size-5 text-white text-[10px] items-center justify-center flex font-black rounded-full border-2 border-slate-900"
+                    style={{ backgroundColor: menuSettings.primary_color }}
+                   >
                     {cart.reduce((acc, i) => acc + i.quantity, 0)}
                    </span>
                 </div>

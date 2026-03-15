@@ -1,0 +1,56 @@
+[0315/132513.941:WARNING:quota_database.cc(1015)] Quota database is too new.
+[0315/132513.941:ERROR:quota_database.cc(929)] Could not open the quota database, resetting.
+[0315/132514.164:WARNING:sqlite_persistent_store_backend_base.cc(176)] Cookie database is too new.
+[0315/132514.542:ERROR:backend_impl.cc(1423)] Unable to map Index file
+[0315/132517.603:INFO:CONSOLE(0)] "Error with Permissions-Policy header: Feature xr-spatial-tracking's parameters are ignored.", source:  (0)
+[0315/132517.603:INFO:CONSOLE(0)] "Error with Permissions-Policy header: Origin trial controlled feature not enabled: 'attribution-reporting'.", source:  (0)
+[0315/132517.603:INFO:CONSOLE(0)] "Error with Permissions-Policy header: Unrecognized feature: 'compute-pressure'.", source:  (0)
+[0315/132517.603:INFO:CONSOLE(0)] "Error with Permissions-Policy header: Origin trial controlled feature not enabled: 'interest-cohort'.", source:  (0)
+[0315/132517.603:INFO:CONSOLE(0)] "Error with Permissions-Policy header: Unrecognized feature: 'private-state-token-issuance'.", source:  (0)
+[0315/132517.603:INFO:CONSOLE(0)] "Error with Permissions-Policy header: Origin trial controlled feature not enabled: 'shared-storage'.", source:  (0)
+[0315/132517.603:INFO:CONSOLE(0)] "Error with Permissions-Policy header: Unrecognized feature: 'shared-storage-select-url'.", source:  (0)
+[0315/132517.603:INFO:CONSOLE(0)] "Error with Permissions-Policy header: Unrecognized feature: 'private-state-token-redemption'.", source:  (0)
+[0315/132517.603:INFO:CONSOLE(0)] "Error with Permissions-Policy header: Unrecognized feature: 'unload'.", source:  (0)
+[0315/132517.603:INFO:CONSOLE(0)] "Error with Permissions-Policy header: Unrecognized feature: 'window-management'.", source:  (0)
+[0315/132517.603:INFO:CONSOLE(0)] "Document-Policy HTTP header: Unrecognized document policy feature name include-js-call-stacks-in-crash-reports.", source: https://web.whatsapp.com/ (0)
+[0315/132518.460:ERROR:indexed_db_factory_impl.cc(918)] IndexedDB backing store had unknown schema, treating it as failure to open.
+[0315/132518.461:ERROR:indexed_db_factory_impl.cc(708)] Got corruption for { origin: https://web.whatsapp.com, top-level site: https://whatsapp.com, nonce: <null>, ancestor chain bit: Same-Site }, Unknown corruption
+[0315/132518.648:ERROR:indexed_db_factory_impl.cc(844)] IndexedDB recovering from a corrupted (and deleted) database.
+[0315/132520.796:INFO:CONSOLE(185)] "Event handler of 'x-storagemutated-1' event must be added on the initial evaluation of worker script.", source: https://static.whatsapp.net/rsrc.php/v4/yC/r/-b0N3N6TdDz.js (185)
+[0315/132553.704:INFO:CONSOLE(79)] "ErrorUtils caught an error:
+
+Requiring unknown module "WAPhoneUtils"
+
+Subsequent non-fatal errors won't be logged; see https://fburl.com/debugjs. [object Object]", source: https://static.whatsapp.net/rsrc.php/v4/yJ/r/XpnBUoxX61b.js (79)
+[0315/132553.711:INFO:CONSOLE(79)] "ErrorUtils caught an error:
+
+Requiring unknown module "WAWebNewsletterToggleMuteStateJob"
+
+Subsequent non-fatal errors won't be logged; see https://fburl.com/debugjs. [object Object]", source: https://static.whatsapp.net/rsrc.php/v4/yJ/r/XpnBUoxX61b.js (79)
+[0315/132553.717:INFO:CONSOLE(79)] "ErrorUtils caught an error:
+
+Requiring unknown module "WAPhoneUtils"
+
+Subsequent non-fatal errors won't be logged; see https://fburl.com/debugjs. [object Object]", source: https://static.whatsapp.net/rsrc.php/v4/yJ/r/XpnBUoxX61b.js (79)
+[0315/132553.719:INFO:CONSOLE(79)] "ErrorUtils caught an error:
+
+Requiring unknown module "WAWebNewsletterToggleMuteStateJob"
+
+Subsequent non-fatal errors won't be logged; see https://fburl.com/debugjs. [object Object]", source: https://static.whatsapp.net/rsrc.php/v4/yJ/r/XpnBUoxX61b.js (79)
+[0315/132553.737:INFO:CONSOLE(79)] "ErrorUtils caught an error:
+
+Requiring unknown module "WAPhoneUtils"
+
+Subsequent non-fatal errors won't be logged; see https://fburl.com/debugjs. [object Object]", source: https://static.whatsapp.net/rsrc.php/v4/yJ/r/XpnBUoxX61b.js (79)
+[0315/132553.739:INFO:CONSOLE(79)] "ErrorUtils caught an error:
+
+Requiring unknown module "WAWebNewsletterToggleMuteStateJob"
+
+Subsequent non-fatal errors won't be logged; see https://fburl.com/debugjs. [object Object]", source: https://static.whatsapp.net/rsrc.php/v4/yJ/r/XpnBUoxX61b.js (79)
+[0315/132730.211:INFO:CONSOLE(185)] "Event handler of 'x-storagemutated-1' event must be added on the initial evaluation of worker script.", source: https://static.whatsapp.net/rsrc.php/v4/yC/r/-b0N3N6TdDz.js (185)
+[0315/133050.969:INFO:CONSOLE(984)] "Failed to parse video contentType: video/mp4; codecs=avc1.42000a", source: https://static.whatsapp.net/rsrc.php/v4imR24/yS/l/pt_BR-j/0teqOXVmZCz.js (984)
+[0315/133050.969:INFO:CONSOLE(984)] "Failed to parse video contentType: video/mp4; codecs=hev1.1.6.L93.B0", source: https://static.whatsapp.net/rsrc.php/v4imR24/yS/l/pt_BR-j/0teqOXVmZCz.js (984)
+[0315/133056.815:INFO:CONSOLE(185)] "Event handler of 'x-storagemutated-1' event must be added on the initial evaluation of worker script.", source: https://static.whatsapp.net/rsrc.php/v4/yC/r/-b0N3N6TdDz.js (185)
+[0315/133800.001:INFO:CONSOLE(185)] "Event handler of 'x-storagemutated-1' event must be added on the initial evaluation of worker script.", source: https://static.whatsapp.net/rsrc.php/v4/yC/r/-b0N3N6TdDz.js (185)
+[0315/134245.350:INFO:CONSOLE(185)] "Event handler of 'x-storagemutated-1' event must be added on the initial evaluation of worker script.", source: https://static.whatsapp.net/rsrc.php/v4/yC/r/-b0N3N6TdDz.js (185)
+[0315/135759.544:INFO:CONSOLE(185)] "Event handler of 'x-storagemutated-1' event must be added on the initial evaluation of worker script.", source: https://static.whatsapp.net/rsrc.php/v4/yC/r/-b0N3N6TdDz.js (185)

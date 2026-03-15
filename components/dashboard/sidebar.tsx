@@ -22,7 +22,8 @@ import {
   BarChart3,
   Coffee,
   Globe,
-  Crown
+  Crown,
+  Calculator
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -42,7 +43,7 @@ const menuGroups = [
     name: "Produção",
     items: [
       { name: "Ingredientes", icon: UtensilsCrossed, path: "/dashboard/estoque", color: "text-emerald-600", bg: "bg-emerald-50" },
-      { name: "Receitas", icon: BookOpen, path: "/dashboard/precificacao", color: "text-orange-600", bg: "bg-orange-50" },
+      { name: "Receitas", icon: BookOpen, path: "/dashboard/receitas", color: "text-orange-600", bg: "bg-orange-50" },
       { name: "Produtos", icon: Package, path: "/dashboard/produtos", color: "text-rose-600", bg: "bg-rose-50" },
     ]
   },
@@ -58,6 +59,7 @@ const menuGroups = [
   {
     name: "Financeiro",
     items: [
+      { name: "Precificação Inteligente", icon: Calculator, path: "/dashboard/precificacao-inteligente", color: "text-rose-600", bg: "bg-rose-50", badge: "Novo" },
       { name: "Fluxo de Caixa", icon: Wallet, path: "/dashboard/financeiro", color: "text-indigo-600", bg: "bg-indigo-50" },
       { name: "Relatórios", icon: BarChart3, path: "/dashboard/relatorios", color: "text-purple-600", bg: "bg-purple-50", badge: "Beta" },
     ]

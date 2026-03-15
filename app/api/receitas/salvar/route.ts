@@ -22,8 +22,12 @@ export async function POST(req: Request) {
             .from("receitas")
             .insert({
                 user_id: userId,
+                company_id: recipe.company_id || null, // Added support for company_id
                 nome: recipe.nome || "Receita Importada",
+                descricao: recipe.descricao || "",
                 rendimento: parseInt(recipe.rendimento) || 1,
+                tempo_preparo: recipe.tempo_preparo || "",
+                foto_url: recipe.foto_url || "",
                 modo_preparo: recipe.modo_preparo || ""
             })
             .select()

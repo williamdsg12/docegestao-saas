@@ -1,3 +1,6 @@
-2026/03/12-10:36:08.070 e3c Reusing MANIFEST D:\app\sistema confeitaria\.wwebjs_auth\session\Default\Local Storage\leveldb/MANIFEST-000001
-2026/03/12-10:36:08.176 e3c Recovering log #3
-2026/03/12-10:36:08.197 e3c Reusing old log D:\app\sistema confeitaria\.wwebjs_auth\session\Default\Local Storage\leveldb/000003.log 
+2026/03/15-13:25:12.378 5114 Reusing MANIFEST D:\app\sistema confeitaria\.wwebjs_auth\session\Default\Local Storage\leveldb/MANIFEST-000001
+2026/03/15-13:25:12.401 5114 Recovering log #3
+2026/03/15-13:25:12.402 5114 Reusing old log D:\app\sistema confeitaria\.wwebjs_auth\session\Default\Local Storage\leveldb/000003.log 
+2026/03/15-13:45:26.577 9ec Level-0 table #5: started
+2026/03/15-13:45:26.615 9ec Level-0 table #5: 20140 bytes OK
+2026/03/15-13:45:26.726 9ec Delete type=0 #3

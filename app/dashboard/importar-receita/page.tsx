@@ -25,6 +25,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useRouter } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/hooks/useAuth"
+import { useBusiness } from "@/hooks/useBusiness"
 
 export default function ImportarReceitaPage() {
     const [importType, setImportType] = useState<"text" | "link">("text")
@@ -34,6 +35,7 @@ export default function ImportarReceitaPage() {
     const [isSaving, setIsSaving] = useState(false) // Renamed from 'loading' to avoid conflict with useAuth
     const [recipeData, setRecipeData] = useState<any>(null) // Renamed from 'recipe'
     const { user, loading } = useAuth()
+    const { profile } = useBusiness()
     const router = useRouter()
 
     if (loading) {
@@ -123,7 +125,10 @@ export default function ImportarReceitaPage() {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    recipe: recipeData,
+                    recipe: {
+                        ...recipeData,
+                        company_id: profile?.company_id
+                    },
                     userId: (user as any).uid || (user as any).id
                 })
             })
@@ -291,7 +296,7 @@ export default function ImportarReceitaPage() {
                                             </Button>
                                             <Button
                                                 variant="outline"
-                                                onClick={() => router.push("/dashboard/precificacao")}
+                                                onClick={() => router.push("/dashboard/precificacao-inteligente")}
                                                 className="h-14 rounded-2xl border-slate-200 text-slate-600 font-black uppercase text-[10px] tracking-widest"
                                             >
                                                 <Calculator className="mr-2 size-4" />
