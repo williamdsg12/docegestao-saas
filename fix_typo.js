@@ -4,18 +4,17 @@ require('dotenv').config()
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
 
-async function checkCompany() {
+async function fixTypo() {
   const { data, error } = await supabase
-    .from('companies')
-    .select('id, name, menu_slug, phone')
-    .eq('menu_slug', 'deliciasmarcucci')
-    .single()
+    .from('menu_products')
+    .update({ name: 'BOLO DE POTE COM MOUSSE' })
+    .eq('name', 'BOLO DE POTE VOM MUSSE')
 
   if (error) {
-    console.error('Error:', error)
+    console.error('Error fixing typo:', error)
   } else {
-    console.log('Company found:', data)
+    console.log('Typo fixed (if found).')
   }
 }
 
-checkCompany()
+fixTypo()

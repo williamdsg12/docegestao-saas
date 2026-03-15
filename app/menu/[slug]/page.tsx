@@ -29,6 +29,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import {
   Dialog,
   DialogContent,
@@ -130,7 +131,23 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
       setProducts(prodRes.data || [])
       setFilteredProducts(prodRes.data || [])
 
-      // 4. Track View
+      // 4. Fetch Owner Phone if not in company
+      if (compData.owner_id) {
+        const { data: ownerProfile } = await supabase
+          .from('profiles')
+          .select('whatsapp')
+          .eq('id', compData.owner_id)
+          .single()
+        
+        if (ownerProfile?.whatsapp) {
+          setCompany((prev: any) => ({
+            ...prev,
+            phone: ownerProfile.whatsapp
+          }))
+        }
+      }
+
+      // 5. Track View
       trackView(compData.id)
     } catch (error: any) {
       console.error("Error fetching menu:", error.message)
@@ -253,9 +270,16 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
       setIsCheckoutOpen(false)
       setIsCartOpen(false)
       
-      // WhatsApp Forwarding (Optional but good)
-      const message = encodeURIComponent(`Olá! Gostaria de confirmar meu pedido #${order.id.slice(0, 8)}\n\n*Itens:*\n${cart.map(i => `- ${i.quantity}x ${i.name}`).join('\n')}\n\n*Total:* R$ ${total.toFixed(2)}`)
-      window.open(`https://wa.me/55${company.phone?.replace(/\D/g, '')}?text=${message}`, '_blank')
+      // WhatsApp Forwarding
+      const message = encodeURIComponent(`Olá! Gostaria de confirmar meu pedido #${order.id.slice(0, 8)}\n\n*Itens:*\n${cart.map(i => `- ${i.quantity}x ${i.name}`).join('\n')}\n\n*Total:* R$ ${total.toFixed(2)}${customerInfo.notes ? `\n\n*Obs:* ${customerInfo.notes}` : ''}`)
+      
+      const rawPhone = company?.phone || company?.whatsapp || company?.whatsapp_number || ""
+      const phone = rawPhone.replace(/\D/g, "")
+
+      if (phone) {
+        const url = `https://wa.me/55${phone}?text=${message}`
+        window.open(url, "_blank")
+      }
 
     } catch (error: any) {
       toast.error("Erro ao enviar pedido.")
@@ -383,14 +407,33 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
                 </div>
                 <div className="flex items-center gap-2">
                   <MapPin className="size-4" style={{ color: menuSettings.primary_color }} />
-                  <span>{company.address_city || "Sua Cidade"}</span>
+                  <span>{company.address_city || "Entrega"}</span>
+                </div>
+                <div className="flex items-center gap-2 px-3 py-1 bg-slate-100 rounded-lg">
+                  <span className="text-slate-400">Min:</span>
+                  <span className="text-slate-900">R$ {parseFloat(company.min_order_value || "0").toFixed(2)}</span>
                 </div>
               </div>
             </div>
 
             <Button 
               className="rounded-2xl bg-[#25D366] hover:bg-[#20ba59] text-white px-6 h-12 flex gap-3 font-bold shadow-lg shadow-emerald-100 transition-all active:scale-95"
-              onClick={() => window.open(`https://wa.me/55${company.phone?.replace(/\D/g, '')}`, '_blank')}
+              onClick={() => {
+                const rawPhone = company?.phone || company?.whatsapp || company?.whatsapp_number || ""
+                const phone = rawPhone.replace(/\D/g, "")
+
+                if (!phone) {
+                  toast.error("WhatsApp da loja não configurado.")
+                  return
+                }
+
+                const message = encodeURIComponent(
+                  `Olá! Vim pelo cardápio ${company.name} e gostaria de fazer um pedido.`
+                )
+
+                const url = `https://wa.me/55${phone}?text=${message}`
+                window.open(url, "_blank")
+              }}
             >
               <MessageCircle className="size-5" />
               WhatsApp
@@ -476,14 +519,14 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
                         }}
                       >
                         {/* Status Badge */}
-                        {prod.is_highlight && (
+                        {prod.is_highlight || prod.name.toLowerCase().includes('bolo') ? (
                           <div 
-                            className="absolute top-0 left-0 text-white text-[8px] font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-br-2xl z-10"
+                            className="absolute top-0 left-0 text-white text-[9px] font-black uppercase tracking-[0.2em] px-5 py-2 rounded-br-2xl z-20 shadow-lg animate-pulse"
                             style={{ backgroundColor: menuSettings.primary_color }}
                           >
-                            🔥 Destaque
+                            🔥 MAIS VENDIDO
                           </div>
-                        )}
+                        ) : null}
 
                         <div className="flex-1 flex flex-col justify-between py-1">
                           <div className="space-y-2">
@@ -495,13 +538,14 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
                             </h3>
                             <p className="text-xs text-slate-500 font-medium line-clamp-2 leading-relaxed">{prod.description}</p>
                           </div>
-                          <div className="flex items-center justify-between mt-6">
-                            <span className="text-xl font-black text-slate-900 italic tracking-tighter">R$ {parseFloat(prod.price).toFixed(2)}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xl font-black text-slate-900 italic tracking-tighter">R$ {parseFloat(prod.price).toFixed(2)}</span>
+                            </div>
                             <Button 
-                              size="sm"
+                              size="icon"
                               className={cn(
-                                "font-black uppercase text-[10px] tracking-widest px-4 h-9 shadow-none border-none transition-all active:scale-95",
-                                menuSettings.button_style === 'rounded' ? "rounded-full" : "rounded-xl"
+                                "size-10 shadow-lg transition-all active:scale-95 group/btn",
+                                menuSettings.button_style === 'rounded' ? "rounded-full" : "rounded-2xl"
                               )}
                               style={{ backgroundColor: menuSettings.button_color, color: '#fff' }}
                               onClick={(e) => {
@@ -510,9 +554,8 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
                                 trackClick(prod.id)
                               }}
                             >
-                              {menuSettings.button_text.split(' ')[0]}
+                              <Plus className="size-5 group-hover/btn:rotate-90 transition-transform" />
                             </Button>
-                          </div>
                         </div>
 
                         <div className="size-28 md:size-32 rounded-3xl bg-slate-50 overflow-hidden shrink-0 border border-slate-100 relative group-hover:scale-105 transition-transform duration-700">
@@ -545,8 +588,9 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
           >
             <Button 
               onClick={() => setIsCartOpen(true)} 
-              className="w-full h-16 rounded-[32px] bg-slate-900 text-white shadow-2xl flex items-center justify-between px-8 group active:scale-95 transition-all outline-none ring-offset-2 ring-slate-900 focus:ring-2"
+              className="w-full h-16 rounded-[32px] bg-slate-900 text-white shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center justify-between px-8 group active:scale-95 transition-all outline-none ring-offset-2 ring-slate-900 focus:ring-2 relative overflow-hidden"
             >
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
               <div className="flex items-center gap-4">
                 <div className="size-10 rounded-2xl bg-white/10 flex items-center justify-center relative">
                    <ShoppingCart className="size-5" />
@@ -720,7 +764,10 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
                     </div>
                   </div>
                   <Button 
-                    onClick={() => setIsCheckoutOpen(true)} 
+                    onClick={() => {
+                        setIsCheckoutOpen(true)
+                        setIsCartOpen(false) // Fechar o carrinho ao abrir o checkout para evitar conflitos de overlay
+                    }} 
                     className="w-full h-16 rounded-[32px] bg-[#FF4D6D] text-white font-black uppercase italic tracking-[0.2em] shadow-xl shadow-pink-100 flex items-center justify-center gap-4 active:scale-95 transition-all outline-none"
                   >
                     Confirmar Pedido <ArrowRight className="size-5" />
@@ -759,14 +806,19 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
               <Input placeholder="Rua, Número, Bairro, Cidade" className="h-14 rounded-2xl bg-slate-50 border-none font-bold px-6 focus-visible:ring-1 focus-visible:ring-[#FF4D6D]/20" value={customerInfo.address} onChange={e => setCustomerInfo({...customerInfo, address: e.target.value})} />
             </div>
 
+            <div className="space-y-3">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Observações</Label>
+              <Textarea placeholder="Ex: Sem cebola, tirar troco para R$ 50..." className="min-h-24 rounded-2xl bg-slate-50 border-none font-bold p-6 focus-visible:ring-1 focus-visible:ring-[#FF4D6D]/20 resize-none" value={customerInfo.notes} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setCustomerInfo({...customerInfo, notes: e.target.value})} />
+            </div>
+
             <div className="space-y-4">
-               <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Pagamento</Label>
+               <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Forma de Pagamento</Label>
                <div className="grid grid-cols-2 gap-4">
                   <button 
                     onClick={() => setCustomerInfo({...customerInfo, payment_method: "pix"})}
                     className={cn(
                       "flex items-center flex-col gap-3 p-6 rounded-3xl border-2 transition-all",
-                      customerInfo.payment_method === "pix" ? "border-[#FF4D6D] bg-[#FFF0F3] text-[#FF4D6D]" : "border-slate-50 bg-slate-50 text-slate-400"
+                      customerInfo.payment_method === "pix" ? "border-[#FF4D6D] bg-[#FFF0F3] text-[#FF4D6D] shadow-lg shadow-pink-50 scale-[1.02]" : "border-slate-50 bg-slate-50 text-slate-400 opacity-60 hover:opacity-100"
                     )}
                   >
                     <QrCode className="size-6" />
@@ -776,11 +828,11 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
                     onClick={() => setCustomerInfo({...customerInfo, payment_method: "card"})}
                     className={cn(
                       "flex items-center flex-col gap-3 p-6 rounded-3xl border-2 transition-all",
-                      customerInfo.payment_method === "card" ? "border-[#FF4D6D] bg-[#FFF0F3] text-[#FF4D6D]" : "border-slate-50 bg-slate-50 text-slate-400"
+                      customerInfo.payment_method === "card" ? "border-[#FF4D6D] bg-[#FFF0F3] text-[#FF4D6D] shadow-lg shadow-pink-50 scale-[1.02]" : "border-slate-50 bg-slate-50 text-slate-400 opacity-60 hover:opacity-100"
                     )}
                   >
                     <CreditCard className="size-6" />
-                    <span className="font-black uppercase text-[10px] tracking-widest">Cartão</span>
+                    <span className="font-black uppercase text-[10px] tracking-widest">Cartão / Dinheiro</span>
                   </button>
                </div>
             </div>

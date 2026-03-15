@@ -29,6 +29,7 @@ interface Company {
     production_time?: string
     menu_slug?: string
     status?: string
+    phone?: string
 }
 
 interface Profile {
@@ -38,6 +39,7 @@ interface Profile {
     email: string
     plan: string
     company_id: string
+    whatsapp?: string
     is_admin: boolean
 }
 

@@ -57,6 +57,24 @@ export function ProfileTabs() {
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab ] = useState("perfil")
   const [copied, setCopied] = useState(false)
+  
+  // Helper to get the correct base URL for menu links
+  const getMenuBaseUrl = () => {
+    const prodDomain = 'https://docesgestao.netlify.app'
+    if (typeof window === 'undefined') return process.env.NEXT_PUBLIC_APP_URL || prodDomain
+    
+    // Se estiver em produção (Netlify ou domínio customizado), usa a origin atual
+    if (window.location.hostname !== 'localhost' && !window.location.hostname.includes('127.0.0.1')) {
+      return window.location.origin
+    }
+    
+    // Se estiver em localhost, prioriza a URL de produção (definida no .env ou fallback)
+    // para que o QR Code e links de teste sejam reais e não apontem para o PC do dev.
+    const envUrl = process.env.NEXT_PUBLIC_APP_URL
+    if (envUrl && !envUrl.includes('localhost')) return envUrl
+    
+    return prodDomain
+  }
 
   // Real WhatsApp Hook
   const [waStatus, setWaStatus] = useState<'DISCONNECTED' | 'QR_READY' | 'AUTHENTICATING' | 'CONNECTED'>('DISCONNECTED')
@@ -145,6 +163,7 @@ export function ProfileTabs() {
           setFormData(prev => ({
             ...prev,
             instagram: companyData.instagram || "",
+            personalWhatsapp: profile?.whatsapp || companyData.phone || prev.personalWhatsapp, // Priorizar profile
             segment: companyData.segment || "Confeitaria Gourmet",
             businessBio: companyData.description || "",
             cep: companyData.address_zip || "",
@@ -210,8 +229,7 @@ export function ProfileTabs() {
   }
 
   const copyToClipboard = () => {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (typeof window !== 'undefined' ? window.location.origin : 'https://docesgestao.netlify.app')
-    const url = `${baseUrl}/menu/${formData.menuSlug || 'sua-loja'}`
+    const url = `${getMenuBaseUrl()}/menu/${formData.menuSlug || 'sua-loja'}`
     navigator.clipboard.writeText(url)
     setCopied(true)
     toast.success("Link copiado!")
@@ -304,7 +322,9 @@ export function ProfileTabs() {
         // Update SaaS/Auth Metadata (Synchronization)
         const { error: authError } = await updateProfile({
           store_name: formData.storeName,
-          instagram: formData.instagram
+          instagram: formData.instagram,
+          menu_slug: formData.menuSlug,
+          whatsapp: formData.personalWhatsapp // Sincronizar whatsapp também
         })
         
         if (authError) throw authError
@@ -537,7 +557,17 @@ export function ProfileTabs() {
                         <p className="text-slate-400 font-bold text-sm max-w-xl">Configure seu link exclusivo e comece a vender online. Seus clientes poderão fazer pedidos diretamente pelo navegador.</p>
                      </div>
                   </div>
-                  <Button variant="outline" className="h-14 rounded-2xl border-2 border-slate-200 px-8 font-black uppercase italic text-[11px] hover:bg-slate-50 gap-3">
+                  <Button 
+                    onClick={() => {
+                        if (!formData.menuSlug) {
+                          toast.error("Por favor, defina um nome para o link do seu cardápio primeiro e salve as alterações.")
+                          return
+                        }
+                        window.open(`${getMenuBaseUrl()}/menu/${formData.menuSlug}`, '_blank')
+                    }}
+                    variant="outline" 
+                    className="h-14 rounded-2xl border-2 border-slate-200 px-8 font-black uppercase italic text-[11px] hover:bg-slate-50 gap-3"
+                  >
                      <Eye className="size-4" /> VISUALIZAR
                   </Button>
                </div>
@@ -562,7 +592,13 @@ export function ProfileTabs() {
                              <Button
                                variant="ghost"
                                size="sm"
-                               onClick={() => window.open(`/menu/${formData.menuSlug}`, '_blank')}
+                               onClick={() => {
+                                   if (!formData.menuSlug) {
+                                     toast.error("Defina o nome do link primeiro.")
+                                     return
+                                   }
+                                   window.open(`${getMenuBaseUrl()}/menu/${formData.menuSlug}`, '_blank')
+                               }}
                                className="h-10 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 transition-all"
                              >
                                <ExternalLink className="size-3 mr-2" />
@@ -633,7 +669,7 @@ export function ProfileTabs() {
                         <div className="absolute top-0 right-0 size-64 bg-primary/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2" />
                         <div className="bg-white p-6 rounded-[40px] shadow-2xl mb-10 transition-transform group-hover:scale-110 duration-500">
                            <QRCodeSVG 
-                             value={(process.env.NEXT_PUBLIC_APP_URL || (typeof window !== 'undefined' ? window.location.origin : 'https://docesgestao.netlify.app')) + `/menu/${formData.menuSlug || 'sua-loja'}`} 
+                             value={`${getMenuBaseUrl()}/menu/${formData.menuSlug || 'sua-loja'}`} 
                              size={180} 
                            />
                         </div>

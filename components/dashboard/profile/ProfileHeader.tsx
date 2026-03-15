@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/hooks/useAuth"
 import { motion } from "framer-motion"
-import { Trophy, TrendingUp, Users, BookOpen, ShoppingCart, Star, Camera } from "lucide-react"
+import { Trophy, TrendingUp, Users, BookOpen, ShoppingCart, Star, Camera, ExternalLink } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
@@ -70,6 +70,20 @@ export function ProfileHeader() {
     { label: "Faturamento", value: "R$ 3.420", icon: TrendingUp, color: "text-amber-500", bg: "bg-amber-50" },
     { label: "Avaliação", value: "4.9", icon: Star, color: "text-yellow-500", bg: "bg-yellow-50" },
   ]
+
+  // Helper to get the correct base URL for menu links
+  const getMenuBaseUrl = () => {
+    const prodDomain = 'https://docesgestao.netlify.app'
+    if (typeof window === 'undefined') return process.env.NEXT_PUBLIC_APP_URL || prodDomain
+    if (window.location.hostname !== 'localhost' && !window.location.hostname.includes('127.0.0.1')) {
+      return window.location.origin
+    }
+    const envUrl = process.env.NEXT_PUBLIC_APP_URL
+    if (envUrl && !envUrl.includes('localhost')) return envUrl
+    return prodDomain
+  }
+
+  const menuSlug = user?.user_metadata?.menu_slug || user?.user_metadata?.slug || ""
 
   return (
     <div className="space-y-8">
@@ -142,20 +156,25 @@ export function ProfileHeader() {
               Configurações
             </Button>
           </Link>
-          <Link href={`/menu/${user?.user_metadata?.slug || ""}`} className="flex-1 lg:flex-none">
-            <Button 
-              className="w-full h-14 rounded-2xl bg-indigo-900 hover:bg-indigo-950 text-white font-bold text-sm px-8 shadow-lg shadow-indigo-100 transition-all active:scale-95 group"
+          <Button 
+            onClick={() => {
+                if (!menuSlug) {
+                    alert("Por favor, defina o link do seu cardápio nas configurações primeiro.")
+                    return
+                }
+                window.open(`${getMenuBaseUrl()}/menu/${menuSlug}`, '_blank')
+            }}
+            className="flex-1 lg:flex-none h-14 rounded-2xl bg-indigo-900 hover:bg-indigo-950 text-white font-bold text-sm px-8 shadow-lg shadow-indigo-100 transition-all active:scale-95 group"
+          >
+            Ver Perfil Público
+            <motion.span
+              className="ml-2 inline-block"
+              animate={{ x: [0, 4, 0] }}
+              transition={{ repeat: Infinity, duration: 1.5 }}
             >
-              Ver Perfil Público
-              <motion.span
-                className="ml-2 inline-block"
-                animate={{ x: [0, 4, 0] }}
-                transition={{ repeat: Infinity, duration: 1.5 }}
-              >
-                →
-              </motion.span>
-            </Button>
-          </Link>
+              →
+            </motion.span>
+          </Button>
         </div>
       </div>
 
