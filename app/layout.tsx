@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   openGraph: {
     type: 'website',
-    url: 'http://localhost:3000',
+    url: 'https://docesgestao.netlify.app',
     title: 'DoceGestão - Gestão Inteligente para Confeiteiras',
     description: 'Seu ateliê mais profissional com a ajuda do DoceGestão. Controle sua produção, insumos e pagamentos em um só lugar.',
     siteName: 'DoceGestão App',

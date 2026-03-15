@@ -210,7 +210,7 @@ export function ProfileTabs() {
   }
 
   const copyToClipboard = () => {
-    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://docesgestao.netlify.app'
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (typeof window !== 'undefined' ? window.location.origin : 'https://docesgestao.netlify.app')
     const url = `${baseUrl}/menu/${formData.menuSlug || 'sua-loja'}`
     navigator.clipboard.writeText(url)
     setCopied(true)
@@ -633,7 +633,7 @@ export function ProfileTabs() {
                         <div className="absolute top-0 right-0 size-64 bg-primary/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2" />
                         <div className="bg-white p-6 rounded-[40px] shadow-2xl mb-10 transition-transform group-hover:scale-110 duration-500">
                            <QRCodeSVG 
-                             value={(typeof window !== 'undefined' ? window.location.origin : 'https://docesgestao.netlify.app') + `/menu/${formData.menuSlug || 'sua-loja'}`} 
+                             value={(process.env.NEXT_PUBLIC_APP_URL || (typeof window !== 'undefined' ? window.location.origin : 'https://docesgestao.netlify.app')) + `/menu/${formData.menuSlug || 'sua-loja'}`} 
                              size={180} 
                            />
                         </div>

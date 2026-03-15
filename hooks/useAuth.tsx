@@ -135,10 +135,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const signInWithGoogle = async () => {
         try {
+            const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (typeof window !== 'undefined' ? window.location.origin : '')
+            // In dev, use location.origin to allow localhost redirects
+            // In prod, use the canonical NEXT_PUBLIC_APP_URL
+            const redirectTo = typeof window !== 'undefined' && window.location.hostname === 'localhost'
+                ? `${window.location.origin}/dashboard`
+                : `${baseUrl}/dashboard`
+
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    redirectTo: `${window.location.origin}/dashboard`
+                    redirectTo
                 }
             })
             if (error) throw error
