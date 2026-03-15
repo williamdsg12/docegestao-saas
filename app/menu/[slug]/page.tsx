@@ -22,7 +22,8 @@ import {
   Star,
   Heart,
   ArrowRight,
-  MessageCircle
+  MessageCircle,
+  ExternalLink
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -279,13 +280,28 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
 
   if (!company) return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-white p-6 text-center">
-      <div className="size-24 bg-rose-50 rounded-full flex items-center justify-center mb-6">
+      <div className="size-24 bg-rose-50 rounded-full flex items-center justify-center mb-6 border-4 border-white shadow-xl">
         <AlertCircle className="size-12 text-[#FF4D6D]" />
       </div>
-      <h1 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter">Oooops!</h1>
-      <p className="text-slate-500 mt-2 max-w-xs">Este cardápio não está disponível ou o link está incorreto.</p>
-      <Button className="mt-8 rounded-2xl bg-[#FF4D6D] hover:bg-[#FF4D6D]/90 px-8" onClick={() => window.location.href = '/'}>
-        Voltar para Home
+      <h1 className="text-4xl font-black text-slate-900 uppercase italic tracking-tighter leading-none mb-4">Oooops!</h1>
+      <p className="text-slate-500 max-w-xs font-medium leading-relaxed">
+        Não encontramos nenhum cardápio para o link <span className="text-slate-900 font-bold">/menu/{slug}</span>.
+      </p>
+      <div className="mt-8 p-6 bg-slate-50 rounded-3xl border border-slate-100 text-left space-y-4 max-w-sm">
+        <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 italic">Dicas para o lojista:</h4>
+        <ul className="space-y-2">
+          <li className="flex gap-2 text-xs font-medium text-slate-600">
+            <div className="size-1.5 rounded-full bg-rose-400 mt-1.5 shrink-0" />
+            Verifique se você salvou o link nas configurações do perfil.
+          </li>
+          <li className="flex gap-2 text-xs font-medium text-slate-600">
+            <div className="size-1.5 rounded-full bg-rose-400 mt-1.5 shrink-0" />
+            Certifique- + que o "slug" (o nome no link) está idêntico.
+          </li>
+        </ul>
+      </div>
+      <Button className="mt-10 rounded-2xl bg-[#FF4D6D] hover:bg-[#FF4D6D]/90 h-14 px-10 font-black uppercase italic tracking-widest shadow-xl shadow-pink-100 transition-all active:scale-95" onClick={() => window.location.href = '/'}>
+        Voltar para a Home
       </Button>
     </div>
   )

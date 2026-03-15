@@ -21,7 +21,8 @@ import {
   Eye,
   Clock,
   MessageSquare,
-  Zap
+  Zap,
+  ExternalLink
 } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
@@ -209,7 +210,8 @@ export function ProfileTabs() {
   }
 
   const copyToClipboard = () => {
-    const url = `docesgestao.netlify.app/menu/${formData.menuSlug || 'sua-loja'}`
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://docesgestao.netlify.app'
+    const url = `${baseUrl}/menu/${formData.menuSlug || 'sua-loja'}`
     navigator.clipboard.writeText(url)
     setCopied(true)
     toast.success("Link copiado!")
@@ -545,22 +547,34 @@ export function ProfileTabs() {
                      {/* URL Section */}
                      <div className="space-y-6">
                         <Label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 italic">URL DO SEU CARDÁPIO</Label>
-                        <div className="flex h-20 items-center rounded-[32px] border-2 border-slate-100 bg-slate-50/50 px-8 transition-all focus-within:border-[#FF2F81] focus-within:bg-white shadow-sm overflow-hidden">
-                           <div className="flex items-center gap-2 shrink-0">
-                              <span className="text-slate-300 font-bold text-lg select-none">docesgestao.netlify.app/menu/</span>
+                        <div className="h-20 bg-slate-50 rounded-3xl border-2 border-slate-100 flex items-center px-8 relative focus-within:border-emerald-500/30 transition-all">
+                           <div className="flex items-center gap-2 shrink-0 border-r border-slate-200 pr-4 mr-4">
+                              <Globe className="size-4 text-emerald-500" />
+                              <span className="text-slate-300 font-bold text-sm select-none">/menu/</span>
                            </div>
                            <input 
-                             value={formData.menuSlug} 
-                             onChange={e => setFormData({...formData, menuSlug: e.target.value.toLowerCase().replace(/\s/g, '-')})} 
-                             placeholder="sua-loja" 
-                             className="flex-1 h-full bg-transparent border-none focus:ring-0 font-black text-2xl text-slate-800 placeholder:text-slate-200" 
+                              value={formData.menuSlug} 
+                              onChange={e => setFormData({...formData, menuSlug: e.target.value.toLowerCase().replace(/\s/g, '-').replace(/[^a-z0-9-]/g, '')})} 
+                              placeholder="sua-loja" 
+                              className="flex-1 h-full bg-transparent border-none focus:ring-0 font-black text-xl text-slate-800 placeholder:text-slate-200" 
                            />
-                           <button 
-                             onClick={copyToClipboard} 
-                             className="ml-4 shrink-0 size-12 rounded-2xl bg-white shadow-sm border border-slate-100 flex items-center justify-center text-slate-400 hover:text-[#FF2F81] hover:scale-105 active:scale-95 transition-all"
-                           >
-                              {copied ? <Check className="size-6 text-emerald-500" /> : <Copy className="size-6" />}
-                           </button>
+                           <div className="flex items-center gap-2">
+                             <Button
+                               variant="ghost"
+                               size="sm"
+                               onClick={() => window.open(`/menu/${formData.menuSlug}`, '_blank')}
+                               className="h-10 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 transition-all"
+                             >
+                               <ExternalLink className="size-3 mr-2" />
+                               VISUALIZAR
+                             </Button>
+                             <button 
+                               onClick={copyToClipboard} 
+                               className="shrink-0 size-10 rounded-xl bg-white shadow-sm border border-slate-100 flex items-center justify-center text-slate-400 hover:text-[#FF2F81] hover:scale-105 active:scale-95 transition-all"
+                             >
+                                {copied ? <Check className="size-5 text-emerald-500" /> : <Copy className="size-5" />}
+                             </button>
+                           </div>
                         </div>
                         <p className="text-[10px] text-slate-400 font-bold italic uppercase tracking-wider ml-4">* ESTE SERÁ O ENDEREÇO QUE VOCÊ VAI COLOCAR NA SUA BIO DO INSTAGRAM.</p>
                      </div>
@@ -618,7 +632,10 @@ export function ProfileTabs() {
                      <div className="bg-gradient-to-br from-[#1E293B] to-[#0F172A] rounded-[56px] p-16 flex flex-col items-center justify-center text-center shadow-2xl relative overflow-hidden group">
                         <div className="absolute top-0 right-0 size-64 bg-primary/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2" />
                         <div className="bg-white p-6 rounded-[40px] shadow-2xl mb-10 transition-transform group-hover:scale-110 duration-500">
-                           <QRCodeSVG value={`https://docesgestao.netlify.app/menu/${formData.menuSlug || 'sua-loja'}`} size={180} />
+                           <QRCodeSVG 
+                             value={(typeof window !== 'undefined' ? window.location.origin : 'https://docesgestao.netlify.app') + `/menu/${formData.menuSlug || 'sua-loja'}`} 
+                             size={180} 
+                           />
                         </div>
                         <h4 className="text-white font-black italic uppercase text-lg tracking-widest mb-2">QR CODE DE <span className="text-[#FF2F81]">BALCÃO</span></h4>
                         <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest leading-relaxed mb-10">IMPRA E COLOQUE NA SUA LOJA<br/>PARA PEDIDOS RÁPIDOS.</p>
