@@ -61,6 +61,8 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
   const [filteredProducts, setFilteredProducts] = useState<any[]>([])
   const [selectedProduct, setSelectedProduct] = useState<any>(null)
   const [activeCategory, setActiveCategory] = useState<string>("all")
+  const [deliverySettings, setDeliverySettings] = useState<any>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [menuSettings, setMenuSettings] = useState<any>({
     primary_color: "#FF4D6D",
     background_color: "#FAFAFA",
@@ -82,17 +84,32 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
     payment_method: "pix"
   })
 
+  // Marketing & Loyalty V3
+  const [couponCode, setCouponCode] = useState("")
+  const [appliedCoupon, setAppliedCoupon] = useState<any>(null)
+  const [discountAmount, setDiscountAmount] = useState(0)
+  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false)
+
   useEffect(() => {
     fetchMenuData()
   }, [slug])
 
   useEffect(() => {
-    // Simulate Delivery Fee Calculation
-    if (customerInfo.cep.replace(/\D/g, '').length === 8) {
-      const fee = Math.floor(Math.random() * 10) + 5 // R$ 5-15
-      setDeliveryFee(fee)
+    // Distance-based fee calculation (Blueprint V2)
+    // Formula: taxa = taxa_base + (distancia * taxa_por_km)
+    if (customerInfo.cep.replace(/\D/g, '').length === 8 && deliverySettings) {
+      const taxaBase = deliverySettings.taxa_base || 5
+      const taxaPorKm = deliverySettings.taxa_por_km || 1
+      const kmMaximo = deliverySettings.km_maximo || 10
+      
+      // Simulated distance for demo (1-10km) capped at kmMaximo
+      const simulatedDist = Math.floor(Math.random() * kmMaximo) + 1
+      const calculatedFee = taxaBase + (simulatedDist * taxaPorKm)
+      
+      setDeliveryFee(calculatedFee)
+      toast.info(`Frete calculado p/ ${simulatedDist}km.`, { position: "bottom-center" })
     }
-  }, [customerInfo.cep])
+  }, [customerInfo.cep, deliverySettings])
 
   async function fetchMenuData() {
     try {
@@ -147,7 +164,22 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
         }
       }
 
-      // 5. Track View
+      // 5. Fetch Delivery Settings (Professional V2)
+      const { data: delSettings } = await supabase
+        .from('configuracoes_delivery')
+        .select('*')
+        .eq('empresa_id', compData.id)
+        .maybeSingle()
+      
+      if (delSettings) {
+        setDeliverySettings(delSettings)
+        // Update WhatsApp number if set in delivery config
+        if (delSettings.whatsapp_number) {
+          setCompany((prev: any) => ({ ...prev, phone: delSettings.whatsapp_number }))
+        }
+      }
+
+      // 6. Track View
       trackView(compData.id)
     } catch (error: any) {
       console.error("Error fetching menu:", error.message)
@@ -218,7 +250,50 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
   }
 
   const subtotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0)
-  const total = subtotal + deliveryFee
+  const total = Math.max(0, subtotal + deliveryFee - discountAmount)
+
+  async function handleApplyCoupon() {
+    if (!couponCode) return
+    setIsValidatingCoupon(true)
+    try {
+      const { data, error } = await supabase
+        .from('cupons')
+        .select('*')
+        .eq('codigo', couponCode.toUpperCase())
+        .eq('empresa_id', company.id)
+        .eq('ativo', true)
+        .single()
+
+      if (error || !data) {
+        toast.error("Cupom inválido ou expirado.")
+        setAppliedCoupon(null)
+        setDiscountAmount(0)
+        return
+      }
+
+      if (subtotal < (data.valor_minimo || 0)) {
+        toast.error(`Pedido mínimo para este cupom: R$ ${data.valor_minimo}`)
+        return
+      }
+
+      let discount = 0
+      if (data.tipo === 'percentual') {
+        discount = subtotal * (data.valor / 100)
+      } else if (data.tipo === 'fixo') {
+        discount = data.valor
+      } else if (data.tipo === 'frete_gratis') {
+        discount = deliveryFee
+      }
+
+      setAppliedCoupon(data)
+      setDiscountAmount(discount)
+      toast.success("Cupom aplicado com sucesso! 🎉")
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setIsValidatingCoupon(false)
+    }
+  }
 
   async function handleSubmitOrder() {
     if (!customerInfo.name || !customerInfo.phone) {
@@ -232,6 +307,8 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
       })
       return
     }
+
+    setIsSubmitting(true)
 
     try {
       const { data: order, error: orderError } = await supabase
@@ -265,6 +342,121 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
 
       if (itemsError) throw itemsError
 
+      // --- PROFESSIONAL SAAS INTEGRATION (Blueprint V2) ---
+      try {
+        // 1. CRM: Find or Create Client
+        let clientId = null
+        const { data: existingClient } = await supabase
+          .from('clientes')
+          .select('id')
+          .eq('empresa_id', company.id)
+          .eq('telefone', customerInfo.phone)
+          .maybeSingle()
+
+        if (existingClient) {
+          clientId = existingClient.id
+        } else {
+          const { data: newClient } = await supabase
+            .from('clientes')
+            .insert({
+              empresa_id: company.id,
+              nome: customerInfo.name,
+              telefone: customerInfo.phone,
+              endereco: customerInfo.address
+            })
+            .select()
+            .single()
+          if (newClient) clientId = newClient.id
+        }
+
+        // 1.1 CRM Legacy: Find or Create Client in 'clients' table
+        let legacyClientId = null
+        const { data: existingLegacyClient } = await supabase
+          .from('clients')
+          .select('id')
+          .eq('company_id', company.id)
+          .eq('phone', customerInfo.phone)
+          .maybeSingle()
+        
+        if (existingLegacyClient) {
+          legacyClientId = existingLegacyClient.id
+        } else {
+          const { data: newLegacyClient } = await supabase
+            .from('clients')
+            .insert({
+              company_id: company.id,
+              name: customerInfo.name,
+              phone: customerInfo.phone,
+              address: customerInfo.address
+            })
+            .select()
+            .single()
+          if (newLegacyClient) legacyClientId = newLegacyClient.id
+        }
+
+        // 2. Insert into professional 'pedidos' table
+        const { data: profOrder } = await supabase
+          .from('pedidos')
+          .insert({
+            empresa_id: company.id,
+            cliente_id: clientId,
+            tipo_pedido: customerInfo.address ? 'delivery' : 'pickup',
+            status: 'recebido',
+            valor_total: total,
+            taxa_entrega: deliveryFee,
+            desconto: discountAmount,
+            cupom_id: appliedCoupon?.id,
+            endereco_entrega: customerInfo.address,
+            observacoes: customerInfo.notes,
+            payment_method: customerInfo.payment_method
+          })
+          .select()
+          .single()
+
+        // 2.1 Insert into legacy 'orders' table for /dashboard/pedidos compatibility
+        await supabase
+          .from('orders')
+          .insert({
+            company_id: company.id,
+            user_id: company.owner_id,
+            client_id: legacyClientId,
+            product_name: cart.map(i => `${i.quantity}x ${i.name}`).join(', '),
+            total_value: total,
+            deposit_value: customerInfo.payment_method === 'pix' ? total : 0,
+            delivery_date: new Date().toISOString(),
+            status: 'confirmado',
+            installments: 1
+          })
+
+        if (profOrder) {
+          // 3. Insert professional items
+          await supabase
+            .from('itens_pedido')
+            .insert(cart.map(item => ({
+              pedido_id: profOrder.id,
+              produto_id: item.id,
+              quantidade: item.quantity,
+              preco: item.price
+            })))
+
+          // 4. Register Coupon Usage if applicable
+          if (appliedCoupon) {
+            await supabase.from('uso_cupons').insert({
+              cupom_id: appliedCoupon.id,
+              cliente_id: clientId,
+              pedido_id: profOrder.id
+            })
+            // Increment usage count
+            await supabase
+              .from('cupons')
+              .update({ usos: (appliedCoupon.usos || 0) + 1 })
+              .eq('id', appliedCoupon.id)
+          }
+        }
+      } catch (e) {
+        console.error("Professional SaaS submission failed:", e)
+      }
+
       toast.success("Pedido enviado com sucesso! 🎉")
       setCart([])
       setIsCheckoutOpen(false)
@@ -277,13 +469,15 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
       const phone = rawPhone.replace(/\D/g, "")
 
       if (phone) {
-        const url = `https://wa.me/55${phone}?text=${message}`
+      const url = `https://wa.me/55${phone}?text=${message}`
         window.open(url, "_blank")
       }
 
     } catch (error: any) {
-      toast.error("Erro ao enviar pedido.")
-      console.error(error)
+      console.error("Order submission error:", error)
+      toast.error("Erro ao enviar pedido. Tente novamente.")
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -758,9 +952,57 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
               {cart.length > 0 && (
                 <div className="p-8 border-t border-slate-100 bg-[#FAFAFA] space-y-6 rounded-t-[40px] shadow-[0_-20px_50px_rgba(0,0,0,0.05)]">
                   <div className="space-y-4">
+                    {/* Voucher / Coupon V3 */}
+                    <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm space-y-4">
+                       <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Cupom de Desconto</p>
+                       <div className="flex gap-2">
+                          <Input 
+                            placeholder="CÓDIGO" 
+                            className="h-12 rounded-xl bg-slate-50 border-none font-bold placeholder:text-slate-300"
+                            value={couponCode}
+                            onChange={e => setCouponCode(e.target.value.toUpperCase())}
+                            disabled={!!appliedCoupon}
+                          />
+                          <Button 
+                            className={cn(
+                              "h-12 px-6 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all",
+                              appliedCoupon ? "bg-emerald-500 hover:bg-emerald-600" : "bg-slate-900 hover:bg-slate-800"
+                            )}
+                            onClick={appliedCoupon ? () => { setAppliedCoupon(null); setDiscountAmount(0); setCouponCode(""); } : handleApplyCoupon}
+                            disabled={isValidatingCoupon}
+                          >
+                            {isValidatingCoupon ? "..." : appliedCoupon ? "Remover" : "Aplicar"}
+                          </Button>
+                       </div>
+                       {appliedCoupon && (
+                         <div className="flex items-center gap-2 text-emerald-600">
+                           <CheckCircle2 className="size-4" />
+                           <span className="text-[10px] font-black uppercase tracking-widest">
+                             Cupom {appliedCoupon.codigo} aplicado! (- R$ {discountAmount.toFixed(2)})
+                           </span>
+                         </div>
+                       )}
+                    </div>
+
+                    {/* Loyalty Points Preview V3 */}
+                    <div className="bg-amber-50 rounded-3xl p-6 border border-amber-100/50 flex items-center justify-between">
+                       <div className="flex items-center gap-3">
+                          <div className="size-10 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-600">
+                             <Star className="size-5 fill-current" />
+                          </div>
+                          <div className="space-y-0.5">
+                             <p className="text-[10px] font-black uppercase text-amber-600/60 tracking-widest leading-none">Programa de Pontos</p>
+                             <p className="font-black text-slate-900 uppercase italic tracking-tight text-xs">Você ganhará <span className="text-amber-600">{Math.floor(subtotal)} pontos</span></p>
+                          </div>
+                       </div>
+                    </div>
+
                     <div className="flex justify-between items-center px-2">
                       <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Total do pedido</span>
-                      <span className="text-3xl font-black text-slate-900 italic tracking-tighter">R$ {total.toFixed(2)}</span>
+                      <div className="text-right">
+                         {discountAmount > 0 && <p className="text-xs font-bold text-rose-500 line-through opacity-50">R$ {(subtotal + deliveryFee).toFixed(2)}</p>}
+                         <span className="text-3xl font-black text-slate-900 italic tracking-tighter">R$ {total.toFixed(2)}</span>
+                      </div>
                     </div>
                   </div>
                   <Button 
@@ -839,9 +1081,10 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
 
             <Button 
               onClick={handleSubmitOrder} 
+              disabled={isSubmitting}
               className="w-full h-18 rounded-[32px] bg-[#FF4D6D] hover:bg-[#FF4D6D]/90 text-white font-black uppercase italic tracking-[0.2em] shadow-2xl transition-all active:scale-95 py-8"
             >
-              Enviar para o WhatsApp 🚀
+              {isSubmitting ? "Enviando..." : "Enviar para o WhatsApp 🚀"}
             </Button>
           </div>
         </DialogContent>

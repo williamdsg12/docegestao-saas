@@ -23,7 +23,9 @@ import {
   Coffee,
   Globe,
   Crown,
-  Calculator
+  Calculator,
+  Ticket,
+  Printer
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -57,6 +59,22 @@ const menuGroups = [
     ]
   },
   {
+    name: "Sistema Delivery",
+    items: [
+      { name: "Painel Delivery", icon: ShoppingCart, path: "/dashboard/delivery-painel", color: "text-cyan-600", bg: "bg-cyan-50", badge: "Live" },
+      { name: "Cozinha", icon: Coffee, path: "/dashboard/cozinha", color: "text-orange-600", bg: "bg-orange-50" },
+      { name: "Entregas", icon: Globe, path: "/dashboard/entregas", color: "text-emerald-600", bg: "bg-emerald-50" },
+      { name: "Equipe", icon: Users, path: "/dashboard/equipe", color: "text-indigo-600", bg: "bg-indigo-50" },
+      { name: "Histórico", icon: ClipboardList, path: "/dashboard/delivery-painel/historico", color: "text-slate-600", bg: "bg-slate-50" },
+    ]
+  },
+  {
+    name: "Marketing & Fidelidade",
+    items: [
+      { name: "Promoções & VIP", icon: Ticket, path: "/dashboard/marketing", color: "text-pink-600", bg: "bg-pink-50", badge: "V3" },
+    ]
+  },
+  {
     name: "Financeiro",
     items: [
       { name: "Precificação Inteligente", icon: Calculator, path: "/dashboard/precificacao-inteligente", color: "text-rose-600", bg: "bg-rose-50", badge: "Novo" },
@@ -68,6 +86,7 @@ const menuGroups = [
     name: "Configurações",
     items: [
       { name: "Perfil & Config.", icon: Settings, path: "/dashboard/settings/profile", color: "text-slate-600", bg: "bg-slate-50" },
+      { name: "Impressoras", icon: Printer, path: "/dashboard/settings/impressoras", color: "text-orange-600", bg: "bg-orange-50", badge: "PRO" },
     ]
   }
 ]

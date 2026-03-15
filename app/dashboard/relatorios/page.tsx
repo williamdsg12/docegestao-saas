@@ -54,25 +54,32 @@ export default function RelatoriosPage() {
             const startDate = new Date()
             startDate.setDate(startDate.getDate() - days)
 
-            const [ordersRes, transRes, clientsRes] = await Promise.all([
-                supabase.from('orders').select('id, total').eq('company_id', profile?.company_id).gte('created_at', startDate.toISOString()),
-                supabase.from('transactions').select('amount').eq('company_id', profile?.company_id).eq('type', 'receita').gte('transaction_date', startDate.toISOString()),
-                supabase.from('clients').select('id', { count: 'exact' }).eq('company_id', profile?.company_id).gte('created_at', startDate.toISOString())
-            ])
+            // 1. Fetch orders from the NEW professional table
+            const { data: pedidosData } = await supabase
+                .from('pedidos')
+                .select('valor_total, created_at')
+                .eq('empresa_id', profile?.company_id)
+                .gte('created_at', startDate.toISOString())
 
-            const totalFaturamento = transRes.data?.reduce((acc, t) => acc + t.amount, 0) || 0
-            const totalPedidos = ordersRes.data?.length || 0
-            const totalClientes = clientsRes.count || 0
+            // 2. Fetch clients from NEW table
+            const { count: totalClientes } = await supabase
+                .from('clientes')
+                .select('id', { count: 'exact' })
+                .eq('empresa_id', profile?.company_id)
+                .gte('created_at', startDate.toISOString())
+
+            const totalFaturamento = pedidosData?.reduce((acc, p) => acc + (p.valor_total || 0), 0) || 0
+            const totalPedidos = pedidosData?.length || 0
             const ticketMedio = totalPedidos > 0 ? totalFaturamento / totalPedidos : 0
 
             setStats({
                 faturamento: totalFaturamento,
                 pedidos: totalPedidos,
-                clientes: totalClientes,
+                clientes: totalClientes || 0,
                 ticketMedio
             })
         } catch (e) {
-            console.error(e)
+            console.error("Error fetching stats:", e)
         } finally {
             setLoading(false)
         }
