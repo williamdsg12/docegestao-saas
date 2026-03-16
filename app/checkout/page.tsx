@@ -117,18 +117,25 @@ export default function CheckoutPage() {
         .insert({
           empresa_id: company.id,
           cliente_id: clientId,
+          cliente_nome: form.name, // Added for redundancy/ease of use
+          cliente_telefone: form.phone, // Added for redundancy/ease of use
           tipo_pedido: form.type,
           status: 'novo',
           valor_total: total,
           taxa_entrega: deliveryFee,
           endereco_entrega: form.address,
-          observacoes: form.complement, // Using complement as notes for now
+          observacoes: form.complement,
           payment_method: form.payment
         })
         .select()
         .single()
 
-      if (profOrderError) throw profOrderError
+      if (profOrderError) {
+        console.error("Supabase error (pedidos):", profOrderError)
+        throw new Error(`Erro ao salvar pedido: ${profOrderError.message}`)
+      }
+      
+      console.log("Pedido salvo com sucesso:", profOrder)
 
       // 2.1 Insert into legacy 'orders' table
       await supabase
