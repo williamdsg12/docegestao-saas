@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, use } from "react"
+import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { motion, AnimatePresence } from "framer-motion"
 import { 
@@ -47,6 +48,7 @@ interface CartItem {
 
 export default function PublicMenuPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params)
+  const router = useRouter()
   const [company, setCompany] = useState<any>(null)
   const [categories, setCategories] = useState<any[]>([])
   const [products, setProducts] = useState<any[]>([])
@@ -475,7 +477,17 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
 
     } catch (error: any) {
       console.error("Order submission error:", error)
-      toast.error("Erro ao enviar pedido. Tente novamente.")
+      
+      if (error?.code === "42501") {
+        toast.error("Erro de permissão no banco de dados. Contacte o suporte.", { duration: 5000 })
+      } else {
+        toast.error("Erro ao enviar pedido. Verifique sua conexão.")
+      }
+      
+      // Se for um erro crítico, podemos fechar o checkout para não travar
+      // ou manter aberto para o usuário tentar novamente se for algo corrigível.
+      // Neste caso de RLS, fechar ajuda a "destravar" o erro visual do cliente.
+      setIsCheckoutOpen(false) 
     } finally {
       setIsSubmitting(false)
     }
@@ -1007,12 +1019,14 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
                   </div>
                   <Button 
                     onClick={() => {
-                        setIsCheckoutOpen(true)
-                        setIsCartOpen(false) // Fechar o carrinho ao abrir o checkout para evitar conflitos de overlay
+                        // Persist data for the new checkout page
+                        localStorage.setItem('checkout_cart', JSON.stringify(cart))
+                        localStorage.setItem('checkout_company', JSON.stringify(company))
+                        router.push('/checkout')
                     }} 
                     className="w-full h-16 rounded-[32px] bg-[#FF4D6D] text-white font-black uppercase italic tracking-[0.2em] shadow-xl shadow-pink-100 flex items-center justify-center gap-4 active:scale-95 transition-all outline-none"
                   >
-                    Confirmar Pedido <ArrowRight className="size-5" />
+                    Ir para o Checkout <ArrowRight className="size-5" />
                   </Button>
                 </div>
               )}

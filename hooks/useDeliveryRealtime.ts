@@ -24,17 +24,17 @@ export function useDeliveryRealtime(companyId: string) {
         toast.error("Áudio bloqueado! Clique em 'Ativar Som' no painel.")
       })
     } else {
-       console.warn("Objeto de áudio não inicializado.")
+      console.warn("Objeto de áudio não inicializado.")
     }
   }, [audio])
 
   const unlockAudio = useCallback(() => {
     if (audio) {
-       audio.play().then(() => {
-          audio.pause()
-          audio.currentTime = 0
-          toast.success("Áudio ativado com sucesso!")
-       }).catch(e => console.error("Erro ao desbloquear áudio:", e))
+      audio.play().then(() => {
+        audio.pause()
+        audio.currentTime = 0
+        toast.success("Áudio ativado com sucesso!")
+      }).catch(e => console.error("Erro ao desbloquear áudio:", e))
     }
   }, [audio])
 
