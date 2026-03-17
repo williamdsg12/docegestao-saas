@@ -93,6 +93,7 @@ export default function RootLayout({
           }}
         />
         {/* End Meta Pixel Code */}
+        <script type="module" src="https://ajax.googleapis.com/ajax/libs/@googlemaps/extended-component-library/0.6.11/index.min.js" async />
       </head>
       <body className={`${inter.variable} ${dmSans.variable} ${dmSerif.variable} font-sans antialiased`}>
         {/* Google Tag Manager (noscript) */}

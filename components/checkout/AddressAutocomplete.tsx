@@ -1,12 +1,19 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { useJsApiLoader, Autocomplete } from "@react-google-maps/api"
 import { Input } from "@/components/ui/input"
 import { MapPin, Search } from "lucide-react"
 import { toast } from "sonner"
 
-const libraries: ("places")[] = ["places"]
+// Declare custom elements for TypeScript
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      'gmpx-api-loader': any;
+      'gmpx-place-picker': any;
+    }
+  }
+}
 
 interface AddressAutocompleteProps {
   onAddressSelect: (address: any) => void
@@ -15,38 +22,32 @@ interface AddressAutocompleteProps {
 }
 
 export function AddressAutocomplete({ onAddressSelect, placeholder, className }: AddressAutocompleteProps) {
-  const { isLoaded } = useJsApiLoader({
-    id: 'google-map-script',
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || "",
-    libraries
-  })
+  const pickerRef = useRef<any>(null)
 
-  const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null)
+  useEffect(() => {
+    const picker = pickerRef.current
+    if (!picker) return
 
-  const onLoad = (auto: google.maps.places.Autocomplete) => {
-    setAutocomplete(auto)
-  }
-
-  const onPlaceChanged = () => {
-    if (autocomplete !== null) {
-      const place = autocomplete.getPlace()
-
-      if (!place.geometry || !place.geometry.location) {
-        toast.error("Por favor, selecione um endereço da lista.")
+    const handlePlaceChange = () => {
+      const place = picker.value
+      
+      if (!place || !place.location) {
         return
       }
 
-      const addressComponents = place.address_components
+      // Extract structured data using the library's place object
+      // Note: Place Extended Components handle most of this, but we'll map it to our existing schema
+      const addressComponents = place.addressComponents
       
       const getComponent = (type: string, useShortName = false) => {
-        const comp = addressComponents?.find(c => c.types.includes(type))
-        return useShortName ? comp?.short_name : comp?.long_name
+        const comp = addressComponents?.find((c: any) => c.types.includes(type))
+        return useShortName ? comp?.shortName : comp?.longName
       }
 
-      const address = {
-        formatted_address: place.formatted_address,
-        lat: place.geometry.location.lat(),
-        lng: place.geometry.location.lng(),
+      const structuredAddress = {
+        formatted_address: place.formattedAddress,
+        lat: place.location.lat(),
+        lng: place.location.lng(),
         street: getComponent("route"),
         number: getComponent("street_number"),
         neighborhood: getComponent("sublocality_level_1") || getComponent("sublocality") || getComponent("neighborhood"),
@@ -55,25 +56,53 @@ export function AddressAutocomplete({ onAddressSelect, placeholder, className }:
         zip: getComponent("postal_code"),
       }
 
-      console.log("Structured Address:", address)
-      onAddressSelect(address)
+      console.log("Modern Structured Address:", structuredAddress)
+      onAddressSelect(structuredAddress)
     }
-  }
 
-  if (!isLoaded) return <Input disabled placeholder="Carregando endereços..." className={className} />
+    picker.addEventListener('gmpx-placechange', handlePlaceChange)
+    return () => picker.removeEventListener('gmpx-placechange', handlePlaceChange)
+  }, [onAddressSelect])
 
   return (
-    <div className="relative w-full">
-      <Autocomplete onLoad={onLoad} onPlaceChanged={onPlaceChanged}>
-        <div className="relative">
-          <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-          <Input
-            type="text"
-            placeholder={placeholder || "Digite seu endereço..."}
-            className={`pl-12 h-14 rounded-2xl border-rose-100 bg-rose-50/20 focus:ring-primary/10 font-bold ${className}`}
-          />
-        </div>
-      </Autocomplete>
+    <div className="relative w-full modern-autocomplete">
+      <gmpx-api-loader 
+        key={process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY} 
+        solution-channel="GMP_GE_mapsandplacesautocomplete_v2"
+      />
+      
+      <div className="relative group">
+        <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400 z-10" />
+        <gmpx-place-picker 
+          ref={pickerRef}
+          placeholder={placeholder || "Digite seu endereço..."}
+          class="modern-picker"
+        />
+      </div>
+
+      <style jsx global>{`
+        gmpx-place-picker {
+          width: 100%;
+          --gmpx-border-radius: 28px;
+          --gmpx-font-family: inherit;
+          --gmpx-font-size: 14px;
+        }
+        gmpx-place-picker::part(input) {
+          padding-left: 3rem;
+          height: 64px;
+          border: 2px solid transparent;
+          background-color: #f8fafc;
+          border-radius: 28px;
+          font-weight: 700;
+          color: #334155;
+          transition: all 0.2s;
+        }
+        gmpx-place-picker:focus-within::part(input) {
+          border-color: #fecdd3;
+          background-color: white;
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+      `}</style>
     </div>
   )
 }
