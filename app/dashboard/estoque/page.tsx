@@ -237,13 +237,13 @@ export default function EstoquePage() {
                 className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between"
             >
                 <div>
-                    <h1 className="text-4xl md:text-5xl font-black tracking-tight text-slate-900 mb-2 uppercase italic leading-none">
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-slate-900 mb-2 uppercase italic leading-none text-center lg:text-left">
                         Gestão de <span className="text-primary tracking-tighter">Estoque</span>
                     </h1>
-                    <p className="text-slate-500 font-medium">Controle de insumos e alertas de reposição para sua produção.</p>
+                    <p className="text-slate-500 font-medium text-sm md:text-base text-center lg:text-left">Controle de insumos e alertas de reposição para sua produção.</p>
                 </div>
-                <div className="flex flex-wrap items-center gap-4">
-                    <Button variant="outline" className="h-14 px-8 rounded-3xl border-white bg-white/40 backdrop-blur-md text-slate-600 hover:text-primary font-black uppercase tracking-widest text-[10px] shadow-lg border transition-all">
+                <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
+                    <Button variant="outline" className="h-14 px-8 rounded-3xl border-white bg-white/40 backdrop-blur-md text-slate-600 hover:text-primary font-black uppercase tracking-widest text-[10px] shadow-lg border transition-all w-full sm:w-auto">
                         <History className="mr-2 size-4" />
                         Movimentações
                     </Button>
@@ -252,12 +252,12 @@ export default function EstoquePage() {
                         else setNewIngredientOpen(true)
                     }}>
                         <DialogTrigger asChild>
-                            <Button className="h-14 px-10 rounded-[20px] bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-widest text-xs shadow-xl shadow-primary/30 transition-all hover:scale-105 active:scale-95">
+                            <Button className="h-14 px-10 rounded-[20px] bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-widest text-xs shadow-xl shadow-primary/30 transition-all hover:scale-105 active:scale-95 w-full sm:w-auto">
                                 <Plus className="mr-2 size-5" />
                                 Entrada de Insumo
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="sm:max-w-2xl border-white/60 bg-white/90 backdrop-blur-2xl p-10 rounded-[40px] shadow-2xl overflow-hidden">
+                        <DialogContent className="w-[95vw] sm:max-w-2xl border-white/60 bg-white/90 backdrop-blur-2xl p-6 sm:p-10 rounded-[32px] sm:rounded-[40px] shadow-2xl overflow-hidden text-slate-900 max-h-[90vh] overflow-y-auto">
                             <div className="absolute -top-24 -right-24 size-48 bg-primary/10 rounded-full blur-3xl" />
                             <DialogHeader className="mb-8 relative z-10">
                                 <DialogTitle className="text-3xl font-black tracking-tighter uppercase italic">
@@ -265,8 +265,8 @@ export default function EstoquePage() {
                                 </DialogTitle>
                             </DialogHeader>
 
-                            <div className="grid gap-6 relative z-10">
-                                <div className="grid grid-cols-2 gap-6">
+                            <div className="grid gap-6 relative z-10 p-1">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                                     <div className="space-y-2">
                                         <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Nome</Label>
                                         <Input
@@ -284,7 +284,7 @@ export default function EstoquePage() {
                                         />
                                     </div>
                                 </div>
-                                <div className="grid grid-cols-3 gap-6">
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
                                     <div className="space-y-2">
                                         <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Qtd Atual</Label>
                                         <Input
@@ -347,7 +347,7 @@ export default function EstoquePage() {
             </motion.div>
 
             {/* Stats Overview */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                 {stats.map((stat, i) => (
                     <motion.div
                         key={stat.label}
@@ -355,7 +355,7 @@ export default function EstoquePage() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.1, type: "spring", stiffness: 100 }}
                     >
-                        <div className="group relative h-full overflow-hidden rounded-[32px] border border-white/60 bg-white/40 backdrop-blur-xl p-8 hover:shadow-2xl hover:shadow-primary/10 transition-all duration-500 hover:-translate-y-2">
+                        <div className="group relative h-full overflow-hidden rounded-[32px] border border-white/60 bg-white/40 backdrop-blur-xl p-6 md:p-8 hover:shadow-2xl hover:shadow-primary/10 transition-all duration-500 hover:-translate-y-2">
                             <div className="absolute -top-12 -right-12 size-40 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors" />
 
                             <div className="flex items-center justify-between mb-6 relative z-10">
@@ -384,14 +384,14 @@ export default function EstoquePage() {
                         onChange={(e) => setSearch(e.target.value)}
                     />
                 </div>
-                <Button variant="outline" className="h-14 px-8 rounded-3xl border-white bg-white/40 backdrop-blur-md text-slate-600 hover:text-primary font-black uppercase tracking-widest text-[10px] shadow-lg border">
+                <Button variant="outline" className="h-14 px-8 rounded-3xl border-white bg-white/40 backdrop-blur-md text-slate-600 hover:text-primary font-black uppercase tracking-widest text-[10px] shadow-lg border w-full md:w-auto">
                     <Filter className="mr-2 size-4" />
                     Filtros Avançados
                 </Button>
             </div>
 
             {/* Stock Grid 2.0 */}
-            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 md:gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 <AnimatePresence mode="popLayout">
                     {filtered.map((item, i) => {
                         const isCritical = (item.quantidade_atual || 0) < (item.estoque_minimo || 0)
@@ -405,7 +405,7 @@ export default function EstoquePage() {
                                 animate={{ opacity: 1, scale: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.2 } }}
                                 transition={{ delay: i * 0.05, type: "spring", stiffness: 100 }}
-                                className="group relative flex flex-col overflow-hidden rounded-[40px] border border-white/60 bg-white/40 backdrop-blur-xl p-8 hover:shadow-[0_20px_50px_rgba(244,114,182,0.15)] transition-all duration-500 hover:-translate-y-2"
+                                className="group relative flex flex-col overflow-hidden rounded-[32px] sm:rounded-[40px] border border-white/60 bg-white/40 backdrop-blur-xl p-6 sm:p-8 hover:shadow-[0_20px_50px_rgba(244,114,182,0.15)] transition-all duration-500 hover:-translate-y-2"
                             >
                                 {/* Warning Glow for Critical */}
                                 {isCritical && (

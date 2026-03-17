@@ -104,20 +104,20 @@ export default function ProducaoPage() {
                 className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between"
             >
                 <div>
-                    <h1 className="text-4xl md:text-5xl font-black tracking-tight text-slate-900 mb-2 uppercase italic leading-none">
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-slate-900 mb-2 uppercase italic leading-none text-center lg:text-left">
                         Gestão de <span className="text-primary tracking-tighter">Ciclo</span>
                     </h1>
-                    <p className="text-slate-500 font-medium italic">Visão estratégica da sua produção em tempo real.</p>
+                    <p className="text-slate-500 font-medium italic text-sm md:text-base text-center lg:text-left">Visão estratégica da sua produção em tempo real.</p>
                 </div>
 
-                <div className="flex items-center gap-4">
-                    <div className="hidden md:flex flex-col items-end mr-4">
+                <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
+                    <div className="hidden sm:flex flex-col items-center lg:items-end lg:mr-4">
                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Capacidade Atual</span>
                         <div className="flex gap-1 mt-1">
                             {[1, 2, 3, 4, 5].map(i => <div key={i} className={cn("h-1.5 w-6 rounded-full", i <= 3 ? "bg-primary" : "bg-slate-200")}></div>)}
                         </div>
                     </div>
-                    <Button className="h-14 px-10 rounded-[20px] bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-widest text-xs shadow-xl shadow-primary/30 transition-all hover:scale-105 active:scale-95">
+                    <Button className="h-14 px-10 rounded-[20px] bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-widest text-xs shadow-xl shadow-primary/30 transition-all hover:scale-105 active:scale-95 w-full sm:w-auto">
                         <Plus className="mr-2 size-5" />
                         Novo Ciclo
                     </Button>
@@ -125,14 +125,14 @@ export default function ProducaoPage() {
             </motion.div>
 
             {/* Kanban Board Container */}
-            <div className="flex flex-1 gap-8 overflow-x-auto pb-10 scrollbar-hide min-h-[700px] -mx-4 px-4 lg:mx-0 lg:px-0">
+            <div className="responsive-kanban-container min-h-[700px]">
                 {columns.map((column, colIdx) => (
                     <motion.div
                         key={column.id}
                         initial={{ opacity: 0, x: 50 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: colIdx * 0.1 }}
-                        className="flex-1 min-w-[340px] flex flex-col gap-6"
+                        className="flex-1 min-w-[300px] sm:min-w-[340px] flex flex-col gap-6"
                     >
                         {/* Column Header */}
                         <div className="flex items-center justify-between px-4">
@@ -165,7 +165,7 @@ export default function ProducaoPage() {
                                             animate={{ opacity: 1, scale: 1, y: 0 }}
                                             exit={{ opacity: 0, scale: 0.8 }}
                                             transition={{ duration: 0.4, type: "spring", stiffness: 100 }}
-                                            className="group relative cursor-pointer overflow-hidden rounded-[32px] border border-white/60 bg-white/60 backdrop-blur-md p-6 hover:shadow-[0_20px_50px_rgba(244,114,182,0.1)] transition-all duration-500 hover:-translate-y-1 hover:bg-white/80"
+                                            className="group relative cursor-pointer overflow-hidden rounded-[24px] sm:rounded-[32px] border border-white/60 bg-white/60 backdrop-blur-md p-5 sm:p-6 hover:shadow-[0_20px_50px_rgba(244,114,182,0.1)] transition-all duration-500 hover:-translate-y-1 hover:bg-white/80"
                                         >
                                             {/* Priority Badge & Actions */}
                                             <div className="flex items-center justify-between mb-5">

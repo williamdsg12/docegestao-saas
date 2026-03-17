@@ -183,43 +183,43 @@ export default function FinanceiroPage() {
                 className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between"
             >
                 <div>
-                    <h1 className="text-4xl md:text-5xl font-black tracking-tight text-slate-900 mb-2 uppercase italic leading-none">
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-slate-900 mb-2 uppercase italic leading-none">
                         Gestão <span className="text-primary tracking-tighter">Financeira</span>
                     </h1>
-                    <p className="text-slate-500 font-medium">Controle cada centavo da sua produção e maximize seus lucros.</p>
+                    <p className="text-slate-500 font-medium text-sm md:text-base">Controle cada centavo da sua produção e maximize seus lucros.</p>
                 </div>
-                <div className="flex flex-wrap items-center gap-4">
-                    <Button variant="outline" className="h-14 px-8 rounded-3xl border-white bg-white/40 backdrop-blur-md text-slate-600 hover:text-primary font-black uppercase tracking-widest text-[10px] shadow-lg border transition-all">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full lg:w-auto">
+                    <Button variant="outline" className="h-14 px-8 rounded-3xl border-white bg-white/40 backdrop-blur-md text-slate-600 hover:text-primary font-black uppercase tracking-widest text-[10px] shadow-lg border transition-all w-full sm:w-auto">
                         <Download className="mr-2 size-4" />
                         Relatórios (PDF)
                     </Button>
                     <Input 
                         type="month"
-                        className="h-14 w-40 rounded-3xl border-white/60 bg-white/40 backdrop-blur-md text-slate-900 font-bold px-5 shadow-lg"
+                        className="h-14 w-full sm:w-40 rounded-3xl border-white/60 bg-white/40 backdrop-blur-md text-slate-900 font-bold px-5 shadow-lg"
                         value={monthFilter}
                         onChange={e => setMonthFilter(e.target.value)}
                     />
 
                     <Dialog open={newTxOpen} onOpenChange={setNewTxOpen}>
                         <DialogTrigger asChild>
-                            <div className="flex gap-2">
+                            <div className="grid grid-cols-1 sm:flex gap-2 w-full sm:w-auto">
                                 <Button 
                                     onClick={() => setTxForm(prev => ({ ...prev, type: "entrada" }))}
-                                    className="h-14 px-8 rounded-[20px] bg-green-500 hover:bg-green-600 text-white font-black uppercase tracking-widest text-[10px] shadow-xl shadow-green-500/30 transition-all hover:scale-105 active:scale-95"
+                                    className="h-14 px-8 rounded-[20px] bg-green-500 hover:bg-green-600 text-white font-black uppercase tracking-widest text-[10px] shadow-xl shadow-green-500/30 transition-all hover:scale-105 active:scale-95 w-full"
                                 >
                                     <TrendingUp className="mr-2 size-4" />
                                     Nova Entrada
                                 </Button>
                                 <Button 
                                     onClick={() => setTxForm(prev => ({ ...prev, type: "saida" }))}
-                                    className="h-14 px-8 rounded-[20px] bg-rose-500 hover:bg-rose-600 text-white font-black uppercase tracking-widest text-[10px] shadow-xl shadow-rose-500/30 transition-all hover:scale-105 active:scale-95"
+                                    className="h-14 px-8 rounded-[20px] bg-rose-500 hover:bg-rose-600 text-white font-black uppercase tracking-widest text-[10px] shadow-xl shadow-rose-500/30 transition-all hover:scale-105 active:scale-95 w-full"
                                 >
                                     <TrendingDown className="mr-2 size-4" />
                                     Nova Despesa
                                 </Button>
                             </div>
                         </DialogTrigger>
-                        <DialogContent className="sm:max-w-2xl border-white/60 bg-white/90 backdrop-blur-2xl p-10 rounded-[40px] shadow-2xl overflow-hidden text-slate-900">
+                        <DialogContent className="w-[95vw] sm:max-w-2xl border-white/60 bg-white/90 backdrop-blur-2xl p-6 sm:p-10 rounded-[32px] sm:rounded-[40px] shadow-2xl overflow-hidden text-slate-900 max-h-[90vh] overflow-y-auto">
                             <div className="absolute -top-24 -right-24 size-48 bg-primary/10 rounded-full blur-3xl" />
                             <DialogHeader className="mb-8 relative z-10">
                                 <DialogTitle className="text-3xl font-black tracking-tighter uppercase italic">
@@ -239,7 +239,7 @@ export default function FinanceiroPage() {
                                     />
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-6">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                                     <div className="space-y-2">
                                         <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Valor</Label>
                                         <div className="relative">
@@ -265,7 +265,7 @@ export default function FinanceiroPage() {
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-6">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                                     <div className="space-y-2">
                                         <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Categoria</Label>
                                         <Input
@@ -300,7 +300,7 @@ export default function FinanceiroPage() {
             </motion.div>
 
             {/* Financial Stats Grid */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                 {stats.map((stat, i) => (
                     <motion.div
                         key={stat.label}
@@ -308,7 +308,7 @@ export default function FinanceiroPage() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.1, type: "spring", stiffness: 100 }}
                     >
-                        <div className="group relative h-full overflow-hidden rounded-[32px] border border-white/60 bg-white/40 backdrop-blur-xl p-8 hover:shadow-2xl hover:shadow-primary/10 transition-all duration-500 hover:-translate-y-2">
+                        <div className="group relative h-full overflow-hidden rounded-[32px] border border-white/60 bg-white/40 backdrop-blur-xl p-6 md:p-8 hover:shadow-2xl hover:shadow-primary/10 transition-all duration-500 hover:-translate-y-2">
                             <div className="absolute -top-12 -right-12 size-40 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors" />
 
                             <div className="flex items-center justify-between mb-6 relative z-10">
@@ -333,7 +333,7 @@ export default function FinanceiroPage() {
                     initial={{ opacity: 0, scale: 0.98 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.4 }}
-                    className="lg:col-span-2 rounded-[40px] border border-white/50 bg-white/30 backdrop-blur-xl p-10 shadow-[0_8px_30px_rgba(0,0,0,0.02)] relative overflow-hidden"
+                    className="lg:col-span-2 rounded-[32px] sm:rounded-[40px] border border-white/50 bg-white/30 backdrop-blur-xl p-6 sm:p-10 shadow-[0_8px_30px_rgba(0,0,0,0.02)] relative overflow-hidden"
                 >
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
                         <div>
@@ -480,7 +480,7 @@ export default function FinanceiroPage() {
                         </div>
                     </div>
 
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 relative z-10">
+                    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 relative z-10">
                         {filteredTransactions.slice(0, 6).map((tx, i) => (
                             <motion.div
                                 initial={{ opacity: 0, y: 20 }}

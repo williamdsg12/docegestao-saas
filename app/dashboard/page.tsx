@@ -205,7 +205,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       {/* KPI Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {kpis.map((kpi, i) => (
           <motion.div
             key={kpi.title}
@@ -216,7 +216,7 @@ export default function DashboardPage() {
             className="group"
           >
             <Card className="border-none shadow-[var(--shadow-card)] rounded-[32px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border)] transition-all duration-300">
-              <CardContent className="p-8 relative">
+              <CardContent className="p-6 md:p-8 relative">
                 <div className="flex justify-between items-start mb-6">
                   <div className={cn("size-14 rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform group-hover:scale-110", kpi.bg)}>
                     <kpi.icon className="size-7" />
@@ -249,10 +249,10 @@ export default function DashboardPage() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.3 }}
-          className="lg:col-span-2"
+          className="lg:col-span-2 w-full"
         >
-          <Card className="border-none shadow-[var(--shadow-card)] rounded-[40px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border)]">
-            <CardHeader className="p-8 pb-2">
+          <Card className="border-none shadow-[var(--shadow-card)] rounded-[40px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border)] w-full">
+            <CardHeader className="p-6 md:p-8 pb-2">
               <div className="flex items-center gap-4">
                 <div className="size-12 rounded-2xl bg-[var(--primary)] flex items-center justify-center text-white shadow-lg shadow-primary/20">
                   <TrendingUp className="size-6" />
@@ -318,10 +318,10 @@ export default function DashboardPage() {
            transition={{ delay: 0.4 }}
         >
           <Card className="border-none shadow-[var(--shadow-card)] rounded-[40px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border)] h-full">
-            <CardHeader className="p-8 pb-2 text-center">
+            <CardHeader className="p-6 md:p-8 pb-2 text-center">
               <h3 className="text-xl font-black text-[var(--text-primary)] tracking-tighter uppercase italic">Status de Pedidos</h3>
             </CardHeader>
-            <CardContent className="flex flex-col items-center justify-center p-6 h-[350px]">
+            <CardContent className="flex flex-col items-center justify-center p-6 min-h-[300px] md:h-[350px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -362,10 +362,10 @@ export default function DashboardPage() {
            className="lg:col-span-3"
         >
           <Card className="border-none shadow-[var(--shadow-card)] rounded-[40px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border)]">
-            <CardHeader className="p-8 pb-4">
+            <CardHeader className="p-6 md:p-8 pb-4">
               <h3 className="text-xl font-black text-[var(--text-primary)] tracking-tighter uppercase italic">Produtos Mais Vendidos</h3>
             </CardHeader>
-            <CardContent className="p-8 pt-0">
+            <CardContent className="p-4 md:p-8 pt-0">
               <div className="h-[250px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={topProducts}>
@@ -386,16 +386,16 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pb-10">
         {/* Recent Orders */}
         <Card className="border-none shadow-[var(--shadow-card)] rounded-[40px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border)]">
-          <CardHeader className="p-8 flex-row items-center justify-between border-b border-[var(--border)]">
+          <CardHeader className="p-6 md:p-8 flex-col sm:flex-row items-start sm:items-center justify-between border-b border-[var(--border)] gap-4">
             <div className="flex items-center gap-4">
-              <div className="size-12 rounded-2xl bg-rose-500 flex items-center justify-center text-white shadow-lg">
-                <Calendar className="size-6" />
+              <div className="size-10 md:size-12 rounded-2xl bg-rose-500 flex items-center justify-center text-white shadow-lg shrink-0">
+                <Calendar className="size-5 md:size-6" />
               </div>
               <h3 className="text-xl font-black text-[var(--text-primary)] tracking-tighter uppercase italic">Próximos Pedidos</h3>
             </div>
             <Link href="/dashboard/pedidos" className="text-[10px] font-black uppercase text-[var(--primary)] tracking-widest hover:underline italic">Ver todos</Link>
           </CardHeader>
-          <CardContent className="p-6">
+          <CardContent className="p-4 md:p-6">
             {recentOrders.length > 0 ? (
               <div className="space-y-4">
                 {recentOrders.map((order, i) => (
@@ -424,16 +424,16 @@ export default function DashboardPage() {
 
         {/* Finances Placeholder */}
         <Card className="border-none shadow-[var(--shadow-card)] rounded-[40px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border)]">
-          <CardHeader className="p-8 flex-row items-center justify-between border-b border-[var(--border)]">
+          <CardHeader className="p-6 md:p-8 flex-col sm:flex-row items-start sm:items-center justify-between border-b border-[var(--border)] gap-4">
             <div className="flex items-center gap-4">
-              <div className="size-12 rounded-2xl bg-indigo-500 flex items-center justify-center text-white shadow-lg">
-                <Wallet className="size-6" />
+              <div className="size-10 md:size-12 rounded-2xl bg-indigo-500 flex items-center justify-center text-white shadow-lg shrink-0">
+                <Wallet className="size-5 md:size-6" />
               </div>
               <h3 className="text-xl font-black text-[var(--text-primary)] tracking-tighter uppercase italic">Contas & Receitas</h3>
             </div>
             <Link href="/dashboard/financeiro" className="text-[10px] font-black uppercase text-indigo-500 tracking-widest hover:underline italic">Explorar</Link>
           </CardHeader>
-          <CardContent className="p-10 flex flex-col items-center justify-center text-[var(--text-secondary)] bg-[radial-gradient(circle_at_top_right,rgba(124,58,237,0.05),transparent)]">
+          <CardContent className="p-6 md:p-10 flex flex-col items-center justify-center text-[var(--text-secondary)] bg-[radial-gradient(circle_at_top_right,rgba(124,58,237,0.05),transparent)] min-h-[150px]">
             <p className="text-xs font-black uppercase tracking-widest italic">Tudo em dia por aqui!</p>
           </CardContent>
         </Card>

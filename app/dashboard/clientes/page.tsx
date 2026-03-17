@@ -196,10 +196,10 @@ export default function ClientesPage() {
         className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between"
       >
         <div>
-          <h1 className="text-4xl md:text-5xl font-black tracking-tight text-slate-900 mb-2 uppercase italic leading-none">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-slate-900 mb-2 uppercase italic leading-none text-center lg:text-left">
             Gestão de <span className="text-primary tracking-tighter">Clientes</span>
           </h1>
-          <p className="text-slate-500 font-medium">Relacionamento, fidelização e histórico completo de quem ama seus doces.</p>
+          <p className="text-slate-500 font-medium text-sm md:text-base text-center lg:text-left">Relacionamento, fidelização e histórico completo de quem ama seus doces.</p>
         </div>
 
         <Dialog open={newClientOpen} onOpenChange={(val) => {
@@ -207,7 +207,7 @@ export default function ClientesPage() {
           else setNewClientOpen(true)
         }}>
           <DialogTrigger asChild>
-            <Button className="h-14 px-10 rounded-[20px] bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-widest text-xs shadow-xl shadow-primary/30 transition-all hover:scale-105 active:scale-95">
+            <Button className="h-14 px-10 rounded-[20px] bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-widest text-xs shadow-xl shadow-primary/30 transition-all hover:scale-105 active:scale-95 w-full lg:w-auto">
               <Plus className="mr-2 size-5" />
               Novo Cliente
               {limits.max_clients < 99999 && (
@@ -217,7 +217,7 @@ export default function ClientesPage() {
               )}
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-xl border-white/60 bg-white/90 backdrop-blur-2xl p-10 rounded-[40px] shadow-2xl overflow-hidden text-slate-900">
+          <DialogContent className="w-[95vw] sm:max-w-xl border-white/60 bg-white/90 backdrop-blur-2xl p-6 sm:p-10 rounded-[32px] sm:rounded-[40px] shadow-2xl overflow-hidden text-slate-900 max-h-[90vh] overflow-y-auto">
             <div className="absolute -top-24 -right-24 size-48 bg-primary/10 rounded-full blur-3xl" />
             <DialogHeader className="mb-8 relative z-10">
               <DialogTitle className="text-3xl font-black tracking-tighter uppercase italic">
@@ -237,7 +237,7 @@ export default function ClientesPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">WhatsApp / Telefone</Label>
                   <Input
@@ -282,7 +282,7 @@ export default function ClientesPage() {
       </motion.div>
 
       {/* CRM Stats Grid */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat, i) => (
           <motion.div
             key={stat.label}
@@ -290,7 +290,7 @@ export default function ClientesPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1, type: "spring", stiffness: 100 }}
           >
-            <div className="group relative h-full overflow-hidden rounded-[32px] border border-white/60 bg-white/40 backdrop-blur-xl p-8 hover:shadow-2xl hover:shadow-primary/10 transition-all duration-500 hover:-translate-y-2">
+            <div className="group relative h-full overflow-hidden rounded-[32px] border border-white/60 bg-white/40 backdrop-blur-xl p-6 md:p-8 hover:shadow-2xl hover:shadow-primary/10 transition-all duration-500 hover:-translate-y-2">
               <div className="absolute -top-12 -right-12 size-40 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors" />
 
               <div className="flex items-center justify-between mb-6 relative z-10">
@@ -319,14 +319,14 @@ export default function ClientesPage() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <Button variant="outline" className="h-14 px-8 rounded-3xl border-white bg-white/40 backdrop-blur-md text-slate-600 hover:text-primary font-black uppercase tracking-widest text-[10px] shadow-lg border">
+        <Button variant="outline" className="h-14 px-8 rounded-3xl border-white bg-white/40 backdrop-blur-md text-slate-600 hover:text-primary font-black uppercase tracking-widest text-[10px] shadow-lg border w-full md:w-auto">
           <Filter className="mr-2 size-4" />
           Filtros Avançados
         </Button>
       </div>
 
       {/* Clients Grid 2.0 */}
-      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         {loading ? (
           <div className="col-span-full py-40 flex flex-col items-center justify-center">
             <div className="size-16 border-8 border-rose-100 border-t-primary rounded-full animate-spin shadow-xl" />
@@ -351,7 +351,7 @@ export default function ClientesPage() {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.8 }}
                 transition={{ delay: i * 0.05, type: "spring", stiffness: 100 }}
-                className="group relative flex flex-col overflow-hidden rounded-[40px] border border-white/60 bg-white/40 backdrop-blur-xl p-8 hover:shadow-[0_20px_50px_rgba(244,114,182,0.15)] transition-all duration-500 hover:-translate-y-2"
+                className="group relative flex flex-col overflow-hidden rounded-[32px] sm:rounded-[40px] border border-white/60 bg-white/40 backdrop-blur-xl p-6 sm:p-8 hover:shadow-[0_20px_50px_rgba(244,114,182,0.15)] transition-all duration-500 hover:-translate-y-2"
               >
                 <div className="flex items-start justify-between mb-8 relative z-10">
                   <div className="flex items-center gap-5">
