@@ -67,43 +67,32 @@ export default function CheckoutPage() {
   const total = subtotal + deliveryFee
 
   const calculateFee = async (selectedAddress: any) => {
-    if (!business || !selectedAddress) return
+    if (!selectedAddress) return
 
     try {
       setIsCalculating(true)
       
-      const service = new google.maps.DistanceMatrixService()
-      const origin = { lat: business.address_lat || -23.5505, lng: business.address_lng || -46.6333 }
-      const destination = { lat: selectedAddress.lat, lng: selectedAddress.lng }
-
-      service.getDistanceMatrix({
-        origins: [origin],
-        destinations: [destination],
-        travelMode: google.maps.TravelMode.DRIVING,
-      }, (response, status) => {
-        if (status === 'OK' && response) {
-          const element = response.rows[0].elements[0]
-          if (element.status === 'OK') {
-            const distanceInKm = element.distance.value / 1000
-            setDistance(distanceInKm)
-
-            const baseFee = business.delivery_fee || 5
-            const ratePerKm = (business.config as any)?.rate_per_km || 2
-            const calculatedFee = baseFee + (distanceInKm * ratePerKm)
-            
-            setDeliveryFee(calculatedFee)
-            setAddress(selectedAddress)
-          } else {
-            toast.error("Não foi possível calcular a rota para este endereço.")
-          }
-        } else {
-          toast.error("Erro ao calcular distância")
-        }
-        setIsCalculating(false)
+      const res = await fetch('/api/calculate-delivery', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lat: selectedAddress.lat, lng: selectedAddress.lng })
       })
 
-    } catch (err) {
+      const data = await res.json()
+
+      if (data.error) throw new Error(data.error)
+
+      setDistance(data.distance)
+      setDeliveryFee(data.fee)
+      setAddress({
+        ...selectedAddress,
+        estimated_time: data.time
+      })
+      
+    } catch (err: any) {
       console.error("Fee check error:", err)
+      toast.error("Erro ao calcular entrega. Tente novamente.")
+    } finally {
       setIsCalculating(false)
     }
   }
@@ -133,7 +122,15 @@ export default function CheckoutPage() {
         payment_method: customerInfo.payment_method,
         observacoes: customerInfo.notes,
         cliente_nome: customerInfo.name,
-        cliente_telefone: customerInfo.phone
+        cliente_telefone: customerInfo.phone,
+        // Detailed Address Components
+        bairro: address.neighborhood,
+        cidade: address.city,
+        cep: address.zip,
+        numero: address.number,
+        lat: address.lat,
+        lng: address.lng,
+        distancia: distance
       }).select().single()
 
       if (orderError) throw orderError
@@ -323,10 +320,12 @@ export default function CheckoutPage() {
                             <span className="text-[10px] font-black uppercase tracking-widest">{distance.toFixed(1)} km</span>
                           </div>
                         )}
-                        <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full border border-white/10">
-                          <Clock className="size-3 text-pink-400" />
-                          <span className="text-[10px] font-black uppercase tracking-widest">30-45 min</span>
-                        </div>
+                          <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full border border-white/10">
+                            <Clock className="size-3 text-pink-400" />
+                            <span className="text-[10px] font-black uppercase tracking-widest">
+                              {address.estimated_time || "30-45"} min
+                            </span>
+                          </div>
                       </div>
                     </div>
                   </motion.div>

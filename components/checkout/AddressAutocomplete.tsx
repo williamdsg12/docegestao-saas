@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import { useJsApiLoader, Autocomplete } from "@react-google-maps/api"
 import { Input } from "@/components/ui/input"
 import { MapPin, Search } from "lucide-react"
+import { toast } from "sonner"
 
 const libraries: ("places")[] = ["places"]
 
@@ -30,19 +31,31 @@ export function AddressAutocomplete({ onAddressSelect, placeholder, className }:
     if (autocomplete !== null) {
       const place = autocomplete.getPlace()
 
-      const addressComponents = place.address_components
-      const address = {
-        formatted_address: place.formatted_address,
-        lat: place.geometry?.location?.lat(),
-        lng: place.geometry?.location?.lng(),
-        street: addressComponents?.find(c => c.types.includes("route"))?.long_name,
-        number: addressComponents?.find(c => c.types.includes("street_number"))?.long_name,
-        neighborhood: addressComponents?.find(c => c.types.includes("sublocality"))?.long_name,
-        city: addressComponents?.find(c => c.types.includes("locality"))?.long_name,
-        state: addressComponents?.find(c => c.types.includes("administrative_area_level_1"))?.short_name,
-        zip: addressComponents?.find(c => c.types.includes("postal_code"))?.long_name,
+      if (!place.geometry || !place.geometry.location) {
+        toast.error("Por favor, selecione um endereço da lista.")
+        return
       }
 
+      const addressComponents = place.address_components
+      
+      const getComponent = (type: string, useShortName = false) => {
+        const comp = addressComponents?.find(c => c.types.includes(type))
+        return useShortName ? comp?.short_name : comp?.long_name
+      }
+
+      const address = {
+        formatted_address: place.formatted_address,
+        lat: place.geometry.location.lat(),
+        lng: place.geometry.location.lng(),
+        street: getComponent("route"),
+        number: getComponent("street_number"),
+        neighborhood: getComponent("sublocality_level_1") || getComponent("sublocality") || getComponent("neighborhood"),
+        city: getComponent("administrative_area_level_2") || getComponent("locality"),
+        state: getComponent("administrative_area_level_1", true),
+        zip: getComponent("postal_code"),
+      }
+
+      console.log("Structured Address:", address)
       onAddressSelect(address)
     }
   }
