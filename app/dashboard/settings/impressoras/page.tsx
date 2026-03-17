@@ -101,65 +101,65 @@ export default function ImpressorasPage() {
   }
 
   return (
-    <div className="p-6 md:p-10 space-y-12 min-h-screen pb-40">
+    <div className="p-4 md:p-10 space-y-8 md:space-y-12 min-h-screen pb-40">
       
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-2">
-          <h1 className="text-5xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">
+          <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">
             Automação <span className="text-orange-500">Impressão</span>
           </h1>
           <p className="text-slate-500 font-medium italic uppercase text-[10px] tracking-widest ml-1">Infraestrutura ESC/POS & Fila Automática V3</p>
         </div>
-        <Button onClick={() => setIsDialogOpen(true)} className="h-16 px-8 rounded-3xl bg-orange-500 text-white font-black uppercase text-[10px] tracking-widest flex gap-3 shadow-xl hover:bg-orange-600 transition-all active:scale-95">
+        <Button onClick={() => setIsDialogOpen(true)} className="h-14 md:h-16 w-full md:w-auto px-8 rounded-2xl md:rounded-3xl bg-orange-500 text-white font-black uppercase text-[10px] tracking-widest flex gap-3 shadow-xl hover:bg-orange-600 transition-all active:scale-95 leading-none">
            <Printer className="size-5" /> Adicionar Impressora
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-10">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 md:gap-10">
          
          {/* Printers List */}
-         <div className="xl:col-span-2 space-y-8">
-            <div className="bg-white rounded-[56px] shadow-2xl border border-slate-50 overflow-hidden">
-               <div className="p-10 border-b border-slate-50 flex items-center justify-between">
-                  <h2 className="text-2xl font-black italic uppercase tracking-tighter flex items-center gap-4">
+         <div className="xl:col-span-2 space-y-6 md:space-y-8">
+            <div className="bg-white rounded-[32px] md:rounded-[56px] shadow-2xl border border-slate-50 overflow-hidden">
+               <div className="p-6 md:p-10 border-b border-slate-50 flex items-center justify-between">
+                  <h2 className="text-xl md:text-2xl font-black italic uppercase tracking-tighter flex items-center gap-4">
                      <Layout className="size-6 text-orange-500" /> Dispositivos Pareados
                   </h2>
                </div>
-               <div className="p-8">
+               <div className="p-6 md:p-8">
                   {printers.length === 0 ? (
-                     <div className="h-60 flex flex-col items-center justify-center text-center opacity-30 gap-6">
-                        <Printer className="size-16 stroke-1" />
+                     <div className="h-40 md:h-60 flex flex-col items-center justify-center text-center opacity-30 gap-6">
+                        <Printer className="size-12 md:size-16 stroke-1" />
                         <p className="text-[10px] font-black uppercase tracking-widest leading-none">Nenhuma impressora térmica encontrada</p>
                      </div>
                   ) : (
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                         {printers.map(printer => (
-                           <div key={printer.id} className="p-8 rounded-[40px] border border-slate-100 bg-slate-50/50 hover:bg-white hover:shadow-2xl transition-all group relative overflow-hidden">
+                           <div key={printer.id} className="p-6 md:p-8 rounded-[32px] md:rounded-[40px] border border-slate-100 bg-slate-50/50 hover:bg-white hover:shadow-2xl transition-all group relative overflow-hidden">
                               <div className="relative z-10 flex items-start justify-between">
                                  <div className="space-y-4">
-                                    <div className="size-14 rounded-2xl bg-white shadow-sm flex items-center justify-center text-orange-500">
-                                       {printer.ip ? <Wifi className="size-8" /> : <Usb className="size-8" />}
+                                    <div className="size-12 md:size-14 rounded-2xl bg-white shadow-sm flex items-center justify-center text-orange-500 shrink-0">
+                                       {printer.ip ? <Wifi className="size-6 md:size-8" /> : <Usb className="size-6 md:size-8" />}
                                     </div>
                                     <div className="space-y-1">
-                                       <h4 className="text-xl font-black italic uppercase tracking-tighter text-slate-900 leading-none">{printer.nome}</h4>
-                                       <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{printer.ip || 'USB Connection'} : {printer.porta}</p>
+                                       <h4 className="text-lg md:text-xl font-black italic uppercase tracking-tighter text-slate-900 leading-none truncate max-w-[150px] md:max-w-none">{printer.nome}</h4>
+                                       <p className="text-[9px] md:text-[10px] font-black uppercase text-slate-400 tracking-widest">{printer.ip || 'USB Connection'} : {printer.porta}</p>
                                     </div>
                                     <Badge className={cn("rounded-full px-4 py-1 font-black text-[9px] uppercase tracking-widest border-none", printer.ativa ? "bg-emerald-100 text-emerald-600" : "bg-slate-200 text-slate-500")}>
                                        {printer.ativa ? 'ON-LINE' : 'OFF-LINE'}
                                     </Badge>
                                  </div>
                                  <div className="flex flex-col gap-2">
-                                    <Button variant="ghost" onClick={() => handleToggleStatus(printer.id, printer.ativa)} className="size-12 rounded-2xl bg-white shadow-sm hover:text-orange-500 transition-all">
-                                       <RefreshCw className="size-5" />
+                                    <Button variant="ghost" onClick={() => handleToggleStatus(printer.id, printer.ativa)} className="size-10 md:size-12 rounded-xl md:rounded-2xl bg-white shadow-sm hover:text-orange-500 transition-all">
+                                       <RefreshCw className="size-4 md:size-5" />
                                     </Button>
-                                    <Button variant="ghost" className="size-12 rounded-2xl bg-white shadow-sm hover:text-rose-500 transition-all">
-                                       <Trash2 className="size-5" />
+                                    <Button variant="ghost" className="size-10 md:size-12 rounded-xl md:rounded-2xl bg-white shadow-sm hover:text-rose-500 transition-all">
+                                       <Trash2 className="size-4 md:size-5" />
                                     </Button>
                                  </div>
                               </div>
                               <div className="absolute -right-4 -bottom-4 opacity-[0.03] rotate-12 text-orange-500">
-                                 <Zap className="size-40" />
+                                 <Zap className="size-32 md:size-40" />
                               </div>
                            </div>
                         ))}
@@ -169,38 +169,38 @@ export default function ImpressorasPage() {
             </div>
 
             {/* Print Logs / Queue */}
-            <div className="bg-slate-900 rounded-[56px] shadow-2xl overflow-hidden border border-slate-800">
-               <div className="p-10 border-b border-slate-800 flex items-center justify-between">
-                  <h2 className="text-2xl font-black italic uppercase tracking-tighter text-white flex items-center gap-4">
-                     <Terminal className="size-6 text-orange-500" /> Console de Impressão
+            <div className="bg-slate-900 rounded-[32px] md:rounded-[56px] shadow-2xl overflow-hidden border border-slate-800">
+               <div className="p-6 md:p-10 border-b border-slate-800 flex items-center justify-between gap-4">
+                  <h2 className="text-xl md:text-2xl font-black italic uppercase tracking-tighter text-white flex items-center gap-4">
+                     <Terminal className="size-6 text-orange-500" /> Console
                   </h2>
-                  <Badge className="bg-orange-500/10 text-orange-500 border-none font-black text-[9px] uppercase tracking-widest px-4 py-2">Real-time Node</Badge>
+                  <Badge className="bg-orange-500/10 text-orange-500 border-none font-black text-[8px] md:text-[9px] uppercase tracking-widest px-3 md:px-4 py-2 shrink-0">Real-time Node</Badge>
                </div>
-               <div className="overflow-x-auto">
+               <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-slate-700">
                   <Table>
                      <TableHeader>
                         <TableRow className="border-slate-800 hover:bg-transparent">
-                           <TableHead className="py-8 px-10 text-[9px] font-black uppercase tracking-widest text-slate-600">ID Pedido</TableHead>
-                           <TableHead className="py-8 text-[9px] font-black uppercase tracking-widest text-slate-600">Status</TableHead>
-                           <TableHead className="py-8 text-[9px] font-black uppercase tracking-widest text-slate-600 text-right px-10">Data/Hora</TableHead>
+                           <TableHead className="py-6 md:py-8 px-6 md:px-10 text-[9px] font-black uppercase tracking-widest text-slate-600">ID Pedido</TableHead>
+                           <TableHead className="py-6 md:py-8 text-[9px] font-black uppercase tracking-widest text-slate-600">Status</TableHead>
+                           <TableHead className="py-6 md:py-8 text-[9px] font-black uppercase tracking-widest text-slate-600 text-right px-6 md:px-10">Data/Hora</TableHead>
                         </TableRow>
                      </TableHeader>
                      <TableBody>
                         {printQueue.map(item => (
                            <TableRow key={item.id} className="border-slate-800 hover:bg-white/5 transition-colors">
-                              <TableCell className="py-6 px-10">
-                                 <p className="font-black text-white text-xs tracking-widest">#{item.pedido_id.slice(0, 8)}</p>
+                              <TableCell className="py-6 px-6 md:px-10">
+                                 <p className="font-black text-white text-[10px] md:text-xs tracking-widest">#{item.pedido_id.slice(0, 8)}</p>
                               </TableCell>
                               <TableCell>
                                  <div className="flex items-center gap-2">
                                     {item.status === 'impresso' ? <CheckCircle2 className="size-4 text-emerald-500" /> : <RefreshCw className="size-4 text-orange-500 animate-spin" />}
-                                    <span className={cn("text-[9px] font-black uppercase tracking-widest", item.status === 'impresso' ? "text-emerald-500" : "text-orange-500")}>
+                                    <span className={cn("text-[8px] md:text-[9px] font-black uppercase tracking-widest", item.status === 'impresso' ? "text-emerald-500" : "text-orange-500")}>
                                        {item.status}
                                     </span>
                                  </div>
                               </TableCell>
-                              <TableCell className="text-right px-10">
-                                 <p className="text-[10px] font-black text-slate-500 tracking-tighter">{new Date(item.created_at).toLocaleString()}</p>
+                              <TableCell className="text-right px-6 md:px-10 whitespace-nowrap">
+                                 <p className="text-[9px] md:text-[10px] font-black text-slate-500 tracking-tighter">{new Date(item.created_at).toLocaleString()}</p>
                               </TableCell>
                            </TableRow>
                         ))}
@@ -211,15 +211,15 @@ export default function ImpressorasPage() {
          </div>
 
          {/* Sidebar / Info */}
-         <div className="space-y-8">
-            <div className="bg-orange-50 rounded-[48px] p-10 border border-orange-100 relative overflow-hidden group">
+         <div className="space-y-6 md:space-y-8">
+            <div className="bg-orange-50 rounded-[32px] md:rounded-[48px] p-8 md:p-10 border border-orange-100 relative overflow-hidden group">
                <div className="absolute top-0 right-0 p-10 opacity-10 rotate-12 text-orange-500">
-                  <FileText className="size-32" />
+                  <FileText className="size-24 md:size-32" />
                </div>
-               <div className="relative z-10 space-y-8">
+               <div className="relative z-10 space-y-6 md:space-y-8">
                   <div className="space-y-2">
-                     <h3 className="text-2xl font-black italic uppercase tracking-tighter text-orange-600">Manual Pro</h3>
-                     <p className="text-slate-500 font-medium italic text-sm">Como usar a impressão automática.</p>
+                     <h3 className="text-xl md:text-2xl font-black italic uppercase tracking-tighter text-orange-600">Manual Pro</h3>
+                     <p className="text-slate-500 font-medium italic text-xs md:text-sm">Como usar a impressão automática.</p>
                   </div>
                   <ul className="space-y-6">
                      {[
@@ -239,19 +239,19 @@ export default function ImpressorasPage() {
                </div>
             </div>
 
-            <div className="bg-white rounded-[48px] p-10 shadow-2xl border border-slate-50 space-y-8">
-               <div className="space-y-1">
+            <div className="bg-white rounded-[32px] md:rounded-[48px] p-8 md:p-10 shadow-2xl border border-slate-50 space-y-6 md:space-y-8">
+               <div className="space-y-1 text-center md:text-left">
                   <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Status do Servidor</p>
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-col md:flex-row items-center gap-3">
                      <div className="size-4 bg-emerald-500 rounded-full animate-pulse shadow-lg shadow-emerald-500/40" />
-                     <h3 className="text-2xl font-black italic tracking-tighter text-slate-900 uppercase">Gateway Online</h3>
+                     <h3 className="text-xl md:text-2xl font-black italic tracking-tighter text-slate-900 uppercase">Gateway Online</h3>
                   </div>
                </div>
-               <div className="p-6 rounded-3xl bg-slate-50 border border-slate-100 space-y-4">
+               <div className="p-6 rounded-2xl md:rounded-3xl bg-slate-50 border border-slate-100 space-y-4">
                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">IP do Local Gateway</p>
-                  <Input readOnly value="192.168.1.10" className="h-12 bg-white border-none font-black text-xs text-slate-900 rounded-xl" />
+                  <Input readOnly value="192.168.1.10" className="h-10 md:h-12 bg-white border-none font-black text-xs text-slate-900 rounded-xl" />
                </div>
-               <Button className="w-full h-16 rounded-[24px] bg-slate-900 text-white font-black uppercase text-[10px] tracking-widest shadow-2xl hover:bg-slate-800">
+               <Button className="w-full h-14 md:h-16 rounded-2xl md:rounded-[24px] bg-slate-900 text-white font-black uppercase text-[10px] tracking-widest shadow-2xl hover:bg-slate-800">
                   DOWNLOAD AGENT .EXE
                </Button>
             </div>

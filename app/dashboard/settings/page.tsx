@@ -98,12 +98,12 @@ export default function SettingsPage() {
             </Breadcrumb>
 
             {/* Page Header */}
-            <div className="flex flex-col gap-2">
-                <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic">
-                    CONFIGURAÇÕES <span className="text-primary">DO SISTEMA</span>
+            <div className="flex flex-col gap-4 text-center lg:text-left">
+                <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">
+                    CONFIGURAÇÕES <span className="text-primary tracking-tighter">DO SISTEMA</span>
                 </h1>
-                <p className="text-slate-500 font-bold uppercase tracking-widest text-xs flex items-center gap-2">
-                    <Settings className="size-3 text-primary" />
+                <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] sm:text-xs flex items-center justify-center lg:justify-start gap-2 italic">
+                    <Settings className="size-3 text-primary shrink-0" />
                     Personalize sua experiência na plataforma e defina padrões globais.
                 </p>
             </div>
@@ -119,12 +119,12 @@ export default function SettingsPage() {
                         <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Escolha como você quer ver o sistema</CardDescription>
                     </CardHeader>
                     <CardContent className="p-8 pt-4 space-y-6">
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <button 
                                 onClick={() => setTheme("light")}
                                 className={cn(
                                     "p-6 rounded-2xl border-2 transition-all flex flex-col items-center gap-3",
-                                    theme === "light" ? "border-primary bg-primary/5 text-primary" : "border-slate-50 bg-slate-50 text-slate-400"
+                                    theme === "light" ? "border-primary bg-primary/5 text-primary" : "border-slate-50 bg-slate-50 text-slate-400 font-bold"
                                 )}
                             >
                                 <Sun className="size-6" />
@@ -134,7 +134,7 @@ export default function SettingsPage() {
                                 onClick={() => setTheme("dark")}
                                 className={cn(
                                     "p-6 rounded-2xl border-2 transition-all flex flex-col items-center gap-3",
-                                    theme === "dark" ? "border-primary bg-primary/5 text-primary" : "border-slate-50 bg-slate-50 text-slate-400"
+                                    theme === "dark" ? "border-primary bg-primary/5 text-primary" : "border-slate-50 bg-slate-50 text-slate-400 font-bold"
                                 )}
                             >
                                 <Moon className="size-6" />
@@ -169,11 +169,11 @@ export default function SettingsPage() {
                                 </Select>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Moeda</Label>
                                     <Select value={formData.currency} onValueChange={(v) => setFormData({...formData, currency: v})}>
-                                        <SelectTrigger className="h-12 rounded-xl border-slate-100 bg-slate-50/50">
+                                        <SelectTrigger className="h-12 rounded-xl border-slate-100 bg-slate-50/50 font-bold">
                                             <SelectValue placeholder="Moeda" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -186,7 +186,7 @@ export default function SettingsPage() {
                                 <div className="space-y-2">
                                     <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Fuso Horário</Label>
                                     <Select value={formData.timezone} onValueChange={(v) => setFormData({...formData, timezone: v})}>
-                                        <SelectTrigger className="h-12 rounded-xl border-slate-100 bg-slate-50/50">
+                                        <SelectTrigger className="h-12 rounded-xl border-slate-100 bg-slate-50/50 font-bold shadow-sm">
                                             <SelectValue placeholder="Fuso" />
                                         </SelectTrigger>
                                         <SelectContent>

@@ -511,7 +511,6 @@ export default function GestorPedidos() {
                                  </div>
                               </div>
                            </div>
-                        </div>
 
                         {selectedOrder.observacoes && (
                            <div className="p-8 bg-amber-50 rounded-[32px] border border-amber-100 flex gap-4 items-start">

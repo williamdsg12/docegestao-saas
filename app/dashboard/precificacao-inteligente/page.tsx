@@ -248,15 +248,15 @@ export default function PrecificacaoInteligentePage() {
                 animate={{ opacity: 1, y: 0 }}
                 className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between"
             >
-                <div className="space-y-1">
-                    <h1 className="text-3xl font-black tracking-tight text-slate-900 italic uppercase leading-none">
+                <div className="space-y-1 text-center xl:text-left">
+                    <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 italic uppercase leading-none">
                         Precificação <span className="text-primary tracking-tighter italic">Inteligente</span>
                     </h1>
-                    <p className="text-slate-500 text-sm font-medium tracking-tight italic">Calcule custos e margens em tempo real.</p>
+                    <p className="text-slate-500 text-xs sm:text-sm font-medium tracking-tight italic">Calcule custos e margens em tempo real.</p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3">
-                    <div className="relative group min-w-[240px]">
+                <div className="flex flex-wrap items-center justify-center xl:justify-end gap-3 w-full xl:w-auto">
+                    <div className="relative group w-full sm:min-w-[240px]">
                         <select
                             className="w-full h-12 pl-4 pr-10 rounded-[18px] border border-slate-200 bg-white shadow-sm font-black italic uppercase text-[10px] text-slate-900 outline-none focus:ring-4 focus:ring-primary/10 transition-all appearance-none cursor-pointer"
                             value={selectedProduct}
@@ -279,7 +279,7 @@ export default function PrecificacaoInteligentePage() {
                 {/* Inputs Column */}
                 <div className="xl:col-span-8 space-y-8">
                     {/* Ingredients Section */}
-                    <section className="relative p-8 rounded-[32px] bg-white border border-slate-100 shadow-xl overflow-hidden">
+                    <section className="relative p-6 sm:p-8 rounded-[32px] bg-white border border-slate-100 shadow-xl overflow-hidden">
                         <div className="flex items-center justify-between mb-8">
                             <div className="flex items-center gap-4">
                                 <div className="size-12 rounded-xl bg-rose-50 flex items-center justify-center text-primary shadow-inner">
@@ -302,9 +302,10 @@ export default function PrecificacaoInteligentePage() {
                                     key={ing.id}
                                     initial={{ opacity: 0, x: -10 }}
                                     animate={{ opacity: 1, x: 0 }}
-                                    className="grid grid-cols-1 md:grid-cols-12 gap-3 p-3 rounded-2xl bg-slate-50 border border-transparent hover:border-slate-200 transition-all"
+                                    className="grid grid-cols-1 sm:grid-cols-12 gap-3 p-3 rounded-2xl bg-slate-50 border border-transparent hover:border-slate-200 transition-all"
                                 >
-                                    <div className="md:col-span-4">
+                                    <div className="sm:col-span-5 lg:col-span-4">
+                                        <label className="sm:hidden text-[8px] font-black uppercase text-slate-400 ml-1">Item</label>
                                         <Input
                                             placeholder="Item..."
                                             className="h-10 bg-transparent border-none font-black italic uppercase text-xs text-slate-900 placeholder:text-slate-300 focus-visible:ring-0"
@@ -312,15 +313,18 @@ export default function PrecificacaoInteligentePage() {
                                             onChange={(e) => atualizarIngrediente(ing.id, "nome", e.target.value)}
                                         />
                                     </div>
-                                    <div className="md:col-span-3 flex items-center gap-2">
-                                        <Input
-                                            type="number"
-                                            className="h-10 bg-transparent border-none font-black text-center text-xs text-slate-900 focus-visible:ring-0"
-                                            value={ing.quantidadeUsada}
-                                            onChange={(e) => atualizarIngrediente(ing.id, "quantidadeUsada", parseFloat(e.target.value))}
-                                        />
+                                    <div className="sm:col-span-4 lg:col-span-3 flex items-center gap-2">
+                                        <div className="flex-1">
+                                            <label className="sm:hidden text-[8px] font-black uppercase text-slate-400 ml-1">Qtd</label>
+                                            <Input
+                                                type="number"
+                                                className="h-10 bg-transparent border-none font-black text-center text-xs text-slate-900 focus-visible:ring-0"
+                                                value={ing.quantidadeUsada}
+                                                onChange={(e) => atualizarIngrediente(ing.id, "quantidadeUsada", parseFloat(e.target.value))}
+                                            />
+                                        </div>
                                         <select
-                                            className="bg-primary/10 px-2 py-1 rounded-lg text-[9px] font-black uppercase text-primary outline-none"
+                                            className="bg-primary/10 px-2 py-1 rounded-lg text-[9px] font-black uppercase text-primary outline-none mt-4 sm:mt-0"
                                             value={ing.unidade}
                                             onChange={(e) => atualizarIngrediente(ing.id, "unidade", e.target.value)}
                                         >
@@ -331,16 +335,19 @@ export default function PrecificacaoInteligentePage() {
                                             <option value="un">un</option>
                                         </select>
                                     </div>
-                                    <div className="md:col-span-4 relative group">
-                                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 size-3 text-slate-300" />
-                                        <Input
-                                            type="number"
-                                            className="h-10 pl-8 bg-transparent border-none font-black text-right text-xs text-slate-900 focus-visible:ring-0"
-                                            value={ing.precoPago}
-                                            onChange={(e) => atualizarIngrediente(ing.id, "precoPago", parseFloat(e.target.value))}
-                                        />
+                                    <div className="sm:col-span-2 lg:col-span-4 relative group">
+                                        <label className="sm:hidden text-[8px] font-black uppercase text-slate-400 ml-1">Preço Pago</label>
+                                        <div className="relative">
+                                            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 size-3 text-slate-300" />
+                                            <Input
+                                                type="number"
+                                                className="h-10 pl-8 bg-transparent border-none font-black text-right text-xs text-slate-900 focus-visible:ring-0"
+                                                value={ing.precoPago}
+                                                onChange={(e) => atualizarIngrediente(ing.id, "precoPago", parseFloat(e.target.value))}
+                                            />
+                                        </div>
                                     </div>
-                                    <div className="md:col-span-1 flex items-center justify-end">
+                                    <div className="sm:col-span-1 flex items-center justify-end">
                                         <Button
                                             variant="ghost"
                                             size="icon"
@@ -356,7 +363,7 @@ export default function PrecificacaoInteligentePage() {
                     </section>
 
                     {/* Logistics Section */}
-                    <section className="p-8 rounded-[32px] bg-white border border-slate-100 shadow-xl">
+                    <section className="p-6 sm:p-8 rounded-[32px] bg-white border border-slate-100 shadow-xl">
                         <div className="flex items-center gap-4 mb-8">
                             <div className="size-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 shadow-inner">
                                 <Package className="size-6" />
@@ -406,7 +413,7 @@ export default function PrecificacaoInteligentePage() {
                 </div>
 
                 {/* Results Dashboard Column - COMPACT VERSION */}
-                <div className="xl:col-span-4 space-y-6 sticky top-6">
+                <div className="xl:col-span-4 space-y-6 xl:sticky xl:top-6">
                     <Card className="rounded-[40px] border-none bg-slate-900 text-white overflow-hidden shadow-2xl">
                         <CardHeader className="p-8 pb-4 flex flex-row items-center justify-between border-b border-white/5">
                             <div className="flex items-center gap-3">
@@ -416,7 +423,7 @@ export default function PrecificacaoInteligentePage() {
                             <Badge className="bg-primary/20 text-primary border-none font-black text-[8px] uppercase">Realtime</Badge>
                         </CardHeader>
 
-                        <CardContent className="p-8 space-y-8">
+                        <CardContent className="p-6 sm:p-8 space-y-8">
                             <div className="space-y-4">
                                 <div className="flex justify-between items-center group">
                                     <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 italic">Insumos</span>
@@ -466,9 +473,9 @@ export default function PrecificacaoInteligentePage() {
                             </div>
 
                             <div className="pt-6 border-t border-white/10">
-                                <div className="p-8 rounded-[32px] bg-gradient-to-br from-primary to-rose-600 shadow-xl text-center">
+                                <div className="p-6 sm:p-8 rounded-[32px] bg-gradient-to-br from-primary to-rose-600 shadow-xl text-center">
                                     <span className="text-[9px] font-black uppercase tracking-widest text-white/70 block mb-2">Venda Sugerida</span>
-                                    <div className="text-4xl font-black italic tracking-tighter leading-none">
+                                    <div className="text-3xl sm:text-4xl font-black italic tracking-tighter leading-none">
                                         R$ {calculos.precoPorUnidade.toFixed(2)}
                                     </div>
                                     <div className="mt-4 text-[9px] font-black uppercase text-white/50 italic">

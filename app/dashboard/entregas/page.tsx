@@ -155,13 +155,13 @@ export default function EntregasPage() {
                <div className="size-2 bg-pink-500 rounded-full animate-ping" />
                <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Logistics Control Center</span>
             </div>
-            <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase italic leading-none text-center lg:text-left">
               Gestão de <span className="text-pink-500">Entregas</span>
             </h1>
           </div>
 
-          <div className="flex items-center gap-4">
-             <div className="px-8 py-4 bg-white rounded-3xl border border-slate-100 shadow-sm flex items-center gap-6">
+          <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
+             <div className="px-6 sm:px-8 py-4 bg-white rounded-3xl border border-slate-100 shadow-sm flex items-center gap-6 w-full sm:w-auto justify-center">
                 <div className="text-center">
                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Aguardando</p>
                    <p className="text-xl font-black italic text-slate-900">{orders.filter(o => o.status === 'pronto').length}</p>
@@ -174,9 +174,10 @@ export default function EntregasPage() {
              </div>
              <Button 
                onClick={unlockAudio}
-               className="size-14 rounded-2xl bg-slate-950 hover:bg-slate-900 text-pink-500 shadow-xl transition-all active:scale-95"
+               className="h-14 w-full sm:w-14 rounded-2xl bg-slate-950 hover:bg-slate-900 text-pink-500 shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2 sm:gap-0"
              >
                <AlertCircle className="size-6" />
+               <span className="sm:hidden font-black uppercase text-[10px] tracking-widest">Alertas Sonoros</span>
              </Button>
           </div>
         </div>

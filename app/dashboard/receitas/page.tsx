@@ -171,20 +171,20 @@ export default function ReceitasPage() {
 
     return (
         <div className="space-y-10 pb-20">
-            <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            <header className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                 <div>
-                    <h1 className="text-4xl font-black tracking-tighter text-slate-900 mb-2 italic uppercase">
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tighter text-slate-900 mb-2 italic uppercase text-center lg:text-left">
                         Minhas <span className="text-primary font-black">Receitas</span>
                     </h1>
-                    <p className="text-slate-500 font-medium italic">Gerencie seu catálogo de criações e segredos culinários.</p>
+                    <p className="text-slate-500 font-medium italic text-sm md:text-base text-center lg:text-left">Gerencie seu catálogo de criações e segredos culinários.</p>
                 </div>
-                <Button onClick={() => { resetForm(); setIsDialogOpen(true); }} className="h-14 px-8 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-widest text-xs shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95">
+                <Button onClick={() => { resetForm(); setIsDialogOpen(true); }} className="h-14 px-8 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-widest text-xs shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95 w-full lg:w-auto">
                     <Plus className="mr-2 size-5" />
                     Nova Receita
                 </Button>
             </header>
 
-            <div className="relative group max-w-md">
+            <div className="relative group w-full md:max-w-md">
                 <Search className="absolute left-4 top-1/2 size-4 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" />
                 <input
                     placeholder="Pesquisar receitas..."
@@ -201,7 +201,7 @@ export default function ReceitasPage() {
                         key={recipe.id}
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="group bg-white rounded-[40px] border border-slate-100 p-6 hover:shadow-2xl hover:shadow-primary/5 transition-all duration-500 relative overflow-hidden"
+                        className="group bg-white rounded-[32px] sm:rounded-[40px] border border-slate-100 p-5 sm:p-6 hover:shadow-2xl hover:shadow-primary/5 transition-all duration-500 relative overflow-hidden"
                     >
                         <div className="aspect-square rounded-[32px] overflow-hidden bg-slate-100 mb-6 relative group/img">
                             {recipe.foto_url ? (
@@ -243,7 +243,7 @@ export default function ReceitasPage() {
             </div>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto rounded-[40px] border-none p-10 bg-white">
+                <DialogContent className="w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto rounded-[32px] sm:rounded-[40px] border-none p-6 sm:p-10 bg-white">
                     <DialogHeader className="mb-8">
                         <DialogTitle className="text-3xl font-black italic uppercase text-slate-900">
                             {editingRecipe ? 'Editar' : 'Nova'} <span className="text-primary">Receita</span>
@@ -262,7 +262,7 @@ export default function ReceitasPage() {
                                 />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                                 <div className="space-y-2">
                                     <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Tempo (min)</Label>
                                     <Input 
@@ -368,10 +368,10 @@ export default function ReceitasPage() {
                     </div>
 
                     <DialogFooter className="mt-10 sm:justify-start">
-                        <Button 
+                            <Button 
                             disabled={isSaving} 
                             onClick={handleSave} 
-                            className="h-14 px-10 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black uppercase text-xs tracking-widest shadow-xl shadow-slate-200 transition-all"
+                            className="h-14 px-10 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black uppercase text-xs tracking-widest shadow-xl shadow-slate-200 transition-all w-full sm:w-auto"
                         >
                             {isSaving ? "Salvando..." : "Salvar Receita ✨"}
                         </Button>

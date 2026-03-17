@@ -111,15 +111,15 @@ export default function RelatoriosPage() {
                 animate={{ opacity: 1, y: 0 }}
                 className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between"
             >
-                <div className="space-y-2">
-                    <h1 className="text-4xl md:text-5xl font-black tracking-tight text-slate-900 italic uppercase leading-none">
+                <div className="space-y-2 text-center md:text-left">
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-slate-900 italic uppercase leading-none">
                         Relatórios <span className="text-primary tracking-tighter italic">& Insights</span>
                     </h1>
-                    <p className="text-slate-500 font-medium tracking-tight italic">Análise profunda do seu império de doces.</p>
+                    <p className="text-slate-500 font-medium tracking-tight italic text-sm md:text-base">Análise profunda do seu império de doces.</p>
                 </div>
-                <div className="flex flex-col md:flex-row items-center gap-4">
+                <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
                     <Select value={dateRange} onValueChange={setDateRange}>
-                        <SelectTrigger className="w-[180px] h-16 bg-white/60 backdrop-blur-xl border border-white/80 rounded-[28px] text-[10px] font-black uppercase tracking-widest text-slate-600 px-6 shadow-xl">
+                        <SelectTrigger className="w-full sm:w-[180px] h-16 bg-white/60 backdrop-blur-xl border border-white/80 rounded-[28px] text-[10px] font-black uppercase tracking-widest text-slate-600 px-6 shadow-xl">
                             <SelectValue placeholder="Período" />
                         </SelectTrigger>
                         <SelectContent className="rounded-2xl border-white/80 bg-white/90 backdrop-blur-xl shadow-2xl">
@@ -128,7 +128,7 @@ export default function RelatoriosPage() {
                             <SelectItem value="90" className="font-bold text-xs">Últimos 90 dias</SelectItem>
                         </SelectContent>
                     </Select>
-                    <Button onClick={handleExport} disabled={isExporting} className="h-16 px-10 rounded-[28px] bg-white border border-slate-100 hover:bg-slate-50 text-slate-900 font-black italic uppercase text-[10px] tracking-widest shadow-xl transition-all hover:scale-105 active:scale-95">
+                    <Button onClick={handleExport} disabled={isExporting} className="h-16 w-full sm:px-10 rounded-[28px] bg-white border border-slate-100 hover:bg-slate-50 text-slate-900 font-black italic uppercase text-[10px] tracking-widest shadow-xl transition-all hover:scale-105 active:scale-95">
                         <Download className="mr-3 size-5 text-primary" />
                         {isExporting ? "Gerando..." : "Exportar Relatório"}
                     </Button>
@@ -177,11 +177,11 @@ export default function RelatoriosPage() {
             </div>
 
             {/* Performance Chart */}
-            <motion.div
+             <motion.div
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.4 }}
-                className="w-full rounded-[48px] border border-white/50 bg-white/40 backdrop-blur-2xl p-10 shadow-2xl relative overflow-hidden"
+                className="w-full rounded-[32px] sm:rounded-[48px] border border-white/50 bg-white/40 backdrop-blur-2xl p-6 sm:p-10 shadow-2xl relative overflow-hidden"
             >
                 <div className="flex items-center justify-between mb-8">
                     <div>
@@ -235,8 +235,8 @@ export default function RelatoriosPage() {
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
                 {/* Product Performance ranking */}
-                <Card className="border-none bg-white/40 backdrop-blur-2xl rounded-[48px] shadow-2xl overflow-hidden border border-white/60">
-                    <CardHeader className="p-10 pb-6 border-b border-white/40">
+                <Card className="border-none bg-white/40 backdrop-blur-2xl rounded-[32px] sm:rounded-[48px] shadow-2xl overflow-hidden border border-white/60">
+                    <CardHeader className="p-6 sm:p-10 pb-6 border-b border-white/40">
                         <div className="flex items-center justify-between">
                             <div className="space-y-1">
                                 <CardTitle className="text-2xl font-black italic uppercase tracking-tighter text-slate-800">Produtos Estrela</CardTitle>
@@ -247,7 +247,7 @@ export default function RelatoriosPage() {
                             </div>
                         </div>
                     </CardHeader>
-                    <CardContent className="p-10 space-y-10">
+                    <CardContent className="p-6 sm:p-10 space-y-10">
                         {[
                             { name: "Bolo Red Velvet", sales: 42, growth: 15, color: "rose" },
                             { name: "Donuts de Pistache", sales: 38, growth: 22, color: "emerald" },
@@ -283,8 +283,8 @@ export default function RelatoriosPage() {
                 </Card>
 
                 {/* Profit Margins section */}
-                <Card className="border-none bg-white/40 backdrop-blur-2xl rounded-[48px] shadow-2xl overflow-hidden border border-white/60">
-                    <CardHeader className="p-10 pb-6 border-b border-white/40">
+                <Card className="border-none bg-white/40 backdrop-blur-2xl rounded-[32px] sm:rounded-[48px] shadow-2xl overflow-hidden border border-white/60">
+                    <CardHeader className="p-6 sm:p-10 pb-6 border-b border-white/40">
                         <div className="flex items-center justify-between">
                             <div className="space-y-1">
                                 <CardTitle className="text-2xl font-black italic uppercase tracking-tighter text-slate-800">Rentabilidade</CardTitle>
@@ -295,7 +295,7 @@ export default function RelatoriosPage() {
                             </div>
                         </div>
                     </CardHeader>
-                    <CardContent className="p-10">
+                    <CardContent className="p-6 sm:p-10">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {[
                                 { label: "Bolos Decorados", margin: "65%", status: "Excelente", color: "rose" },
@@ -331,17 +331,17 @@ export default function RelatoriosPage() {
             </div>
 
             {/* VIP Client section */}
-            <motion.div
+             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="group relative overflow-hidden bg-slate-900 rounded-[56px] p-12 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.3)] border border-slate-800"
+                className="group relative overflow-hidden bg-slate-900 rounded-[32px] sm:rounded-[56px] p-8 sm:p-12 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.3)] border border-slate-800"
             >
                 <div className="absolute top-0 right-0 p-12 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity">
                     <Target className="size-[400px]" />
                 </div>
 
-                <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-                    <div className="lg:col-span-4 space-y-6">
+                 <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                    <div className="lg:col-span-4 space-y-6 text-center lg:text-left flex flex-col items-center lg:items-start">
                         <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-primary/20 border border-primary/30 text-primary">
                             <Star className="size-4 fill-current" />
                             <span className="text-[10px] font-black uppercase tracking-widest italic">Hall da Fama VIP</span>
@@ -385,8 +385,8 @@ export default function RelatoriosPage() {
                 </div>
             </motion.div>
 
-            {/* AI Strategic Footer */}
-            <section className="relative py-16 px-10 rounded-[48px] overflow-hidden group text-center flex flex-col items-center gap-10">
+             {/* AI Strategic Footer */}
+            <section className="relative py-12 sm:py-16 px-6 sm:px-10 rounded-[32px] sm:rounded-[48px] overflow-hidden group text-center flex flex-col items-center gap-10">
                 <div className="absolute inset-0 bg-rose-50/50 backdrop-blur-xl -z-10 group-hover:bg-rose-100/50 transition-colors" />
 
                 <div className="relative">
@@ -397,10 +397,10 @@ export default function RelatoriosPage() {
                 </div>
 
                 <div className="max-w-2xl space-y-6">
-                    <h2 className="text-4xl md:text-5xl font-black text-slate-900 italic uppercase tracking-tighter leading-none">
+                     <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 italic uppercase tracking-tighter leading-none">
                         A Doce IA está <span className="text-primary italic tracking-tight">Pronta para agir</span>
                     </h2>
-                    <p className="text-slate-500 font-bold italic text-xl">
+                    <p className="text-slate-500 font-bold italic text-base sm:text-xl">
                         Analisamos todo o seu histórico e identificamos <span className="text-slate-900">3 estratégias de faturamento explosivo</span> para os próximos 7 dias.
                     </p>
                     <div className="pt-6">

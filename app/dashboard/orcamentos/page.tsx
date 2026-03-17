@@ -170,22 +170,22 @@ export default function OrcamentosPage() {
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between"
+                className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between"
             >
-                <div className="space-y-2">
-                    <h1 className="text-4xl md:text-5xl font-black tracking-tight text-slate-900 italic uppercase leading-none">
+                <div className="space-y-2 text-center lg:text-left">
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-slate-900 italic uppercase leading-none">
                         Orçamentos <span className="text-primary tracking-tighter italic">& Negócios</span>
                     </h1>
-                    <p className="text-slate-500 font-medium tracking-tight italic">Gerencie suas cotações com profissionalismo e converta em vendas.</p>
+                    <p className="text-slate-500 font-medium tracking-tight italic text-sm md:text-base">Gerencie suas cotações com profissionalismo e converta em vendas.</p>
                 </div>
                 <Dialog open={newQuoteOpen} onOpenChange={setNewQuoteOpen}>
                     <DialogTrigger asChild>
-                        <Button className="h-16 px-10 rounded-[28px] bg-primary hover:bg-rose-500 text-white font-black italic uppercase text-[11px] tracking-widest shadow-2xl shadow-primary/20 transition-all hover:scale-105 active:scale-95">
+                        <Button className="h-16 px-10 rounded-[28px] bg-primary hover:bg-rose-500 text-white font-black italic uppercase text-[11px] tracking-widest shadow-2xl shadow-primary/20 transition-all hover:scale-105 active:scale-95 w-full lg:w-auto">
                             <Plus className="mr-3 size-5" />
                             Novo Orçamento VIP
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-xl border-white/60 bg-white/90 backdrop-blur-2xl p-10 rounded-[40px] shadow-2xl">
+                    <DialogContent className="w-[95vw] sm:max-w-xl border-white/60 bg-white/90 backdrop-blur-2xl p-6 sm:p-10 rounded-[32px] sm:rounded-[40px] shadow-2xl max-h-[90vh] overflow-y-auto text-slate-900">
                         <DialogHeader className="mb-6">
                             <DialogTitle className="text-3xl font-black italic uppercase text-slate-900">
                                 Novo <span className="text-primary italic">Orçamento</span>
@@ -203,7 +203,7 @@ export default function OrcamentosPage() {
                                     {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                 </select>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                                 <div className="space-y-2">
                                     <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Valor Total Estimado (R$)</Label>
                                     <Input
@@ -267,8 +267,8 @@ export default function OrcamentosPage() {
             </div>
 
             {/* Filters and Search */}
-            <section className="p-4 rounded-[32px] bg-white/40 backdrop-blur-2xl border border-white/60 shadow-xl flex items-center gap-4">
-                <div className="relative flex-1 group">
+            <section className="p-4 rounded-[32px] bg-white/40 backdrop-blur-2xl border border-white/60 shadow-xl flex flex-col md:flex-row items-center gap-4">
+                <div className="relative flex-1 w-full group">
                     <Search className="absolute left-6 top-1/2 -translate-y-1/2 size-5 text-slate-400 group-focus-within:text-primary transition-colors" />
                     <Input
                         placeholder="Pesquisar por cliente ou identificador..."
@@ -278,7 +278,7 @@ export default function OrcamentosPage() {
                     />
                 </div>
                 <div className="h-10 w-px bg-slate-200 hidden md:block" />
-                <Button variant="ghost" className="hidden md:flex h-14 px-8 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-primary hover:bg-primary/5 transition-all">
+                <Button variant="ghost" className="h-14 px-8 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-primary hover:bg-primary/5 transition-all w-full md:w-auto">
                     Filtrar Status
                 </Button>
             </section>
@@ -296,7 +296,7 @@ export default function OrcamentosPage() {
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, scale: 0.95 }}
                                 transition={{ delay: idx * 0.05 }}
-                                className="group relative overflow-hidden bg-white/60 backdrop-blur-xl rounded-[48px] p-8 border border-white/80 shadow-lg hover:shadow-2xl hover:border-primary/20 hover:bg-white transition-all flex flex-col xl:flex-row xl:items-center justify-between gap-8 focus-within:ring-2 focus-within:ring-primary/20"
+                                className="group relative overflow-hidden bg-white/60 backdrop-blur-xl rounded-[32px] sm:rounded-[48px] p-6 sm:p-8 border border-white/80 shadow-lg hover:shadow-2xl hover:border-primary/20 hover:bg-white transition-all flex flex-col xl:flex-row xl:items-center justify-between gap-8 focus-within:ring-2 focus-within:ring-primary/20"
                             >
                                 <div className="flex items-center gap-8">
                                     {/* Status Visual */}
@@ -345,7 +345,7 @@ export default function OrcamentosPage() {
                                                 whileHover={{ scale: 1.05 }}
                                                 whileTap={{ scale: 0.95 }}
                                                 onClick={() => convertToOrder(quote)}
-                                                className="h-16 px-10 rounded-[28px] bg-emerald-500 hover:bg-emerald-600 text-white font-black italic uppercase text-[10px] tracking-widest shadow-xl shadow-emerald-200/50 transition-all flex items-center gap-3"
+                                                className="h-16 px-10 rounded-[28px] bg-emerald-500 hover:bg-emerald-600 text-white font-black italic uppercase text-[10px] tracking-widest shadow-xl shadow-emerald-200/50 transition-all flex items-center justify-center gap-3 w-full sm:w-auto"
                                             >
                                                 <ArrowRightLeft className="size-5" />
                                                 Converter Pedido

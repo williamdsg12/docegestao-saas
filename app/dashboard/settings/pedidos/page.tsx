@@ -83,31 +83,31 @@ export default function OrderSettingsPage() {
   )
 
   return (
-    <div className="space-y-8 p-6 md:p-10">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8 p-4 md:p-10 pb-20">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic leading-none mb-2">
+          <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tighter uppercase italic leading-none mb-2">
             Fluxo de <span className="text-pink-500">Pedidos</span>
           </h1>
-          <p className="text-slate-500 font-medium italic uppercase text-[10px] tracking-widest">Configurações Gerais de Recebimento</p>
+          <p className="text-slate-500 font-medium italic uppercase text-[10px] tracking-widest leading-relaxed">Configurações Gerais de Recebimento</p>
         </div>
         {!settings.accept_orders && (
-          <div className="px-4 py-2 bg-rose-50 text-rose-600 rounded-2xl flex items-center gap-2 border border-rose-100 animate-pulse">
+          <div className="px-4 py-2 bg-rose-50 text-rose-600 rounded-2xl flex items-center gap-2 border border-rose-100 animate-pulse w-fit">
             <AlertCircle className="size-4" />
-            <span className="text-xs font-black uppercase tracking-widest">Loja Pausada</span>
+            <span className="text-[10px] font-black uppercase tracking-widest">Loja Pausada</span>
           </div>
         )}
       </div>
 
       <div className="max-w-3xl space-y-8">
-        <Card className="rounded-[40px] border-none shadow-2xl shadow-pink-100/20 bg-white p-8 overflow-hidden relative">
+        <Card className="rounded-[32px] md:rounded-[40px] border-none shadow-2xl shadow-pink-100/20 bg-white p-6 md:p-8 overflow-hidden relative">
           <div className="absolute top-0 right-0 size-64 bg-pink-50 rounded-full blur-[100px] -mr-32 -mt-32 opacity-50" />
           
-          <CardContent className="p-0 space-y-10 relative z-10">
-            <div className="flex items-center justify-between p-8 bg-slate-50/50 rounded-[32px] border border-slate-100/50 transition-all hover:bg-slate-50">
+          <CardContent className="p-0 space-y-8 md:space-y-10 relative z-10">
+            <div className="flex items-center justify-between p-6 md:p-8 bg-slate-50/50 rounded-2xl md:rounded-[32px] border border-slate-100/50 transition-all hover:bg-slate-50 gap-4">
               <div>
-                <h3 className="font-black uppercase tracking-tighter italic text-slate-900 text-lg">Aceitar Novos Pedidos</h3>
-                <p className="text-xs font-medium text-slate-500">Controle o recebimento de pedidos em tempo real</p>
+                <h3 className="font-black uppercase tracking-tighter italic text-slate-900 text-base md:text-lg">Aceitar Novos Pedidos</h3>
+                <p className="text-[10px] md:text-xs font-medium text-slate-500">Controle o recebimento em tempo real</p>
               </div>
               <Switch 
                 checked={settings.accept_orders}
@@ -120,31 +120,39 @@ export default function OrderSettingsPage() {
               <div className="space-y-3">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">WhatsApp para Recebimento</Label>
                 <div className="relative group">
-                  <div className="absolute left-6 top-1/2 -translate-y-1/2 size-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center transition-all group-focus-within:bg-emerald-500 group-focus-within:text-white">
+                  <div className="absolute left-4 md:left-6 top-1/2 -translate-y-1/2 size-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center transition-all group-focus-within:bg-emerald-500 group-focus-within:text-white shrink-0">
                     <MessageCircle className="size-5" />
                   </div>
                   <Input 
                     placeholder="(00) 00000-0000" 
-                    className="h-16 pl-20 rounded-2xl bg-slate-50 border-none font-bold text-lg focus-visible:ring-2 focus-visible:ring-pink-500/20" 
+                    className="h-14 md:h-16 pl-16 md:pl-20 rounded-2xl bg-slate-50 border-none font-bold text-lg focus-visible:ring-2 focus-visible:ring-pink-500/20" 
                     value={settings.whatsapp_number}
                     onChange={e => setSettings({...settings, whatsapp_number: e.target.value})}
                   />
                 </div>
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] ml-2">Este número será usado para o redirecionamento dos pedidos.</p>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em] ml-2 leading-relaxed">Este número será usado para o redirecionamento dos pedidos.</p>
               </div>
 
               <div className="space-y-3">
                 <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Mensagem de Confirmação Automática</Label>
                 <div className="relative">
+                  <div className="absolute top-4 right-4 z-20 flex gap-2">
+                    {["cliente", "pedido", "total"].map(tag => (
+                      <span key={tag} className="hidden md:block text-[8px] font-black uppercase tracking-widest px-2 py-1 bg-white/80 border border-slate-100 text-slate-400 rounded-lg backdrop-blur-sm">
+                        {"{{"}{tag}{"}}"}
+                      </span>
+                    ))}
+                  </div>
                   <Textarea 
                     placeholder="Olá {{cliente}}, recebemos seu pedido..." 
-                    className="min-h-40 rounded-[32px] bg-slate-50 border-none font-medium p-8 focus-visible:ring-2 focus-visible:ring-pink-500/20 resize-none"
+                    className="min-h-40 rounded-2xl md:rounded-[32px] bg-slate-50 border-none font-medium p-6 md:p-8 focus-visible:ring-2 focus-visible:ring-pink-500/20 resize-none text-sm md:text-base"
                     value={settings.auto_confirm_message}
                     onChange={e => setSettings({...settings, auto_confirm_message: e.target.value})}
                   />
-                  <div className="absolute bottom-6 left-8 flex gap-2">
+                  <div className="absolute bottom-6 left-6 md:left-8 flex flex-wrap gap-2">
+                    {/* Always show tags at bottom on mobile to save space or provide access */}
                     {["cliente", "pedido", "total"].map(tag => (
-                      <span key={tag} className="text-[9px] font-black uppercase tracking-widest px-2 py-1 bg-white border border-slate-100 text-slate-400 rounded-lg">
+                      <span key={tag} className="text-[8px] font-black uppercase tracking-widest px-2 py-1 bg-white border border-slate-100 text-slate-400 rounded-lg">
                         {"{{"}{tag}{"}}"}
                       </span>
                     ))}
@@ -156,7 +164,7 @@ export default function OrderSettingsPage() {
             <Button 
               disabled={saving}
               onClick={handleSave}
-              className="w-full h-18 rounded-[30px] bg-slate-900 hover:bg-slate-800 text-white font-black uppercase italic tracking-[0.2em] shadow-2xl transition-all active:scale-95"
+              className="w-full h-16 md:h-18 rounded-2xl md:rounded-[30px] bg-slate-900 hover:bg-slate-800 text-white font-black uppercase italic tracking-[0.2em] shadow-2xl transition-all active:scale-95"
             >
                {saving ? (
                  <div className="size-6 border-2 border-white/20 border-t-white rounded-full animate-spin" />

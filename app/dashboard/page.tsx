@@ -203,7 +203,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 md:space-y-8 p-4 md:p-0">
       {/* KPI Section */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {kpis.map((kpi, i) => (
@@ -215,24 +215,24 @@ export default function DashboardPage() {
             whileHover={{ y: -5 }}
             className="group"
           >
-            <Card className="border-none shadow-[var(--shadow-card)] rounded-[32px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border)] transition-all duration-300">
-              <CardContent className="p-6 md:p-8 relative">
-                <div className="flex justify-between items-start mb-6">
-                  <div className={cn("size-14 rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform group-hover:scale-110", kpi.bg)}>
-                    <kpi.icon className="size-7" />
+            <Card className="border-none shadow-[var(--shadow-card)] rounded-[24px] md:rounded-[32px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border)] transition-all duration-300">
+              <CardContent className="p-5 md:p-8 relative">
+                <div className="flex justify-between items-start mb-4 md:mb-6">
+                  <div className={cn("size-10 md:size-14 rounded-xl md:rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform group-hover:scale-110", kpi.bg)}>
+                    <kpi.icon className="size-5 md:size-7" />
                   </div>
-                  <div className={cn("px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-white/10 backdrop-blur-md shadow-sm", kpi.trendColor)}>
+                  <div className={cn("px-2.5 py-0.5 md:px-3 md:py-1 rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-widest bg-white/10 backdrop-blur-md shadow-sm", kpi.trendColor)}>
                     {kpi.trend}
                   </div>
                 </div>
 
                 <div className="space-y-1">
                   <p className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest italic">{kpi.title}</p>
-                  <h3 className="text-3xl font-black text-[var(--text-primary)] tracking-tighter italic uppercase">{kpi.value}</h3>
-                  <div className="flex items-center justify-between pt-4">
-                    <span className="text-[10px] font-bold text-[var(--text-secondary)]">{kpi.description}</span>
-                    <Link href={kpi.link} className="size-8 rounded-full bg-[var(--text-primary)] text-[var(--bg-card)] flex items-center justify-center hover:bg-[var(--primary)] transition-colors">
-                      <ArrowRight className="size-4" />
+                  <h3 className="text-2xl md:text-3xl font-black text-[var(--text-primary)] tracking-tighter italic uppercase">{kpi.value}</h3>
+                  <div className="flex items-center justify-between pt-3 md:pt-4">
+                    <span className="text-[9px] md:text-[10px] font-bold text-[var(--text-secondary)]">{kpi.description}</span>
+                    <Link href={kpi.link} className="size-7 md:size-8 rounded-full bg-[var(--text-primary)] text-[var(--bg-card)] flex items-center justify-center hover:bg-[var(--primary)] transition-colors">
+                      <ArrowRight className="size-3.5 md:size-4" />
                     </Link>
                   </div>
                 </div>
@@ -251,20 +251,20 @@ export default function DashboardPage() {
           transition={{ delay: 0.3 }}
           className="lg:col-span-2 w-full"
         >
-          <Card className="border-none shadow-[var(--shadow-card)] rounded-[40px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border)] w-full">
-            <CardHeader className="p-6 md:p-8 pb-2">
-              <div className="flex items-center gap-4">
-                <div className="size-12 rounded-2xl bg-[var(--primary)] flex items-center justify-center text-white shadow-lg shadow-primary/20">
-                  <TrendingUp className="size-6" />
+          <Card className="border-none shadow-[var(--shadow-card)] rounded-[32px] md:rounded-[40px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border)] w-full">
+            <CardHeader className="p-5 md:p-8 pb-1 md:pb-2">
+              <div className="flex items-center gap-3 md:gap-4">
+                <div className="size-10 md:size-12 rounded-xl md:rounded-2xl bg-[var(--primary)] flex items-center justify-center text-white shadow-lg shadow-primary/20">
+                  <TrendingUp className="size-5 md:size-6" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black text-[var(--text-primary)] tracking-tighter uppercase italic">Vendas 30 Dias</h3>
-                  <p className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest italic">Análise de faturamento</p>
+                  <h3 className="text-lg md:text-xl font-black text-[var(--text-primary)] tracking-tighter uppercase italic leading-tight">Vendas 30 Dias</h3>
+                  <p className="text-[9px] md:text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest italic">Análise de faturamento</p>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="p-4 sm:p-10 pt-4">
-              <div className="h-[300px] w-full">
+              <div className="h-[250px] md:h-[300px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={chartData}>
                     <defs>
@@ -278,29 +278,30 @@ export default function DashboardPage() {
                       dataKey="name"
                       axisLine={false}
                       tickLine={false}
-                      tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 10, fontWeight: 800 }}
-                      dy={15}
+                      tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 9, fontWeight: 800 }}
+                      dy={10}
                     />
                     <YAxis
                       axisLine={false}
                       tickLine={false}
-                      tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 10, fontWeight: 800 }}
+                      tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 9, fontWeight: 800 }}
                     />
                     <Tooltip
                       contentStyle={{ 
-                        borderRadius: '24px', 
+                        borderRadius: '20px', 
                         border: '1px solid var(--border)', 
                         boxShadow: 'var(--shadow-card)',
-                        padding: '16px',
+                        padding: '12px',
                         background: 'var(--bg-card)',
                         color: 'var(--text-primary)',
+                        fontSize: '10px'
                       }}
                     />
                     <Area
                       type="monotone"
                       dataKey="vendas"
                       stroke="var(--primary)"
-                      strokeWidth={4}
+                      strokeWidth={3}
                       fillOpacity={1}
                       fill="url(#colorSales)"
                     />
@@ -317,36 +318,38 @@ export default function DashboardPage() {
            animate={{ opacity: 1, scale: 1 }}
            transition={{ delay: 0.4 }}
         >
-          <Card className="border-none shadow-[var(--shadow-card)] rounded-[40px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border)] h-full">
-            <CardHeader className="p-6 md:p-8 pb-2 text-center">
-              <h3 className="text-xl font-black text-[var(--text-primary)] tracking-tighter uppercase italic">Status de Pedidos</h3>
+          <Card className="border-none shadow-[var(--shadow-card)] rounded-[32px] md:rounded-[40px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border)] h-full">
+            <CardHeader className="p-6 md:p-8 pb-1 text-center">
+              <h3 className="text-lg md:text-xl font-black text-[var(--text-primary)] tracking-tighter uppercase italic">Status de Pedidos</h3>
             </CardHeader>
-            <CardContent className="flex flex-col items-center justify-center p-6 min-h-[300px] md:h-[350px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={orderStatus}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {orderStatus.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{ borderRadius: '20px', border: 'none', background: 'var(--bg-card)', color: 'var(--text-primary)' }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="grid grid-cols-2 gap-4 mt-4 w-full px-4">
+            <CardContent className="flex flex-col items-center justify-center p-6 min-h-[250px] md:h-[350px]">
+              <div className="size-full max-h-[200px] md:max-h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={orderStatus}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={70}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {orderStatus.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{ borderRadius: '16px', border: 'none', background: 'var(--bg-card)', color: 'var(--text-primary)', fontSize: '10px' }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="grid grid-cols-2 gap-3 md:gap-4 mt-2 md:mt-4 w-full px-2 md:px-4">
                 {orderStatus.map((s) => (
-                  <div key={s.name} className="flex items-center gap-2">
-                    <div className="size-3 rounded-full" style={{ backgroundColor: s.color }} />
-                    <span className="text-[10px] font-bold text-[var(--text-secondary)] uppercase">{s.name}</span>
+                  <div key={s.name} className="flex items-center gap-1.5 md:gap-2">
+                    <div className="size-2 md:size-3 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
+                    <span className="text-[9px] md:text-[10px] font-bold text-[var(--text-secondary)] uppercase truncate">{s.name}</span>
                   </div>
                 ))}
               </div>
@@ -361,19 +364,19 @@ export default function DashboardPage() {
            transition={{ delay: 0.5 }}
            className="lg:col-span-3"
         >
-          <Card className="border-none shadow-[var(--shadow-card)] rounded-[40px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border)]">
-            <CardHeader className="p-6 md:p-8 pb-4">
-              <h3 className="text-xl font-black text-[var(--text-primary)] tracking-tighter uppercase italic">Produtos Mais Vendidos</h3>
+          <Card className="border-none shadow-[var(--shadow-card)] rounded-[32px] md:rounded-[40px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border)]">
+            <CardHeader className="p-6 md:p-8 pb-2 md:pb-4">
+              <h3 className="text-lg md:text-xl font-black text-[var(--text-primary)] tracking-tighter uppercase italic">Produtos Mais Vendidos</h3>
             </CardHeader>
             <CardContent className="p-4 md:p-8 pt-0">
-              <div className="h-[250px] w-full">
+              <div className="h-[200px] md:h-[250px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={topProducts}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? "#334155" : "#e2e8f0"} />
                     <XAxis dataKey="name" hide />
                     <YAxis hide />
-                    <Tooltip contentStyle={{ borderRadius: '24px', border: 'none', background: 'var(--bg-card)', color: 'var(--text-primary)' }} />
-                    <Bar dataKey="sales" fill="var(--primary)" radius={[10, 10, 0, 0]} />
+                    <Tooltip contentStyle={{ borderRadius: '20px', border: 'none', background: 'var(--bg-card)', color: 'var(--text-primary)', fontSize: '10px' }} />
+                    <Bar dataKey="sales" fill="var(--primary)" radius={[8, 8, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -385,56 +388,56 @@ export default function DashboardPage() {
       {/* Tables Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pb-10">
         {/* Recent Orders */}
-        <Card className="border-none shadow-[var(--shadow-card)] rounded-[40px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border)]">
-          <CardHeader className="p-6 md:p-8 flex-col sm:flex-row items-start sm:items-center justify-between border-b border-[var(--border)] gap-4">
-            <div className="flex items-center gap-4">
-              <div className="size-10 md:size-12 rounded-2xl bg-rose-500 flex items-center justify-center text-white shadow-lg shrink-0">
+        <Card className="border-none shadow-[var(--shadow-card)] rounded-[32px] md:rounded-[40px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border)]">
+          <CardHeader className="p-5 md:p-8 flex-col sm:flex-row items-start sm:items-center justify-between border-b border-[var(--border)] gap-4">
+            <div className="flex items-center gap-3 md:gap-4">
+              <div className="size-10 md:size-12 rounded-xl md:rounded-2xl bg-rose-500 flex items-center justify-center text-white shadow-lg shrink-0">
                 <Calendar className="size-5 md:size-6" />
               </div>
-              <h3 className="text-xl font-black text-[var(--text-primary)] tracking-tighter uppercase italic">Próximos Pedidos</h3>
+              <h3 className="text-lg md:text-xl font-black text-[var(--text-primary)] tracking-tighter uppercase italic">Próximos Pedidos</h3>
             </div>
             <Link href="/dashboard/pedidos" className="text-[10px] font-black uppercase text-[var(--primary)] tracking-widest hover:underline italic">Ver todos</Link>
           </CardHeader>
           <CardContent className="p-4 md:p-6">
             {recentOrders.length > 0 ? (
-              <div className="space-y-4">
+              <div className="space-y-3 md:space-y-4">
                 {recentOrders.map((order, i) => (
-                  <div key={order.id} className="p-4 rounded-3xl bg-[var(--bg-app)] border border-[var(--border)] flex items-center justify-between group">
-                    <div className="flex items-center gap-4">
-                       <div className="size-12 rounded-2xl bg-[var(--bg-card)] flex items-center justify-center text-rose-500 shadow-sm border border-[var(--border)]">
-                          <Package className="size-6" />
+                  <div key={order.id} className="p-3 md:p-4 rounded-2xl md:rounded-3xl bg-[var(--bg-app)] border border-[var(--border)] flex items-center justify-between group">
+                    <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
+                       <div className="size-10 md:size-12 rounded-xl md:rounded-2xl bg-[var(--bg-card)] flex items-center justify-center text-rose-500 shadow-sm border border-[var(--border)] shrink-0">
+                          <Package className="size-5 md:size-6" />
                        </div>
-                       <div>
-                         <p className="text-sm font-black text-[var(--text-primary)] tracking-tighter italic uppercase">{order.product_name}</p>
-                         <p className="text-[10px] font-bold text-[var(--text-secondary)] uppercase">{order.clients?.name || 'Cliente'}</p>
+                       <div className="overflow-hidden">
+                         <p className="text-xs md:text-sm font-black text-[var(--text-primary)] tracking-tighter italic uppercase truncate">{order.product_name}</p>
+                         <p className="text-[9px] md:text-[10px] font-bold text-[var(--text-secondary)] uppercase truncate">{order.clientes?.name || 'Cliente'}</p>
                        </div>
                     </div>
-                    <div className="text-right">
-                       <p className="text-sm font-black text-[var(--text-primary)] italic">{format(new Date(order.delivery_date), 'dd MMM', { locale: ptBR })}</p>
-                       <Badge className="bg-[var(--primary)]/10 text-[var(--primary)] border-none text-[9px] font-black uppercase">{order.status}</Badge>
+                    <div className="text-right shrink-0">
+                       <p className="text-xs md:text-sm font-black text-[var(--text-primary)] italic">{format(new Date(order.delivery_date), 'dd MMM', { locale: ptBR })}</p>
+                       <Badge className="bg-[var(--primary)]/10 text-[var(--primary)] border-none text-[8px] md:text-[9px] font-black uppercase">{order.status}</Badge>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="h-[200px] flex items-center justify-center text-[var(--text-secondary)] uppercase font-black italic text-xs">Sem pedidos próximos</div>
+              <div className="h-[150px] md:h-[200px] flex items-center justify-center text-[var(--text-secondary)] uppercase font-black italic text-[10px] md:text-xs">Sem pedidos próximos</div>
             )}
           </CardContent>
         </Card>
 
         {/* Finances Placeholder */}
-        <Card className="border-none shadow-[var(--shadow-card)] rounded-[40px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border)]">
-          <CardHeader className="p-6 md:p-8 flex-col sm:flex-row items-start sm:items-center justify-between border-b border-[var(--border)] gap-4">
-            <div className="flex items-center gap-4">
-              <div className="size-10 md:size-12 rounded-2xl bg-indigo-500 flex items-center justify-center text-white shadow-lg shrink-0">
+        <Card className="border-none shadow-[var(--shadow-card)] rounded-[32px] md:rounded-[40px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border)]">
+          <CardHeader className="p-5 md:p-8 flex-col sm:flex-row items-start sm:items-center justify-between border-b border-[var(--border)] gap-4">
+            <div className="flex items-center gap-3 md:gap-4">
+              <div className="size-10 md:size-12 rounded-xl md:rounded-2xl bg-indigo-500 flex items-center justify-center text-white shadow-lg shrink-0">
                 <Wallet className="size-5 md:size-6" />
               </div>
-              <h3 className="text-xl font-black text-[var(--text-primary)] tracking-tighter uppercase italic">Contas & Receitas</h3>
+              <h3 className="text-lg md:text-xl font-black text-[var(--text-primary)] tracking-tighter uppercase italic">Contas & Receitas</h3>
             </div>
             <Link href="/dashboard/financeiro" className="text-[10px] font-black uppercase text-indigo-500 tracking-widest hover:underline italic">Explorar</Link>
           </CardHeader>
-          <CardContent className="p-6 md:p-10 flex flex-col items-center justify-center text-[var(--text-secondary)] bg-[radial-gradient(circle_at_top_right,rgba(124,58,237,0.05),transparent)] min-h-[150px]">
-            <p className="text-xs font-black uppercase tracking-widest italic">Tudo em dia por aqui!</p>
+          <CardContent className="p-6 md:p-10 flex flex-col items-center justify-center text-[var(--text-secondary)] bg-[radial-gradient(circle_at_top_right,rgba(124,58,237,0.05),transparent)] min-h-[120px] md:min-h-[150px]">
+            <p className="text-[10px] md:text-xs font-black uppercase tracking-widest italic">Tudo em dia por aqui!</p>
           </CardContent>
         </Card>
       </div>

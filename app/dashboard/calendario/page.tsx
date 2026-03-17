@@ -71,12 +71,12 @@ export default function CalendarioPage() {
 
     const renderHeader = () => {
         return (
-            <div className="flex items-center justify-between mb-8">
-                <div>
-                    <h1 className="text-4xl font-black tracking-tighter text-slate-900 mb-2 italic uppercase">Calendário <span className="text-primary tracking-tighter italic uppercase">de Entregas</span></h1>
-                    <p className="text-slate-500 font-medium">Gerencie sua carga de trabalho mensal de forma visual.</p>
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8 mb-8">
+                <div className="text-center lg:text-left">
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tighter text-slate-900 mb-2 italic uppercase">Calendário <span className="text-primary tracking-tighter italic uppercase">de Entregas</span></h1>
+                    <p className="text-slate-500 font-medium text-sm md:text-base">Gerencie sua carga de trabalho mensal de forma visual.</p>
                 </div>
-                <div className="flex items-center gap-4 bg-white p-2 rounded-2xl border border-slate-100 shadow-sm">
+                <div className="flex items-center justify-center gap-4 bg-white p-2 rounded-2xl border border-slate-100 shadow-sm w-full lg:w-auto self-center">
                     <Button variant="ghost" size="icon" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="rounded-xl hover:bg-rose-50 text-primary">
                         <ChevronLeft className="size-5" />
                     </Button>
@@ -126,7 +126,7 @@ export default function CalendarioPage() {
                         key={day.toString()}
                         whileHover={{ y: -2 }}
                         className={cn(
-                            "relative min-h-[120px] p-2 border border-slate-100 bg-white transition-all cursor-pointer hover:shadow-lg hover:shadow-primary/5 hover:border-primary/20",
+                            "relative min-h-[100px] sm:min-h-[120px] p-2 border border-slate-100 bg-white transition-all cursor-pointer hover:shadow-lg hover:shadow-primary/5 hover:border-primary/20",
                             !isSameMonth(day, monthStart) ? "bg-slate-50 opacity-40" : "",
                             isSameDay(day, selectedDate) ? "ring-2 ring-primary ring-inset z-10" : ""
                         )}
@@ -173,7 +173,11 @@ export default function CalendarioPage() {
             )
             days = []
         }
-        return <div className="rounded-3xl overflow-hidden border border-slate-200 shadow-sm">{rows}</div>
+        return <div className="rounded-[24px] sm:rounded-3xl overflow-hidden border border-slate-200 shadow-sm bg-white overflow-x-auto">
+            <div className="min-w-[600px]">
+                {rows}
+            </div>
+        </div>
     }
 
     const selectedDayOrders = orders.filter(o => isSameDay(parseISO(o.delivery_date), selectedDate))
@@ -183,12 +187,12 @@ export default function CalendarioPage() {
             {renderHeader()}
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                <div className="lg:col-span-3">
+                <div className="lg:col-span-3 order-2 lg:order-1">
                     {renderDays()}
                     {renderCells()}
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-6 order-1 lg:order-2">
                     <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-xl font-black text-slate-900 italic uppercase">

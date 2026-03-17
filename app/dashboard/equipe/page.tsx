@@ -160,24 +160,24 @@ export default function TeamPage() {
   return (
     <div className="p-6 md:p-10 space-y-8 bg-slate-50 min-h-screen">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-            <div className="p-2 bg-pink-500 rounded-xl text-white">
+        <div className="text-center md:text-left">
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center justify-center md:justify-start gap-3">
+            <div className="p-2 bg-pink-500 rounded-xl text-white shrink-0">
               <Users className="size-6" />
             </div>
             Gestão de Equipe
           </h1>
-          <p className="text-slate-500 font-medium">Gerencie os acessos do seu estabelecimento</p>
+          <p className="text-slate-500 font-medium text-sm md:text-base">Gerencie os acessos do seu estabelecimento</p>
         </div>
 
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-pink-500 hover:bg-pink-600 text-white rounded-xl h-12 px-6 flex gap-2 font-bold shadow-lg shadow-pink-100 transition-all active:scale-95">
-              <UserPlus className="size-5" />
-              Convidar Membro
-            </Button>
+              <Button className="bg-pink-500 hover:bg-pink-600 text-white rounded-xl h-12 px-6 flex gap-2 font-bold shadow-lg shadow-pink-100 transition-all active:scale-95 w-full md:w-auto">
+                <UserPlus className="size-5" />
+                Convidar Membro
+              </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px] rounded-[32px]">
+          <DialogContent className="w-[95vw] sm:max-w-[425px] rounded-[32px] p-6 sm:p-10 max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-2xl font-black italic uppercase tracking-tighter">Novo <span className="text-pink-500">Membro</span></DialogTitle>
               <DialogDescription className="font-medium text-slate-500">
@@ -263,86 +263,88 @@ export default function TeamPage() {
           </div>
         </div>
 
-        <Table>
-          <TableHeader>
-            <TableRow className="border-slate-50 hover:bg-transparent">
-              <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400 py-6">Membro</TableHead>
-              <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400 py-6 text-center">Função</TableHead>
-              <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400 py-6 text-center">Status</TableHead>
-              <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400 py-6 text-center">Desde</TableHead>
-              <TableHead className="w-[100px]"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={5} className="h-64 text-center">
-                  <div className="flex flex-col items-center justify-center gap-4 opacity-30">
-                    <div className="size-10 border-4 border-pink-500/20 border-t-pink-500 rounded-full animate-spin" />
-                    <span className="font-bold text-xs uppercase tracking-widest">Carregando equipe...</span>
-                  </div>
-                </TableCell>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-slate-50 hover:bg-transparent">
+                <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400 py-6 min-w-[200px]">Membro</TableHead>
+                <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400 py-6 text-center min-w-[120px]">Função</TableHead>
+                <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400 py-6 text-center min-w-[100px]">Status</TableHead>
+                <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-400 py-6 text-center min-w-[120px]">Desde</TableHead>
+                <TableHead className="w-[100px]"></TableHead>
               </TableRow>
-            ) : filteredMembers.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="h-64 text-center">
-                  <div className="flex flex-col items-center justify-center gap-2 opacity-30">
-                    <Users className="size-12 mb-2" />
-                    <span className="font-bold text-xs uppercase tracking-widest italic">Nenhum membro encontrado</span>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredMembers.map((member) => (
-                <TableRow key={member.id} className="border-slate-50 hover:bg-slate-50/50 group transition-colors">
-                  <TableCell className="py-6">
-                    <div className="flex items-center gap-4">
-                      <div className="size-12 rounded-2xl bg-slate-100 flex items-center justify-center font-black text-slate-600 uppercase">
-                        {member.name.charAt(0)}
-                      </div>
-                      <div className="space-y-1">
-                        <p className="font-black text-slate-900 leading-none">{member.name}</p>
-                        <div className="flex items-center gap-2 text-slate-400">
-                          <Mail className="size-3" />
-                          <span className="text-xs font-medium">{member.email}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-center py-6">
-                    <div className="inline-flex justify-center w-full">
-                      {getRoleBadge(member.role)}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-center py-6">
-                    <Badge className="bg-emerald-50 text-emerald-600 border-none font-black uppercase text-[10px] tracking-widest px-3">
-                      Ativo
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-center py-6 text-slate-400 font-bold text-xs">
-                    {new Date(member.created_at).toLocaleDateString('pt-BR')}
-                  </TableCell>
-                  <TableCell className="py-6">
-                    <div className="flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
-                        onClick={() => handleDeleteMember(member.id)}
-                      >
-                        <Trash2 className="size-5" />
-                      </Button>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="h-64 text-center">
+                    <div className="flex flex-col items-center justify-center gap-4 opacity-30">
+                      <div className="size-10 border-4 border-pink-500/20 border-t-pink-500 rounded-full animate-spin" />
+                      <span className="font-bold text-xs uppercase tracking-widest">Carregando equipe...</span>
                     </div>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : filteredMembers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="h-64 text-center">
+                    <div className="flex flex-col items-center justify-center gap-2 opacity-30">
+                      <Users className="size-12 mb-2" />
+                      <span className="font-bold text-xs uppercase tracking-widest italic">Nenhum membro encontrado</span>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredMembers.map((member) => (
+                  <TableRow key={member.id} className="border-slate-50 hover:bg-slate-50/50 group transition-colors">
+                    <TableCell className="py-6">
+                      <div className="flex items-center gap-4">
+                        <div className="size-12 rounded-2xl bg-slate-100 flex items-center justify-center font-black text-slate-600 uppercase">
+                          {member.name.charAt(0)}
+                        </div>
+                        <div className="space-y-1">
+                          <p className="font-black text-slate-900 leading-none">{member.name}</p>
+                          <div className="flex items-center gap-2 text-slate-400">
+                            <Mail className="size-3" />
+                            <span className="text-xs font-medium">{member.email}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center py-6">
+                      <div className="inline-flex justify-center w-full">
+                        {getRoleBadge(member.role)}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center py-6">
+                      <Badge className="bg-emerald-50 text-emerald-600 border-none font-black uppercase text-[10px] tracking-widest px-3">
+                        Ativo
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-center py-6 text-slate-400 font-bold text-xs">
+                      {new Date(member.created_at).toLocaleDateString('pt-BR')}
+                    </TableCell>
+                    <TableCell className="py-6">
+                      <div className="flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                          onClick={() => handleDeleteMember(member.id)}
+                        >
+                          <Trash2 className="size-5" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
       {/* Dicas de Gestão */}
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
          <div className="p-6 bg-white rounded-3xl border border-slate-100 shadow-sm space-y-3">
             <div className="p-2 bg-purple-50 rounded-xl text-purple-600 w-fit">
               <Shield className="size-5" />

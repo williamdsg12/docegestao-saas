@@ -106,44 +106,44 @@ export default function LogisticaPage() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-slate-900 overflow-hidden text-white font-sans">
+    <div className="min-h-screen bg-slate-900 text-white font-sans flex flex-col overflow-hidden">
       {/* Logistics Header */}
-      <div className="p-6 border-b border-white/5 flex items-center justify-between bg-slate-900/50 backdrop-blur-xl relative z-20 shadow-2xl">
-        <div className="flex items-center gap-4">
-          <div className="size-12 bg-gradient-to-br from-pink-500 to-rose-600 rounded-2xl flex items-center justify-center shadow-lg shadow-pink-500/20 animate-pulse">
-            <Zap className="size-6 text-white" />
+      <div className="p-4 md:p-6 border-b border-white/5 flex flex-col md:flex-row items-center justify-between bg-slate-900/50 backdrop-blur-xl relative z-20 shadow-2xl gap-4">
+        <div className="flex items-center gap-4 w-full md:w-auto">
+          <div className="size-10 md:size-12 bg-gradient-to-br from-pink-500 to-rose-600 rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg shadow-pink-500/20 animate-pulse">
+            <Zap className="size-5 md:size-6 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-black tracking-tighter uppercase italic">
+            <h1 className="text-xl md:text-2xl font-black tracking-tighter uppercase italic">
               Fleet <span className="text-pink-500">Command</span>
             </h1>
-            <p className="text-[10px] uppercase font-bold tracking-[0.3em] text-slate-500 italic">LOGISTICS INTELLIGENCE V4</p>
+            <p className="text-[8px] md:text-[10px] uppercase font-bold tracking-[0.3em] text-slate-500 italic">LOGISTICS INTELLIGENCE V4</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="hidden lg:flex items-center gap-6 px-8 py-3 bg-white/5 rounded-2xl border border-white/10">
-            <div className="flex items-center gap-3">
-              <div className="size-2 bg-emerald-500 rounded-full animate-ping" />
+        <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+          <div className="hidden sm:flex items-center gap-4 md:gap-6 px-4 md:px-8 py-2 md:py-3 bg-white/5 rounded-xl md:rounded-2xl border border-white/10">
+            <div className="flex items-center gap-2 md:gap-3">
+              <div className="size-1.5 md:size-2 bg-emerald-500 rounded-full animate-ping" />
               <div className="flex flex-col">
-                <span className="text-[10px] font-black uppercase text-slate-500 leading-none mb-1">Status</span>
-                <span className="text-xs font-black text-emerald-500 uppercase">{couriers.filter(c => c.status === 'disponivel').length} ONLINE</span>
+                <span className="text-[8px] md:text-[10px] font-black uppercase text-slate-500 leading-none mb-1">Status</span>
+                <span className="text-[10px] md:text-xs font-black text-emerald-500 uppercase">{couriers.filter(c => c.status === 'disponivel').length} ONLINE</span>
               </div>
             </div>
             <div className="w-px h-6 bg-white/10" />
             <div className="flex flex-col">
-              <span className="text-[10px] font-black uppercase text-slate-500 leading-none mb-1">Transit</span>
-              <span className="text-xs font-black text-white uppercase">{activeDeliveries.length} ACTIVE</span>
+              <span className="text-[8px] md:text-[10px] font-black uppercase text-slate-500 leading-none mb-1">Transit</span>
+              <span className="text-[10px] md:text-xs font-black text-white uppercase">{activeDeliveries.length} ACTIVE</span>
             </div>
           </div>
           
-          <Button onClick={fetchLogisticsData} variant="outline" className="rounded-xl border-white/10 bg-white/5 text-white/70 hover:bg-white/10 h-12 w-12 p-0">
+          <Button onClick={fetchLogisticsData} variant="outline" className="rounded-xl border-white/10 bg-white/5 text-white/70 hover:bg-white/10 h-10 md:h-12 w-10 md:w-12 p-0">
             <RefreshCcw className="size-4" />
           </Button>
         </div>
       </div>
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
         {/* Map View */}
         <div className="flex-1 relative bg-slate-950">
           {isLoaded ? (
@@ -169,11 +169,13 @@ export default function LogisticaPage() {
                   scaledSize: new google.maps.Size(40, 40)
                 }}
               />
-              <Circle 
-                center={center} 
-                radius={(business?.delivery_radius || 5) * 1000} 
-                options={{ fillOpacity: 0.1, fillColor: "#ec4899", strokeColor: "#ec4899", strokeWeight: 1 }}
-              />
+              {business?.delivery_radius && (
+                <Circle 
+                  center={center} 
+                  radius={business.delivery_radius * 1000} 
+                  options={{ fillOpacity: 0.1, fillColor: "#ec4899", strokeColor: "#ec4899", strokeWeight: 1 }}
+                />
+              )}
 
               {/* Courier Markers */}
               {couriers.map(courier => {
@@ -224,86 +226,86 @@ export default function LogisticaPage() {
           )}
           
           {/* Map Controls */}
-          <div className="absolute top-8 left-8 flex flex-col gap-4 z-10">
-            <div className="bg-slate-950/80 backdrop-blur-md p-2 rounded-2xl border border-white/10 flex flex-col gap-2 shadow-2xl">
-              <Button onClick={() => setViewMode('map')} className={cn("size-12 rounded-xl transition-all", viewMode === 'map' ? "bg-pink-500 text-white shadow-lg shadow-pink-500/20" : "bg-transparent text-slate-500")}>
-                <MapIcon className="size-5" />
+          <div className="absolute top-4 md:top-8 left-4 md:left-8 flex flex-col gap-4 z-10">
+            <div className="bg-slate-950/80 backdrop-blur-md p-2 rounded-xl md:rounded-2xl border border-white/10 flex flex-col gap-2 shadow-2xl">
+              <Button onClick={() => setViewMode('map')} className={cn("size-10 md:size-12 rounded-lg md:rounded-xl transition-all", viewMode === 'map' ? "bg-pink-500 text-white shadow-lg shadow-pink-500/20" : "bg-transparent text-slate-500")}>
+                <MapIcon className="size-4 md:size-5" />
               </Button>
-              <Button onClick={() => setViewMode('list')} className={cn("size-12 rounded-xl transition-all", viewMode === 'list' ? "bg-pink-500 text-white" : "bg-transparent text-slate-500")}>
-                <Filter className="size-5" />
+              <Button onClick={() => setViewMode('list')} className={cn("size-10 md:size-12 rounded-lg md:rounded-xl transition-all", viewMode === 'list' ? "bg-pink-500 text-white" : "bg-transparent text-slate-500")}>
+                <Filter className="size-4 md:size-5" />
               </Button>
             </div>
           </div>
         </div>
 
         {/* Sidebar Panel */}
-        <div className="w-[480px] bg-slate-900 border-l border-white/5 flex flex-col overflow-hidden relative z-20 shadow-[-20px_0_50px_rgba(0,0,0,0.5)]">
-          <div className="p-8 pb-4">
-            <h3 className="text-xs font-black uppercase tracking-[0.4em] text-pink-500 mb-6 flex items-center gap-2 italic">
+        <div className="w-full lg:w-[480px] bg-slate-900 lg:border-l border-white/5 flex flex-col overflow-hidden relative z-20 shadow-[-20px_0_50px_rgba(0,0,0,0.5)] h-[300px] lg:h-auto">
+          <div className="p-4 md:p-8 pb-4">
+            <h3 className="text-[10px] md:text-xs font-black uppercase tracking-[0.4em] text-pink-500 mb-4 md:mb-6 flex items-center gap-2 italic">
               <Truck className="size-4" /> Live Manifest
             </h3>
             
-            <div className="relative mb-8">
-              <Search className="absolute left-5 top-1/2 -translate-y-1/2 size-4 text-slate-500" />
+            <div className="relative mb-4 md:mb-8">
+              <Search className="absolute left-4 md:left-5 top-1/2 -translate-y-1/2 size-4 text-slate-500" />
               <input 
                 placeholder="PROCURAR ENTREGAS..." 
-                className="w-full h-14 bg-white/5 border border-white/10 rounded-2xl pl-14 pr-6 text-[10px] font-black uppercase tracking-widest focus:outline-none focus:border-pink-500 transition-all placeholder:text-slate-600 focus:bg-white/[0.07]"
+                className="w-full h-12 md:h-14 bg-white/5 border border-white/10 rounded-xl md:rounded-2xl pl-12 md:pl-14 pr-4 md:pr-6 text-[9px] md:text-[10px] font-black uppercase tracking-widest focus:outline-none focus:border-pink-500 transition-all placeholder:text-slate-600 focus:bg-white/[0.07]"
               />
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-8 pt-0 space-y-6 scrollbar-hide">
+          <div className="flex-1 overflow-y-auto p-4 md:p-8 pt-0 space-y-4 md:space-y-6 scrollbar-hide">
             {activeDeliveries.length > 0 ? activeDeliveries.map((delivery) => (
-              <Card key={delivery.id} className="bg-white/[0.03] border-white/5 rounded-[40px] overflow-hidden group hover:bg-white/10 transition-all duration-500 border-none hover:shadow-2xl hover:-translate-y-1">
-                <CardContent className="p-8">
-                  <div className="flex justify-between items-start mb-8">
-                    <div className="space-y-2">
+              <Card key={delivery.id} className="bg-white/[0.03] border-white/5 rounded-[32px] md:rounded-[40px] overflow-hidden group hover:bg-white/10 transition-all duration-500 border-none hover:shadow-2xl hover:-translate-y-1">
+                <CardContent className="p-6 md:p-8">
+                  <div className="flex justify-between items-start mb-6 md:mb-8">
+                    <div className="space-y-1 md:space-y-2">
                       <Badge className={cn(
-                        "border-none font-black text-[9px] uppercase tracking-widest px-4 py-1.5 rounded-full",
+                        "border-none font-black text-[8px] md:text-[9px] uppercase tracking-widest px-3 md:px-4 py-1 md:py-1.5 rounded-full",
                         getMarkerColor(delivery.created_at) === 'red' ? "bg-rose-500/10 text-rose-500" :
                         getMarkerColor(delivery.created_at) === 'yellow' ? "bg-amber-500/10 text-amber-500" : "bg-emerald-500/10 text-emerald-500"
                       )}>
                         {differenceInMinutes(new Date(), new Date(delivery.created_at))} MIN EM ROTA
                       </Badge>
-                      <h4 className="text-xl font-black uppercase italic tracking-tighter truncate max-w-[250px]">
+                      <h4 className="text-lg md:text-xl font-black uppercase italic tracking-tighter truncate max-w-[200px] md:max-w-[250px]">
                         {delivery.clientes?.nome || "Cliente"}
                       </h4>
                     </div>
-                    <div className="size-12 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10">
-                       <MapPin className="size-5 text-pink-500" />
+                    <div className="size-10 md:size-12 bg-white/5 rounded-xl md:rounded-2xl flex items-center justify-center border border-white/10">
+                       <MapPin className="size-4 md:size-5 text-pink-500" />
                     </div>
                   </div>
 
-                  <div className="p-6 bg-slate-900/80 rounded-[32px] border border-white/5 mb-8">
-                    <div className="flex items-center gap-4">
-                      <div className="size-10 bg-white text-slate-900 rounded-xl flex items-center justify-center shadow-lg transform -rotate-3 group-hover:rotate-0 transition-transform">
-                        <Truck className="size-5" />
+                  <div className="p-4 md:p-6 bg-slate-900/80 rounded-2xl md:rounded-[32px] border border-white/5 mb-6 md:mb-8">
+                    <div className="flex items-center gap-3 md:gap-4">
+                      <div className="size-8 md:size-10 bg-white text-slate-900 rounded-lg md:rounded-xl flex items-center justify-center shadow-lg transform -rotate-3 group-hover:rotate-0 transition-transform">
+                        <Truck className="size-4 md:size-5" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Entregador Responsável</p>
-                        <p className="text-xs font-black uppercase text-white tracking-widest">
+                        <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-0.5 md:mb-1">Entregador Responsável</p>
+                        <p className="text-[10px] md:text-xs font-black uppercase text-white tracking-widest">
                            {couriers.find(c => c.id === delivery.entregador_id)?.nome || "Buscando..."}
                         </p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4">
-                    <Button className="flex-1 h-12 bg-pink-500 hover:bg-pink-600 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-pink-500/20">
+                  <div className="flex items-center gap-3 md:gap-4">
+                    <Button className="flex-1 h-10 md:h-12 bg-pink-500 hover:bg-pink-600 text-white rounded-xl md:rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-pink-500/20">
                       Rastrear
                     </Button>
-                    <Button variant="outline" className="size-12 rounded-2xl border-white/10 bg-white/5 text-white/50 hover:bg-white/10">
+                    <Button variant="outline" className="size-10 md:size-12 rounded-xl md:rounded-2xl border-white/10 bg-white/5 text-white/50 hover:bg-white/10">
                       <Navigation className="size-4" />
                     </Button>
                   </div>
                 </CardContent>
               </Card>
             )) : (
-              <div className="h-64 border-2 border-dashed border-white/5 rounded-[50px] flex flex-col items-center justify-center text-center p-8 bg-white/[0.01]">
-                 <div className="size-20 bg-white/5 rounded-3xl flex items-center justify-center text-slate-700 mb-6 scale-75 opacity-50">
-                   <AlertCircle className="size-10" />
+              <div className="h-48 md:h-64 border-2 border-dashed border-white/5 rounded-[40px] md:rounded-[50px] flex flex-col items-center justify-center text-center p-6 md:p-8 bg-white/[0.01]">
+                 <div className="size-16 md:size-20 bg-white/5 rounded-2xl md:rounded-3xl flex items-center justify-center text-slate-700 mb-4 md:mb-6 scale-75 opacity-50">
+                   <AlertCircle className="size-8 md:size-10" />
                  </div>
-                 <p className="text-xs font-black uppercase tracking-[0.2em] text-slate-500 italic">No Active Wings in Transit</p>
+                 <p className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-slate-500 italic">No Active Wings in Transit</p>
               </div>
             )}
           </div>

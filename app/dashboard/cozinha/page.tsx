@@ -100,21 +100,21 @@ export default function KDSPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-white p-6 md:p-10 font-sans overflow-x-hidden">
       {/* KDS Header */}
-      <div className="flex flex-col md:flex-row items-center justify-between gap-8 mb-12">
-        <div className="flex items-center gap-6">
-          <div className="size-16 bg-gradient-to-br from-amber-400 to-orange-600 rounded-[28px] flex items-center justify-center shadow-2xl shadow-orange-500/20 animate-pulse">
+      <div className="flex flex-col lg:flex-row items-center justify-between gap-8 mb-12">
+        <div className="flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
+          <div className="size-16 bg-gradient-to-br from-amber-400 to-orange-600 rounded-[28px] flex items-center justify-center shadow-2xl shadow-orange-500/20 animate-pulse shrink-0">
             <ChefHat className="size-8 text-white" />
           </div>
           <div>
-            <h1 className="text-4xl md:text-5xl font-black tracking-tighter uppercase italic leading-none">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tighter uppercase italic leading-none">
               Kitchen <span className="text-amber-500">Display</span> System
             </h1>
             <p className="text-[10px] uppercase font-black tracking-[0.4em] text-slate-500 italic mt-2">Intelligence Unit V4.0</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-           <div className="px-10 py-5 bg-white/5 rounded-[32px] border border-white/10 backdrop-blur-xl flex items-center gap-8">
+        <div className="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
+           <div className="px-6 sm:px-10 py-5 bg-white/5 rounded-[32px] border border-white/10 backdrop-blur-xl flex items-center gap-6 sm:gap-8 w-full sm:w-auto justify-center">
               <div className="text-center">
                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Pendente</p>
                  <p className="text-3xl font-black italic text-white leading-none">
@@ -133,15 +133,16 @@ export default function KDSPage() {
            <Button 
              onClick={unlockAudio}
              variant="outline" 
-             className="size-16 rounded-[28px] border-white/10 bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white"
+             className="h-16 w-full sm:w-16 rounded-[28px] border-white/10 bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white flex items-center justify-center"
            >
-             <Bell className="size-6" />
+             <Bell className="size-6 mr-2 sm:mr-0" />
+             <span className="sm:hidden font-black uppercase tracking-widest text-[10px]">Alertas Sonoros</span>
            </Button>
         </div>
       </div>
 
       {/* Grid of Kitchen Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
         <AnimatePresence mode="popLayout">
           {orders.length > 0 ? orders.map((order, idx) => {
             const minutes = differenceInMinutes(new Date(), new Date(order.created_at))
@@ -156,7 +157,7 @@ export default function KDSPage() {
                 exit={{ opacity: 0, scale: 0.8, x: 100 }}
                 transition={{ type: "spring", stiffness: 100, delay: idx * 0.05 }}
               >
-                <Card className="rounded-[48px] bg-white border-none shadow-2xl overflow-hidden min-h-[580px] flex flex-col group transition-all duration-500 hover:-translate-y-2">
+                <Card className="rounded-[40px] md:rounded-[48px] bg-white border-none shadow-2xl overflow-hidden min-h-[500px] md:min-h-[580px] flex flex-col group transition-all duration-500 hover:-translate-y-2">
                   {/* Card Header */}
                   <div className={cn(
                     "p-8 pb-4 flex justify-between items-start transition-colors",

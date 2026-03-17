@@ -507,31 +507,31 @@ export default function DigitalMenuPage() {
     <div className="space-y-10 pb-20">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <h1 className="text-4xl font-black tracking-tighter text-slate-900 mb-2 uppercase italic leading-none">
+        <div className="text-center md:text-left">
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tighter text-slate-900 mb-2 uppercase italic leading-none">
             Cardápio <span className="text-primary tracking-tighter">Digital</span>
           </h1>
-          <p className="text-slate-500 font-medium">Gerencie o que seus clientes veem na sua vitrine online.</p>
+          <p className="text-slate-500 font-medium text-sm sm:text-base">Gerencie o que seus clientes veem na sua vitrine online.</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
           <Dialog open={isAIImportOpen} onOpenChange={setIsAIImportOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="h-12 border-primary/20 bg-primary/5 text-primary font-bold hover:bg-primary/10 rounded-xl gap-2 transition-all hover:scale-105 active:scale-95">
+              <Button variant="outline" className="h-12 w-full sm:w-auto border-primary/20 bg-primary/5 text-primary font-bold hover:bg-primary/10 rounded-xl gap-2 transition-all hover:scale-105 active:scale-95">
                 <Plus className="size-4" /> Importar com IA ✨
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-xl rounded-[32px] overflow-hidden p-0 border-none shadow-2xl">
-              <div className="bg-slate-900 p-8 text-white relative overflow-hidden">
+            <DialogContent className="w-[95vw] sm:max-w-xl rounded-[32px] overflow-hidden p-0 border-none shadow-2xl max-h-[90vh] overflow-y-auto">
+              <div className="bg-slate-900 p-6 sm:p-8 text-white relative overflow-hidden shrink-0">
                 <div className="absolute top-0 right-0 size-40 bg-primary/20 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2" />
-                <DialogTitle className="text-2xl font-black italic uppercase tracking-tighter flex items-center gap-3 relative z-10">
+                <DialogTitle className="text-xl sm:text-2xl font-black italic uppercase tracking-tighter flex items-center gap-3 relative z-10">
                   IA Doce <span className="text-primary italic">Gestão</span>
                 </DialogTitle>
-                <p className="text-slate-400 text-sm font-medium mt-2 relative z-10">
+                <p className="text-slate-400 text-xs sm:text-sm font-medium mt-2 relative z-10 leading-relaxed">
                   Cole um link do iFood (produto ou loja completa) ou descreva os itens para importarmos tudo automaticamente.
                 </p>
               </div>
 
-              <div className="p-8 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
+              <div className="p-6 sm:p-8 space-y-6">
                 {!extractedProduct && !extractedBulkData && (
                   <div className="space-y-3">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Link ou Descrição</Label>
@@ -652,14 +652,14 @@ export default function DigitalMenuPage() {
           <Button 
             onClick={() => router.push('/dashboard/menu-editor')}
             variant="outline" 
-            className="h-12 rounded-xl border-primary/20 bg-primary/5 text-primary font-bold hover:bg-primary/10 gap-2 transition-all hover:scale-105 active:scale-95"
+            className="h-12 w-full sm:w-auto rounded-xl border-primary/20 bg-primary/5 text-primary font-bold hover:bg-primary/10 gap-2 transition-all hover:scale-105 active:scale-95"
           >
             <LayoutGrid className="size-4" /> Personalizar Cardápio
           </Button>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="h-12 rounded-xl border-slate-200 bg-white font-bold text-slate-600 gap-2 hover:border-primary hover:text-primary transition-colors">
+              <Button variant="outline" className="h-12 w-full sm:w-auto rounded-xl border-slate-200 bg-white font-bold text-slate-600 gap-2 hover:border-primary hover:text-primary transition-colors">
                 <Share2 className="size-4" /> Compartilhar
               </Button>
             </DropdownMenuTrigger>
@@ -680,19 +680,19 @@ export default function DigitalMenuPage() {
                   setEditingProduct(null)
                   setProductData({ name: "", description: "", price: "", category_id: "", image_url: "", active: true })
                 }}
-                className="h-12 px-6 rounded-xl bg-primary hover:bg-primary text-white font-black uppercase italic tracking-widest text-[10px] shadow-lg shadow-primary/20 transition-transform hover:scale-105 active:scale-95"
+                className="h-12 w-full sm:w-auto px-6 rounded-xl bg-primary hover:bg-primary text-white font-black uppercase italic tracking-widest text-[10px] shadow-lg shadow-primary/20 transition-transform hover:scale-105 active:scale-95"
               >
                 <Plus className="mr-2 size-5" /> Novo Produto
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-xl rounded-[32px]">
+            <DialogContent className="w-[95vw] sm:max-w-xl rounded-[32px] p-6 sm:p-10 max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="text-2xl font-black italic uppercase tracking-tighter">
                   {editingProduct ? 'Editar' : 'Novo'} <span className="text-primary">Produto</span>
                 </DialogTitle>
               </DialogHeader>
               <div className="grid gap-6 py-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Nome</Label>
                     <Input 
