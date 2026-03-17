@@ -13,6 +13,7 @@ import { ThemeToggle } from "@/components/dashboard/ThemeToggle"
 import { NotificationBell } from "@/components/dashboard/NotificationBell"
 import { useState, useEffect } from "react"
 import { toast } from "sonner"
+import { SidebarTrigger } from "@/components/dashboard/sidebar"
 
 export default function DashboardLayout({
   children,
@@ -62,22 +63,25 @@ export default function DashboardLayout({
         <DashboardSidebar>
           <div className="flex flex-col h-full">
             {/* Header with soft pink gradient - Refined Style */}
-            <header className="h-20 bg-gradient-to-r from-[#FBCFE8] via-[#F472B6] to-[#FBCFE8] px-8 flex items-center justify-between shrink-0 shadow-lg relative z-20 transition-all duration-500">
-              <div className="flex flex-col">
-                <h1 className="text-xl font-black text-slate-900 tracking-tight uppercase italic">Dashboard</h1>
-                <p className="text-[10px] text-pink-700 font-bold uppercase tracking-widest">Bem-vindo de volta!</p>
+            <header className="h-16 md:h-20 bg-gradient-to-r from-[#FBCFE8] via-[#F472B6] to-[#FBCFE8] px-4 md:px-6 flex items-center justify-between shrink-0 shadow-lg relative z-20 transition-all duration-500">
+              <div className="flex items-center gap-2 md:gap-4 overflow-hidden">
+                <SidebarTrigger />
+                <div className="flex flex-col min-w-0">
+                  <h1 className="text-base md:text-xl font-black text-slate-900 tracking-tight uppercase italic truncate">Dashboard</h1>
+                  <p className="hidden md:block text-[10px] text-pink-700 font-bold uppercase tracking-widest">Bem-vindo de volta!</p>
+                </div>
               </div>
 
               {/* Trial Banner - Clickable Link to Billing */}
               <Link
                 href="/dashboard/billing"
-                className="hidden md:flex items-center gap-2 px-6 py-2 rounded-full bg-white/40 backdrop-blur-md border border-white/60 text-pink-900 font-black text-sm transition-all hover:bg-white/60 hover:scale-105 active:scale-95 cursor-pointer italic shadow-sm group"
+                className="hidden lg:flex items-center gap-2 px-6 py-2 rounded-full bg-white/40 backdrop-blur-md border border-white/60 text-pink-900 font-black text-sm transition-all hover:bg-white/60 hover:scale-105 active:scale-95 cursor-pointer italic shadow-sm group"
               >
                 <Clock className="size-4 animate-pulse text-pink-600 group-hover:rotate-12 transition-transform" />
                 <span>{getTrialLabel()}</span>
               </Link>
 
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 md:gap-4">
                 <ThemeToggle />
                 <NotificationBell />
                 <UserAvatarMenu variant="transparent" />
@@ -85,8 +89,8 @@ export default function DashboardLayout({
             </header>
 
             {/* Content Area */}
-            <div className="flex-1 overflow-y-auto p-4 md:p-8 xl:p-10">
-              <div className="max-w-[1400px] mx-auto">
+            <div className="flex-1 overflow-y-auto w-full">
+              <div className="max-w-[1400px] mx-auto p-4 md:p-8 xl:p-10">
                 {children}
               </div>
             </div>

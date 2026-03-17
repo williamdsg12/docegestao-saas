@@ -447,7 +447,7 @@ export default function FichaTecnicaPage() {
 
         <TabsContent value="produtos" className="space-y-10 mt-0 focus-visible:outline-none">
           {/* Stats 2.0 */}
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
+          <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-8">
             {stats.map((stat, i) => (
               <motion.div
                 key={stat.label}
@@ -455,14 +455,14 @@ export default function FichaTecnicaPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
               >
-                <div className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 hover:border-primary/20 transition-all duration-300 shadow-sm">
+                <div className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 md:p-6 hover:border-primary/20 transition-all duration-300 shadow-sm">
                   <div className="flex items-center gap-4">
-                    <div className={cn("flex size-14 items-center justify-center rounded-xl bg-slate-50 border border-slate-100 group-hover:scale-110 transition-transform duration-500", stat.color)}>
-                      <stat.icon className="size-7" />
+                    <div className={cn("flex size-12 md:size-14 items-center justify-center rounded-xl bg-slate-50 border border-slate-100 group-hover:scale-110 transition-transform duration-500", stat.color)}>
+                      <stat.icon className="size-6 md:size-7" />
                     </div>
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{stat.label}</p>
-                      <p className="text-2xl font-black text-slate-900 tracking-tighter">{stat.value}</p>
+                      <p className="text-xl md:text-2xl font-black text-slate-900 tracking-tighter">{stat.value}</p>
                     </div>
                   </div>
                 </div>
@@ -470,8 +470,8 @@ export default function FichaTecnicaPage() {
             ))}
           </div>
 
-          <div className="rounded-3xl border border-slate-200 bg-white overflow-hidden shadow-sm">
-            <Table>
+          <div className="rounded-3xl border border-slate-200 bg-white overflow-hidden shadow-sm overflow-x-auto">
+            <Table className="min-w-[800px] md:min-w-full">
               <TableHeader className="bg-slate-50/50">
                 <TableRow className="border-slate-100 hover:bg-transparent">
                   <TableHead className="py-5 pl-8 text-[10px] font-black uppercase tracking-widest text-slate-400">Item / Receita</TableHead>

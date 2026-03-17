@@ -193,225 +193,334 @@ export default function CheckoutPage() {
   if (loadingBusiness) return <div className="h-screen flex items-center justify-center font-black animate-pulse">CARREGANDO...</div>
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
-      {/* Checkout Navbar */}
-      <header className="bg-white border-b border-rose-100 p-6 flex items-center justify-between sticky top-0 z-50">
-        <div className="flex items-center gap-3">
-          <div className="size-10 bg-primary rounded-xl flex items-center justify-center">
-            <ShoppingBag className="text-white size-5" />
+    <div className="min-h-screen bg-[#FFF5F8] flex flex-col font-sans selection:bg-pink-100 selection:text-pink-600">
+      {/* Checkout Navbar - Refined */}
+      <header className="bg-white/80 backdrop-blur-md border-b border-pink-100 p-6 flex items-center justify-between sticky top-0 z-50 shadow-sm">
+        <div className="flex items-center gap-4 group cursor-pointer" onClick={() => router.push('/')}>
+          <div className="size-12 bg-gradient-to-br from-[#FF2F81] to-[#FF6B6B] rounded-2xl flex items-center justify-center shadow-lg shadow-pink-200 group-hover:scale-110 transition-transform">
+            <ShoppingBag className="text-white size-6" />
           </div>
-          <h1 className="text-xl font-black italic uppercase tracking-tighter">
-            Finalizar <span className="text-primary">Pedido</span>
-          </h1>
+          <div>
+            <h1 className="text-2xl font-black italic uppercase tracking-tighter leading-none">
+              FINALIZAR <span className="text-[#FF2F81]">PEDIDO</span>
+            </h1>
+            <p className="text-[10px] font-bold text-pink-400 uppercase tracking-widest mt-1">Sua confeitaria favorita</p>
+          </div>
         </div>
-        <Button variant="ghost" onClick={() => router.back()} className="text-xs font-black uppercase text-slate-400">
+        <Button 
+          variant="ghost" 
+          onClick={() => router.back()} 
+          className="text-xs font-black uppercase text-slate-400 hover:text-pink-500 hover:bg-pink-50 rounded-full px-6"
+        >
            Voltar ao Menu
         </Button>
       </header>
 
-      <main className="flex-1 max-w-5xl mx-auto w-full p-6 md:p-12 grid grid-cols-1 lg:grid-cols-2 gap-12">
-        {/* Left Column: Form Details */}
-        <div className="space-y-12">
+      <main className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start relative z-10">
+        
+        {/* Left Column: Form Details (Col 7/12) */}
+        <div className="lg:col-span-7 space-y-8 w-full min-w-0">
+
           {/* Section 1: Customer Info */}
-          <section className="bg-white p-8 rounded-[40px] border border-rose-100 shadow-xl shadow-rose-200/20">
-            <div className="flex items-center gap-4 mb-8">
-               <div className="size-10 rounded-2xl bg-pink-100 flex items-center justify-center text-pink-500 font-black">1</div>
-               <h2 className="text-xl font-black uppercase italic tracking-tighter">Seus Dados</h2>
+          <motion.section 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="bg-white p-6 md:p-10 rounded-[40px] md:rounded-[56px] border border-pink-50 shadow-[0_30px_60px_rgba(255,47,129,0.05)] w-full"
+          >
+            <div className="flex items-center gap-6 mb-10">
+               <div className="w-14 h-14 shrink-0 rounded-2xl bg-gradient-to-br from-[#FF2F81] to-[#FF6B6B] flex items-center justify-center text-white font-black text-xl shadow-lg shadow-pink-200">1</div>
+               <div className="space-y-1">
+                 <h2 className="text-2xl font-black uppercase italic tracking-tighter text-slate-800 leading-none">Seus Dados</h2>
+                 <p className="text-[10px] font-bold text-pink-400 uppercase tracking-widest">Identificação do cliente</p>
+               </div>
             </div>
             
-            <div className="space-y-6">
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                     <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Nome Completo</Label>
+            <div className="space-y-8">
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                  <div className="space-y-3">
+                     <Label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-4">Nome Completo</Label>
                      <Input 
                         placeholder="Ex: João Silva" 
                         value={customerInfo.name} 
                         onChange={e => setCustomerInfo({...customerInfo, name: e.target.value})}
-                        className="h-14 rounded-2xl bg-slate-50 border-none font-bold px-6 focus-visible:ring-primary/20"
+                        className="h-16 rounded-[28px] bg-slate-50 border-2 border-transparent focus:border-pink-200 focus:bg-white transition-all font-bold px-8 text-slate-700"
                      />
                   </div>
-                  <div className="space-y-2">
-                     <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">WhatsApp</Label>
+                  <div className="space-y-3">
+                     <Label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-4">WhatsApp</Label>
                      <Input 
                         placeholder="(00) 00000-0000" 
                         value={customerInfo.phone} 
                         onChange={e => setCustomerInfo({...customerInfo, phone: e.target.value})}
-                        className="h-14 rounded-2xl bg-slate-50 border-none font-bold px-6 focus-visible:ring-primary/20"
+                        className="h-16 rounded-[28px] bg-slate-50 border-2 border-transparent focus:border-pink-200 focus:bg-white transition-all font-bold px-8 text-slate-700"
                      />
                   </div>
                </div>
-               <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Email (Opcional)</Label>
+               <div className="space-y-3">
+                  <Label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-4">Email (Opcional)</Label>
                   <Input 
                      placeholder="seu@email.com" 
                      value={customerInfo.email} 
                      onChange={e => setCustomerInfo({...customerInfo, email: e.target.value})}
-                     className="h-14 rounded-2xl bg-slate-50 border-none font-bold px-6 focus-visible:ring-primary/20"
+                     className="h-16 rounded-[28px] bg-slate-50 border-2 border-transparent focus:border-pink-200 focus:bg-white transition-all font-bold px-8 text-slate-700"
                   />
                </div>
-               <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Observações</Label>
+               <div className="space-y-3">
+                  <Label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-4">Observações do Pedido</Label>
                   <Input 
-                     placeholder="Ex: Apartamento 402, bloco B..." 
+                     placeholder="Ex: Sem cebola, apartamento..." 
                      value={customerInfo.notes} 
                      onChange={e => setCustomerInfo({...customerInfo, notes: e.target.value})}
-                     className="h-14 rounded-2xl bg-slate-50 border-none font-bold px-6 focus-visible:ring-primary/20"
+                     className="h-16 rounded-[28px] bg-slate-50 border-2 border-transparent focus:border-pink-200 focus:bg-white transition-all font-bold px-8 text-slate-700"
                   />
                </div>
             </div>
-          </section>
+          </motion.section>
+
 
           {/* Section 2: Delivery */}
-          <section className="bg-white p-8 rounded-[40px] border border-rose-100 shadow-xl shadow-rose-200/20">
-            <div className="flex items-center gap-4 mb-8">
-               <div className="size-10 rounded-2xl bg-pink-100 flex items-center justify-center text-pink-500 font-black">2</div>
-               <h2 className="text-xl font-black uppercase italic tracking-tighter">Onde Entregar</h2>
+          <motion.section 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
+            className="bg-white p-6 md:p-10 rounded-[40px] md:rounded-[56px] border border-pink-50 shadow-[0_30px_60px_rgba(255,47,129,0.05)] w-full"
+          >
+            <div className="flex items-center gap-6 mb-10">
+               <div className="w-14 h-14 shrink-0 rounded-2xl bg-[#F8FAFC] border-4 border-white shadow-md flex items-center justify-center text-slate-300 font-black text-xl">2</div>
+               <div className="space-y-1">
+                 <h2 className="text-2xl font-black uppercase italic tracking-tighter text-slate-800 leading-none">Onde Entregar</h2>
+                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Endereço de entrega</p>
+               </div>
             </div>
             
-            <AddressAutocomplete 
-              onAddressSelect={calculateFee} 
-              className="shadow-inner bg-slate-50 rounded-2xl"
-            />
+            <div className="space-y-6">
+              <AddressAutocomplete 
+                onAddressSelect={calculateFee} 
+                className="shadow-sm bg-slate-50 rounded-[28px] border-2 border-transparent focus-within:border-pink-200 focus-within:bg-white transition-all h-16 px-8"
+              />
 
-            {address && (
-              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="mt-6 p-6 bg-slate-900 rounded-[32px] text-white flex items-start gap-4">
-                <div className="size-10 rounded-2xl bg-white/10 flex items-center justify-center shrink-0">
-                  <MapPin className="size-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-[10px] font-black uppercase text-slate-400 mb-1 tracking-widest leading-none">Localização Confirmada</p>
-                  <p className="text-sm font-bold leading-tight">{address.formatted_address}</p>
-                  {distance && (
-                    <Badge variant="secondary" className="mt-3 bg-primary text-white border-none font-black text-[10px] uppercase tracking-widest px-3 py-1">
-                       Distância: {distance.toFixed(1)} km
-                    </Badge>
-                  )}
-                </div>
-              </motion.div>
-            )}
-          </section>
+              <AnimatePresence>
+                {address && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }} 
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                  >
+                    <div className="mt-4 p-8 bg-slate-900 rounded-[32px] text-white space-y-6 relative overflow-hidden group">
+                      <div className="absolute top-0 right-0 w-64 h-64 bg-[#FF2F81] rounded-full blur-[100px] opacity-10 -translate-y-1/2 translate-x-1/2" />
+                      
+                      <div className="flex items-center gap-4 relative z-10">
+                        <div className="size-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
+                          <MapPin className="size-5 text-pink-400" />
+                        </div>
+                        <p className="text-sm font-bold truncate pr-4">{address.formatted_address}</p>
+                      </div>
+
+                      <div className="flex flex-wrap gap-4 relative z-10">
+                        {distance && (
+                          <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full border border-white/10">
+                            <Zap className="size-3 text-pink-400" />
+                            <span className="text-[10px] font-black uppercase tracking-widest">{distance.toFixed(1)} km</span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full border border-white/10">
+                          <Clock className="size-3 text-pink-400" />
+                          <span className="text-[10px] font-black uppercase tracking-widest">30-45 min</span>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </motion.section>
+
 
           {/* Section 3: Payment */}
-          <section className="bg-white p-8 rounded-[40px] border border-rose-100 shadow-xl shadow-rose-200/20">
-            <div className="flex items-center gap-4 mb-8">
-               <div className="size-10 rounded-2xl bg-pink-100 flex items-center justify-center text-pink-500 font-black">3</div>
-               <h2 className="text-xl font-black uppercase italic tracking-tighter">Como Pagar</h2>
+          <motion.section 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-white p-6 md:p-10 rounded-[40px] md:rounded-[56px] border border-pink-50 shadow-[0_30px_60px_rgba(255,47,129,0.05)] w-full"
+          >
+            <div className="flex items-center gap-6 mb-10">
+               <div className="w-14 h-14 shrink-0 rounded-2xl bg-[#F8FAFC] border-4 border-white shadow-md flex items-center justify-center text-slate-300 font-black text-xl">3</div>
+               <div className="space-y-1">
+                 <h2 className="text-2xl font-black uppercase italic tracking-tighter text-slate-800 leading-none">Como Pagar</h2>
+                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Forma de pagamento</p>
+               </div>
             </div>
             
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
                <button 
                 onClick={() => setCustomerInfo({...customerInfo, payment_method: "pix"})}
                 className={cn(
-                  "p-8 rounded-[36px] border-2 flex flex-col items-center gap-4 group transition-all relative overflow-hidden",
-                  customerInfo.payment_method === "pix" ? "border-primary bg-pink-50/50 shadow-inner" : "border-slate-50 bg-slate-50 opacity-60 hover:opacity-100"
+                  "p-8 rounded-[32px] md:rounded-[40px] border-4 flex flex-col items-center gap-4 transition-all duration-300 relative overflow-hidden group",
+                  customerInfo.payment_method === "pix" 
+                    ? "border-[#FF2F81] bg-pink-50/50 shadow-xl shadow-pink-100/50 scale-[1.02]" 
+                    : "border-slate-50 bg-slate-50 hover:border-pink-100"
                 )}
                >
                   <div className={cn(
-                    "size-14 rounded-3xl flex items-center justify-center transition-transform group-hover:scale-110",
-                    customerInfo.payment_method === "pix" ? "bg-primary text-white" : "bg-white text-slate-400 shadow-sm"
+                    "size-16 rounded-2xl flex items-center justify-center transition-all",
+                    customerInfo.payment_method === "pix" ? "bg-[#FF2F81] text-white shadow-lg shadow-pink-200" : "bg-white text-slate-300 shadow-sm border border-slate-100"
                   )}>
-                     <Zap className="size-7" />
+                     <Zap className="size-8" />
                   </div>
-                  <span className={cn(
-                    "text-[10px] font-black uppercase tracking-widest",
-                    customerInfo.payment_method === "pix" ? "text-primary" : "text-slate-400"
-                  )}>Pagar via Pix</span>
+                  <div className="text-center">
+                    <span className={cn(
+                      "text-sm font-black uppercase tracking-widest block",
+                      customerInfo.payment_method === "pix" ? "text-[#FF2F81]" : "text-slate-500"
+                    )}>Pagar via Pix</span>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase mt-1 block">Rápido e Seguro</span>
+                  </div>
+                  {customerInfo.payment_method === "pix" && (
+                    <div className="absolute top-4 right-4 bg-[#FF2F81] text-white p-1 rounded-full">
+                       <Check className="size-3 stroke-[3px]" />
+                    </div>
+                  )}
                </button>
 
                <button 
                 onClick={() => setCustomerInfo({...customerInfo, payment_method: "cart"})}
                 className={cn(
-                  "p-8 rounded-[36px] border-2 flex flex-col items-center gap-4 group transition-all relative overflow-hidden",
-                  customerInfo.payment_method === "cart" ? "border-primary bg-pink-50/50 shadow-inner" : "border-slate-50 bg-slate-50 opacity-60 hover:opacity-100"
+                  "p-8 rounded-[32px] md:rounded-[40px] border-4 flex flex-col items-center gap-4 transition-all duration-300 relative overflow-hidden group",
+                  customerInfo.payment_method === "cart" 
+                    ? "border-[#FF2F81] bg-pink-50/50 shadow-xl shadow-pink-100/50 scale-[1.02]" 
+                    : "border-slate-50 bg-slate-50 hover:border-pink-100"
                 )}
                >
                   <div className={cn(
-                    "size-14 rounded-3xl flex items-center justify-center transition-transform group-hover:scale-110",
-                    customerInfo.payment_method === "cart" ? "bg-primary text-white" : "bg-white text-slate-400 shadow-sm"
+                    "size-16 rounded-2xl flex items-center justify-center transition-all",
+                    customerInfo.payment_method === "cart" ? "bg-[#FF2F81] text-white shadow-lg shadow-pink-200" : "bg-white text-slate-300 shadow-sm border border-slate-100"
                   )}>
-                     <CreditCard className="size-7" />
+                     <CreditCard className="size-8" />
                   </div>
-                  <span className={cn(
-                    "text-[10px] font-black uppercase tracking-widest",
-                    customerInfo.payment_method === "cart" ? "text-primary" : "text-slate-400"
-                  )}>Cartão / Dinheiro</span>
+                  <div className="text-center">
+                    <span className={cn(
+                      "text-sm font-black uppercase tracking-widest block",
+                      customerInfo.payment_method === "cart" ? "text-[#FF2F81]" : "text-slate-500"
+                    )}>Outras Opções</span>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase mt-1 block">Cartão ou Dinheiro</span>
+                  </div>
+                  {customerInfo.payment_method === "cart" && (
+                    <div className="absolute top-4 right-4 bg-[#FF2F81] text-white p-1 rounded-full">
+                       <Check className="size-3 stroke-[3px]" />
+                    </div>
+                  )}
                </button>
             </div>
-          </section>
+          </motion.section>
         </div>
 
-        {/* Right Column: Order Summary Card */}
-        <aside>
-          <Card className="rounded-[64px] border-none shadow-[0_40px_100px_rgba(255,107,107,0.15)] overflow-hidden sticky top-32">
-            <CardContent className="p-12 bg-white">
-              <div className="flex items-center justify-between mb-10">
-                <h3 className="text-2xl font-black uppercase italic tracking-tighter leading-none">Resumo</h3>
-                <Badge className="bg-slate-100 text-slate-500 font-black border-none px-4 py-1.5 rounded-full text-[10px] uppercase">
-                  {cart.length} ITENS
-                </Badge>
-              </div>
+        {/* Right Column: Order Summary Card (Col 5/12) */}
+        <aside className="lg:col-span-5 w-full lg:sticky lg:top-36">
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <Card className="rounded-[40px] md:rounded-[60px] border-none shadow-[0_40px_100px_rgba(255,47,129,0.1)] bg-white overflow-hidden group">
+              <CardContent className="p-8 md:p-12">
+                <div className="flex items-center justify-between mb-10">
+                  <div className="space-y-1">
+                    <h3 className="text-3xl font-black uppercase italic tracking-tighter text-slate-800">Resumo</h3>
+                    <p className="text-[10px] font-bold text-pink-400 uppercase tracking-widest">Seu pedido selecionado</p>
+                  </div>
+                  <div className="bg-[#FFF5F8] text-[#FF2F81] font-black border-2 border-pink-50 px-5 py-2 rounded-2xl text-[10px] uppercase tracking-widest">
+                    {cart.length} ITENS
+                  </div>
+                </div>
 
-              <div className="space-y-6 mb-10 max-h-72 overflow-y-auto pr-4 no-scrollbar">
-                {cart.length > 0 ? cart.map((item: any) => (
-                  <div key={item.id} className="flex justify-between items-center group">
-                    <div className="flex items-center gap-4">
-                      <div className="size-14 bg-slate-50 rounded-2xl flex items-center justify-center font-black text-slate-400 border border-slate-100 group-hover:bg-primary/5 transition-colors">
-                        {item.quantity}x
-                      </div>
-                      <div className="space-y-0.5">
-                        <span className="text-sm font-black text-slate-900 uppercase italic tracking-tighter block">{item.name}</span>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Unit: R$ {item.price.toFixed(2)}</span>
-                      </div>
+                <div className="space-y-6 mb-10 max-h-[350px] overflow-y-auto pr-4 custom-scrollbar">
+                  {cart.length > 0 ? (
+                    <AnimatePresence mode="popLayout">
+                      {cart.map((item: any, idx: number) => (
+                        <motion.div 
+                          key={item.id} 
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="flex justify-between items-center p-3 rounded-2xl hover:bg-slate-50 transition-colors group/item"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="size-14 rounded-2xl bg-white border-2 border-slate-50 flex items-center justify-center font-black text-[#FF2F81] shadow-sm transform group-hover/item:rotate-3 transition-transform">
+                              {item.quantity}x
+                            </div>
+                            <div className="space-y-1">
+                              <span className="text-sm font-black text-slate-800 uppercase italic tracking-tighter block">{item.name}</span>
+                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">R$ {item.price.toFixed(2)}</span>
+                            </div>
+                          </div>
+                          <span className="text-base font-black text-slate-800 italic tracking-tighter">R$ {(item.price * item.quantity).toFixed(2)}</span>
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  ) : (
+                    <div className="text-center py-16 bg-slate-50 rounded-[32px] border-2 border-dashed border-slate-100 flex flex-col items-center gap-4">
+                       <ShoppingBag className="size-12 text-slate-200 stroke-1" />
+                       <p className="font-black uppercase tracking-widest text-[10px] text-slate-300 px-8 text-center">Sua sacola está vazia por enquanto.</p>
                     </div>
-                    <span className="text-sm font-black text-slate-900 italic tracking-tighter">R$ {(item.price * item.quantity).toFixed(2)}</span>
-                  </div>
-                )) : (
-                  <div className="text-center py-12 opacity-30">
-                     <ShoppingBag className="size-12 mx-auto mb-4 stroke-1" />
-                     <p className="font-black uppercase tracking-widest text-[10px]">Sacola Vazia</p>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
 
-              <div className="space-y-5 pt-10 border-t border-rose-50">
-                 <div className="flex justify-between items-center text-slate-500 font-bold">
-                    <span className="text-[10px] uppercase tracking-widest">Subtotal</span>
-                    <span className="text-sm font-black text-slate-900 italic">R$ {subtotal.toFixed(2)}</span>
-                 </div>
-                 <div className="flex justify-between items-center text-slate-500 font-bold">
-                    <span className="text-[10px] uppercase tracking-widest flex items-center gap-2">
-                      Taxa de Entrega {isCalculating && <RefreshCcw className="size-3 animate-spin" />}
+                <div className="space-y-5 pt-8 border-t-2 border-slate-50">
+                   <div className="flex justify-between items-center text-slate-500 font-bold text-[11px] uppercase tracking-widest">
+                      <span>Subtotal</span>
+                      <span className="text-slate-800">R$ {subtotal.toFixed(2)}</span>
+                   </div>
+                   <div className="flex justify-between items-center text-slate-500 font-bold text-[11px] uppercase tracking-widest">
+                      <span className="flex items-center gap-2">
+                        Taxa de Entrega 
+                        {isCalculating && <RefreshCcw className="size-3 animate-spin text-pink-400" />}
+                      </span>
+                      <span className={cn(
+                        "font-black tracking-tighter",
+                        deliveryFee === 0 ? "text-emerald-500" : "text-slate-800"
+                      )}>
+                        {deliveryFee > 0 ? `R$ ${deliveryFee.toFixed(2)}` : 'Grátis'}
+                      </span>
+                   </div>
+                   
+                   <div className="pt-6 relative">
+                      <div className="absolute inset-0 bg-pink-50/10 blur-2xl -z-10" />
+                      <div className="flex justify-between items-end">
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#FF2F81] block ml-1 leading-none">Total à Pagar</span>
+                          <span className="text-5xl md:text-6xl font-black italic tracking-tighter text-slate-900 block leading-none">
+                            R$ {total.toFixed(2).split('.')[0]}
+                            <span className="text-2xl align-top mt-1 ml-0.5 opacity-40">,{total.toFixed(2).split('.')[1]}</span>
+                          </span>
+                        </div>
+                      </div>
+                   </div>
+                </div>
+
+                <Button 
+                  onClick={handleFinalizeOrder}
+                  disabled={!address || isCalculating || isSubmitting || cart.length === 0}
+                  className="w-full h-20 md:h-24 rounded-[32px] md:rounded-[40px] bg-gradient-to-r from-[#FF2F81] to-[#FF6B6B] hover:shadow-[0_20px_50px_rgba(255,47,129,0.3)] text-white font-black uppercase text-lg md:text-xl tracking-[0.2em] shadow-xl shadow-pink-100 mt-10 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-40"
+                >
+                  {isSubmitting ? (
+                    <RefreshCcw className="size-8 animate-spin" />
+                  ) : (
+                    <span className="flex items-center gap-4">
+                      Finalizar Agora
+                      <ArrowRight className="size-6 md:size-8" />
                     </span>
-                    <span className="text-sm font-black text-slate-900 italic">{deliveryFee > 0 ? `R$ ${deliveryFee.toFixed(2)}` : 'Grátis'}</span>
-                 </div>
-                 <div className="flex justify-between items-center pt-6">
-                    <div className="space-y-0.5">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-primary block leading-none">Total à Pagar</span>
-                      <span className="text-4xl font-black italic tracking-tighter text-slate-900 block">R$ {total.toFixed(2)}</span>
-                    </div>
-                 </div>
-              </div>
+                  )}
+                </Button>
 
-              <Button 
-                onClick={handleFinalizeOrder}
-                disabled={!address || isCalculating || isSubmitting}
-                className="w-full h-20 rounded-[40px] bg-primary hover:bg-primary/90 text-white font-black uppercase text-base tracking-[0.2em] shadow-2xl shadow-primary/30 mt-12 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50"
-              >
-                {isSubmitting ? (
-                  <RefreshCcw className="size-8 animate-spin" />
-                ) : (
-                  <>Finalizar Compra <ArrowRight className="ml-3 mt-0.5 size-6" /></>
-                )}
-              </Button>
-
-              <div className="mt-8 flex items-center justify-center gap-3 py-4 px-6 bg-slate-50 rounded-3xl">
-                <CheckCircle2 className="size-4 text-emerald-500 shrink-0" />
-                <span className="text-[9px] font-black uppercase text-slate-400 tracking-[0.1em]">Pedido processado com segurança por DoceGestão</span>
-              </div>
-            </CardContent>
-          </Card>
+                <div className="mt-8 flex items-center justify-center gap-4 p-6 bg-slate-50 rounded-[28px] border border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wide leading-snug">
+                  <CheckCircle2 className="size-4 text-emerald-500 shrink-0" />
+                  Ambiente Seguro Cryptografado
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         </aside>
       </main>
+
+
 
       {/* PIX MODAL DIALOG */}
       <Dialog open={isPixDialogOpen} onOpenChange={setIsPixDialogOpen}>

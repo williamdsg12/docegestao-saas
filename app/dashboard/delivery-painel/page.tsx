@@ -40,6 +40,8 @@ import { toast } from "sonner"
 import { format, differenceInMinutes } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { cn } from "@/lib/utils"
+import { useIsMobile } from "@/hooks/use-mobile"
+import { ArrowLeft } from "lucide-react"
 
 // --- Sub-components (could be separate files, but keeping here for cohesion) ---
 
@@ -99,6 +101,7 @@ export default function GestorPedidos() {
   const [autoAccept, setAutoAccept] = useState(false)
   const [audioEnabled, setAudioEnabled] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const isMobile = useIsMobile()
 
   const toggleAudio = () => {
     // Establishing audio context on user gesture
@@ -260,7 +263,10 @@ export default function GestorPedidos() {
     <div className="h-screen flex bg-slate-100 overflow-hidden font-sans">
       
       {/* SIDEBAR: Order List */}
-      <aside className="w-96 flex flex-col bg-white border-r border-slate-200">
+      <aside className={cn(
+        "w-full md:w-96 flex flex-col bg-white border-r border-slate-200",
+        isMobile && selectedOrder ? "hidden" : "flex"
+      )}>
          <div className="p-6 space-y-4 shrink-0 border-b border-slate-100 bg-white z-10">
             <div className="flex items-center justify-between mb-2">
                <div className="flex items-center gap-3">
@@ -358,18 +364,30 @@ export default function GestorPedidos() {
       </aside>
 
       {/* MAIN CONTENT: Order Details */}
-      <main className="flex-1 flex flex-col min-w-0 bg-slate-50">
+      <main className={cn(
+        "flex-1 flex flex-col min-w-0 bg-slate-50",
+        isMobile && !selectedOrder ? "hidden" : "flex"
+      )}>
          {selectedOrder ? (
             <div className="flex-1 flex flex-col overflow-hidden">
-               {/* Detail Header */}
-               <header className="p-8 bg-white border-b border-slate-200 flex items-center justify-between shrink-0">
-                  <div className="flex items-center gap-6">
-                     <div className="size-16 rounded-[24px] bg-slate-900 flex items-center justify-center font-black text-white italic text-xl shadow-xl transform -rotate-3">
+                <header className="p-4 md:p-8 bg-white border-b border-slate-200 flex flex-col md:flex-row items-center justify-between shrink-0 gap-4">
+                  <div className="flex items-center gap-4 md:gap-6 w-full">
+                     {isMobile && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => setSelectedOrder(null)}
+                          className="size-10 rounded-xl bg-slate-100"
+                        >
+                           <ArrowLeft className="size-5" />
+                        </Button>
+                     )}
+                     <div className="size-12 md:size-16 rounded-[18px] md:rounded-[24px] bg-slate-900 flex items-center justify-center font-black text-white italic text-base md:text-xl shadow-xl transform -rotate-3">
                         #{selectedOrder.num_serial || selectedOrder.id.slice(0, 3)}
                      </div>
-                     <div>
-                        <div className="flex items-center gap-3 mb-1">
-                           <h2 className="text-3xl font-black italic uppercase tracking-tighter text-slate-900 leading-none">
+                     <div className="flex-1">
+                        <div className="flex items-center gap-2 md:gap-3 mb-0.5">
+                           <h2 className="text-xl md:text-3xl font-black italic uppercase tracking-tighter text-slate-900 leading-none truncate">
                               {selectedOrder.clientes?.nome || selectedOrder.cliente_nome}
                            </h2>
                            <Badge className={cn("border-none text-[10px] font-black uppercase tracking-widest px-3", 
@@ -385,14 +403,17 @@ export default function GestorPedidos() {
                      </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                     <Button variant="outline" className="h-14 px-6 rounded-2xl border-slate-200 text-slate-600 font-bold uppercase text-[10px] tracking-widest gap-2">
-                        <Printer className="size-4" /> Imprimir
+                  <div className="flex items-center gap-3 w-full md:w-auto">
+                     <Button 
+                        variant="outline" 
+                        className="flex-1 md:flex-none h-12 md:h-14 px-4 md:px-6 rounded-2xl border-slate-200 text-slate-600 font-bold uppercase text-[10px] tracking-widest gap-2"
+                     >
+                        <Printer className="size-4" /> <span className="md:inline">Imprimir</span>
                      </Button>
                      <Button 
                         onClick={() => handleStatusUpdate(selectedOrder.id, 'cancelado')}
                         variant="outline" 
-                        className="h-14 px-6 rounded-2xl border-rose-100 text-rose-500 font-bold uppercase text-[10px] tracking-widest hover:bg-rose-50"
+                        className="flex-1 md:flex-none h-12 md:h-14 px-4 md:px-6 rounded-2xl border-rose-100 text-rose-500 font-bold uppercase text-[10px] tracking-widest hover:bg-rose-50"
                      >
                         Cancelar
                      </Button>
@@ -402,7 +423,7 @@ export default function GestorPedidos() {
                {/* Detail Content */}
                <div className="flex-1 flex flex-col md:flex-row min-h-0 bg-slate-50/50">
                   <ScrollArea className="flex-1">
-                     <div className="p-12 space-y-12">
+                     <div className="p-4 md:p-12 space-y-6 md:space-y-12">
                         {/* Customer & Logistics */}
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                            <div className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm space-y-6">
@@ -421,59 +442,60 @@ export default function GestorPedidos() {
                               </div>
                            </div>
 
-                           <div className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm space-y-6">
-                              <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-300 italic">Endereço</h3>
-                              <div className="flex gap-4 items-start">
-                                 <div className="p-3 bg-pink-50 rounded-2xl text-pink-500">
-                                    <MapPin className="size-6" />
-                                 </div>
-                                 <div>
-                                    <p className="text-sm font-black text-slate-900 uppercase italic tracking-tighter leading-tight">
-                                       {selectedOrder.endereco_entrega || "Retirada no Local"}
-                                    </p>
-                                    <p className="text-slate-400 font-bold text-xs mt-1">
-                                       {selectedOrder.clientes?.bairro && `${selectedOrder.clientes.bairro} • `}
-                                       {selectedOrder.complemento_endereco && `${selectedOrder.complemento_endereco}`}
-                                    </p>
-                                 </div>
-                              </div>
-                           </div>
+                            <div className="bg-white p-6 md:p-8 rounded-[32px] md:rounded-[40px] border border-slate-100 shadow-sm space-y-6">
+                               <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-300 italic">Endereço</h3>
+                               <div className="flex gap-4 items-start">
+                                  <div className="p-3 bg-pink-50 rounded-2xl text-pink-500 shrink-0">
+                                     <MapPin className="size-6" />
+                                  </div>
+                                  <div className="min-w-0">
+                                     <p className="text-sm font-black text-slate-900 uppercase italic tracking-tighter leading-tight break-words">
+                                        {selectedOrder.endereco_entrega || "Retirada no Local"}
+                                     </p>
+                                     <p className="text-slate-400 font-bold text-xs mt-1">
+                                        {selectedOrder.clientes?.bairro && `${selectedOrder.clientes.bairro} • `}
+                                        {selectedOrder.complemento_endereco && `${selectedOrder.complemento_endereco}`}
+                                     </p>
+                                  </div>
+                               </div>
+                            </div>
                         </div>
 
                         {/* Items Section */}
                         <div className="space-y-6">
                            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-300 italic">Produtos</h3>
-                           <div className="bg-white rounded-[48px] border border-slate-100 shadow-sm overflow-hidden">
-                              <table className="w-full">
-                                 <thead>
-                                    <tr className="bg-slate-50/50 border-b border-slate-100">
-                                       <th className="px-8 py-5 text-left text-[10px] font-black uppercase tracking-widest text-slate-400">Qtd</th>
-                                       <th className="px-8 py-5 text-left text-[10px] font-black uppercase tracking-widest text-slate-400">Produto</th>
-                                       <th className="px-8 py-5 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">Preço</th>
-                                       <th className="px-8 py-5 text-right text-[10px) font-black uppercase tracking-widest text-slate-400">Total</th>
-                                    </tr>
-                                 </thead>
-                                 <tbody className="divide-y divide-slate-50">
-                                    {(selectedOrder.itens_pedido || []).map((item: any, i: number) => (
-                                       <tr key={i} className="group hover:bg-slate-50/30 transition-colors">
-                                          <td className="px-8 py-6 font-black text-slate-400">{item.quantidade}x</td>
-                                          <td className="px-8 py-6">
-                                             <p className="font-black text-slate-900 uppercase italic tracking-tighter">{item.product_name || "Produto"}</p>
-                                             {item.observacoes && <p className="text-[10px] font-bold text-pink-500 italic uppercase">Obs: {item.observacoes}</p>}
-                                          </td>
-                                          <td className="px-8 py-6 text-right font-bold text-slate-400 text-sm italic">R$ {item.preco?.toFixed(2)}</td>
-                                          <td className="px-8 py-6 text-right font-black text-slate-900 italic">R$ {(item.quantidade * item.preco).toFixed(2)}</td>
-                                       </tr>
-                                    ))}
-                                    {(!selectedOrder.itens_pedido || selectedOrder.itens_pedido.length === 0) && (
-                                       <tr>
-                                          <td colSpan={4} className="px-8 py-12 text-center text-slate-300 font-bold italic">Sem itens detalhados</td>
-                                       </tr>
-                                    )}
-                                 </tbody>
-                              </table>
+                            <div className="bg-white rounded-[32px] md:rounded-[48px] border border-slate-100 shadow-sm overflow-hidden overflow-x-auto">
+                               <table className="w-full min-w-[600px] md:min-w-full">
+                                  <thead>
+                                     <tr className="bg-slate-50/50 border-b border-slate-100">
+                                        <th className="px-4 md:px-8 py-5 text-left text-[10px] font-black uppercase tracking-widest text-slate-400">Qtd</th>
+                                        <th className="px-4 md:px-8 py-5 text-left text-[10px] font-black uppercase tracking-widest text-slate-400">Produto</th>
+                                        <th className="px-4 md:px-8 py-5 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">Preço</th>
+                                        <th className="px-4 md:px-8 py-5 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">Total</th>
+                                     </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-slate-50">
+                                     {(selectedOrder.itens_pedido || []).map((item: any, i: number) => (
+                                        <tr key={i} className="group hover:bg-slate-50/30 transition-colors">
+                                           <td className="px-4 md:px-8 py-6 font-black text-slate-400">{item.quantidade}x</td>
+                                           <td className="px-4 md:px-8 py-6">
+                                              <p className="font-black text-slate-900 uppercase italic tracking-tighter break-words">{item.product_name || "Produto"}</p>
+                                              {item.observacoes && <p className="text-[10px] font-bold text-pink-500 italic uppercase">Obs: {item.observacoes}</p>}
+                                           </td>
+                                           <td className="px-4 md:px-8 py-6 text-right font-bold text-slate-400 text-sm italic">R$ {item.preco?.toFixed(2)}</td>
+                                           <td className="px-4 md:px-8 py-6 text-right font-black text-slate-900 italic">R$ {(item.quantidade * item.preco).toFixed(2)}</td>
+                                        </tr>
+                                     ))}
+                                     {(!selectedOrder.itens_pedido || selectedOrder.itens_pedido.length === 0) && (
+                                        <tr>
+                                           <td colSpan={4} className="px-8 py-12 text-center text-slate-300 font-bold italic">Sem itens detalhados</td>
+                                        </tr>
+                                     )}
+                                  </tbody>
+                               </table>
+                            </div>
                               
-                              <div className="bg-slate-950 p-10 flex justify-between items-center text-white">
+                              <div className="bg-slate-950 p-6 md:p-10 flex flex-col md:flex-row justify-between items-start md:items-center text-white gap-6">
                                  <div className="space-y-2">
                                     <div className="flex items-center gap-3">
                                        <CreditCard className="size-4 text-emerald-400" />
@@ -483,9 +505,9 @@ export default function GestorPedidos() {
                                        {selectedOrder.status_pagamento === 'pago' ? 'Confirmado' : 'Pendente'}
                                     </Badge>
                                  </div>
-                                 <div className="text-right">
+                                 <div className="text-right w-full md:w-auto">
                                     <p className="text-[10px] font-black uppercase tracking-[0.3em] text-pink-500 mb-1 leading-none">Total à Pagar</p>
-                                    <p className="text-5xl font-black italic tracking-tighter leading-none">R$ {selectedOrder.valor_total?.toFixed(2)}</p>
+                                    <p className="text-3xl md:text-5xl font-black italic tracking-tighter leading-none">R$ {selectedOrder.valor_total?.toFixed(2)}</p>
                                  </div>
                               </div>
                            </div>
@@ -505,14 +527,14 @@ export default function GestorPedidos() {
                   </ScrollArea>
 
                   {/* Actions Sidebar */}
-                  <div className="w-full md:w-96 p-10 space-y-10 shrink-0 bg-white border-l border-slate-100">
+                  <div className="w-full md:w-96 p-6 md:p-10 space-y-6 md:space-y-10 shrink-0 bg-white border-l border-slate-100">
                      <div className="space-y-4">
                         <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-300 italic">Ações do Pedido</h3>
                         
                         {selectedOrder.status === 'novo' && (
                            <Button 
                               onClick={() => handleStatusUpdate(selectedOrder.id, 'confirmado')}
-                              className="w-full h-20 rounded-[32px] bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase italic text-lg tracking-widest shadow-xl shadow-emerald-500/20 gap-3 group"
+                              className="w-full h-16 md:h-20 rounded-[24px] md:rounded-[32px] bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase italic text-base md:text-lg tracking-widest shadow-xl shadow-emerald-500/20 gap-3 group"
                            >
                               <Zap className="size-6 group-hover:animate-pulse" /> Confirmar Pedido
                            </Button>
@@ -521,7 +543,7 @@ export default function GestorPedidos() {
                         {selectedOrder.status === 'confirmado' && (
                            <Button 
                               onClick={() => handleStatusUpdate(selectedOrder.id, 'preparando')}
-                              className="w-full h-20 rounded-[32px] bg-amber-500 hover:bg-amber-600 text-white font-black uppercase italic text-lg tracking-widest shadow-xl shadow-amber-500/20 gap-3 group"
+                              className="w-full h-16 md:h-20 rounded-[24px] md:rounded-[32px] bg-amber-500 hover:bg-amber-600 text-white font-black uppercase italic text-base md:text-lg tracking-widest shadow-xl shadow-amber-500/20 gap-3 group"
                            >
                               <ChefHat className="size-6" /> Iniciar Preparo
                            </Button>
@@ -530,7 +552,7 @@ export default function GestorPedidos() {
                         {selectedOrder.status === 'preparando' && (
                            <Button 
                               onClick={() => handleStatusUpdate(selectedOrder.id, 'pronto')}
-                              className="w-full h-20 rounded-[32px] bg-indigo-500 hover:bg-indigo-600 text-white font-black uppercase italic text-lg tracking-widest shadow-xl shadow-indigo-500/20 gap-3 group"
+                              className="w-full h-16 md:h-20 rounded-[24px] md:rounded-[32px] bg-indigo-500 hover:bg-indigo-600 text-white font-black uppercase italic text-base md:text-lg tracking-widest shadow-xl shadow-indigo-500/20 gap-3 group"
                            >
                               <ShoppingBag className="size-6" /> Marcar como Pronto
                            </Button>
@@ -539,7 +561,7 @@ export default function GestorPedidos() {
                         {selectedOrder.status === 'pronto' && (
                            <Button 
                               onClick={() => handleStatusUpdate(selectedOrder.id, 'saiu_entrega')}
-                              className="w-full h-20 rounded-[32px] bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase italic text-lg tracking-widest shadow-xl shadow-emerald-600/20 gap-3 group"
+                              className="w-full h-16 md:h-20 rounded-[24px] md:rounded-[32px] bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase italic text-base md:text-lg tracking-widest shadow-xl shadow-emerald-600/20 gap-3 group"
                            >
                               <Truck className="size-6 shadow-glow" /> Despachar Pedido
                            </Button>
@@ -548,7 +570,7 @@ export default function GestorPedidos() {
                         {selectedOrder.status === 'saiu_entrega' && (
                            <Button 
                               onClick={() => handleStatusUpdate(selectedOrder.id, 'entregue')}
-                              className="w-full h-20 rounded-[32px] bg-slate-900 hover:bg-black text-white font-black uppercase italic text-lg tracking-widest shadow-xl gap-3 group"
+                              className="w-full h-16 md:h-20 rounded-[24px] md:rounded-[32px] bg-slate-900 hover:bg-black text-white font-black uppercase italic text-base md:text-lg tracking-widest shadow-xl gap-3 group"
                            >
                               <CheckCircle2 className="size-6" /> Concluir Entrega
                            </Button>

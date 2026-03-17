@@ -127,6 +127,34 @@
   .text-gradient {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/60;
   }
+
+  /* Responsive Utilities */
+  .responsive-table-container {
+    @apply w-full overflow-x-auto;
+  }
+
+  .responsive-kanban-container {
+    @apply flex gap-4 overflow-x-auto pb-4 px-4 -mx-4;
+    scrollbar-width: thin;
+    scrollbar-color: var(--text-secondary) transparent;
+  }
+
+  .responsive-container {
+    @apply w-full max-w-[1400px] mx-auto px-4 md:px-8 xl:px-10;
+  }
+
+  /* Accessibility & Touch Targets */
+  .touch-target {
+    @apply min-h-[48px] min-w-[48px] flex items-center justify-center;
+  }
+
+  .mobile-only {
+    @apply flex md:hidden;
+  }
+
+  .desktop-only {
+    @apply hidden md:flex;
+  }
 }
 
 @layer base {

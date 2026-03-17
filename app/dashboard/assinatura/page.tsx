@@ -17,10 +17,17 @@ import {
   Calendar, 
   ArrowUpRight, 
   XCircle,
-  AlertTriangle
+  AlertTriangle,
+  Shield,
+  Trophy,
+  Star,
+  ChevronRight,
+  Sparkles,
+  CheckCircle2
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
+import { AnimatePresence } from "framer-motion"
 
 export default function AssinaturaPage() {
   const { profile } = useBusiness()
@@ -28,6 +35,50 @@ export default function AssinaturaPage() {
   const { limits, loading: limitsLoading } = usePlanLimits()
   const [plans, setPlans] = useState<any[]>([])
   const [loadingPlans, setLoadingPlans] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "annually">("annually")
+
+  const planIcons: Record<string, any> = {
+    'iniciante': {
+        icon: Zap,
+        gradient: "from-amber-400 to-orange-500",
+        lightColor: "bg-amber-50",
+        textColor: "text-amber-600",
+        features: [
+            "Gestão de clientes",
+            "Relatório de lucros básico",
+            "Até 50 fichas técnicas",
+            "100 pedidos por mês"
+        ]
+    },
+    'profissional': {
+        icon: Shield,
+        gradient: "from-rose-500 to-pink-600",
+        lightColor: "bg-rose-50",
+        textColor: "text-rose-600",
+        highlight: true,
+        badge: "Melhor Escolha",
+        features: [
+            "Fichas técnicas ilimitadas",
+            "Pedidos ilimitados",
+            "Financeiro completo",
+            "Controle de estoque",
+            "Relatórios profissionais"
+        ]
+    },
+    'premium': {
+        icon: Trophy,
+        gradient: "from-indigo-500 to-purple-600",
+        lightColor: "bg-indigo-50",
+        textColor: "text-indigo-600",
+        features: [
+            "Tudo do Profissional",
+            "IA para Precificação",
+            "Automação de Pedidos",
+            "Suporte VIP prioritário"
+        ]
+    }
+}
 
   useEffect(() => {
     async function fetchPlans() {
@@ -38,7 +89,20 @@ export default function AssinaturaPage() {
           .filter('is_active', 'eq', true)
           .order('price', { ascending: true })
         if (error) throw error
-        setPlans(data || [])
+
+        // Deduplicate by NAME to ensure only one of each tier
+        const uniquePlans = (data || [])
+            .filter((p: any) => !p.price.toString().includes('29'))
+            .reduce((acc: any[], current: any) => {
+                const x = acc.find(item => item.name === current.name);
+                if (!x) {
+                    return acc.concat([current]);
+                } else {
+                    return acc;
+                }
+            }, []);
+
+        setPlans(uniquePlans.slice(0, 3))
       } catch (e) {
         console.error(e)
       } finally {
@@ -48,27 +112,52 @@ export default function AssinaturaPage() {
     fetchPlans()
   }, [])
 
-  const handleUpgrade = async (planId: string) => {
-    toast.info("Iniciando checkout... Redirecionando para o pagamento.")
-    // Here we would call our API to create a Stripe or Mercado Pago session
+  const mappedPlans = plans.map((p: any) => {
+    const iconData = planIcons[p.slug] || planIcons[p.name.toLowerCase()] || planIcons['iniciante']
+    return {
+        ...p,
+        ...iconData,
+        features: iconData.features,
+        displayPrice: billingCycle === 'annually' ? Math.round(p.price * 0.8) : p.price,
+        yearlyPrice: Math.round(p.price * 0.8 * 12)
+    }
+})
+
+  const handleUpgrade = async (plan: any) => {
+    setIsLoading(true)
     try {
-        const res = await fetch('/api/checkout', {
+        const { data: { session: authSession } } = await supabase.auth.getSession()
+
+        if (!authSession) {
+            toast.error("Sessão expirada. Faça login novamente.")
+            return
+        }
+
+        const res = await fetch('/api/checkout/stripe', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authSession.access_token}`
+            },
             body: JSON.stringify({ 
-                planId,
-                companyId: profile?.company_id,
-                gateway: 'stripe' // or 'mercado_pago'
+                planId: plan.id,
+                billingCycle
             })
         })
+
         const data = await res.json()
         if (data.url) {
-            window.location.href = data.url
+            toast.success("Redirecionando para o pagamento seguro...")
+            setTimeout(() => {
+                window.location.href = data.url
+            }, 1000)
         } else {
-            throw new Error("Não foi possível gerar o link de pagamento.")
+            throw new Error(data.error || "Não foi possível gerar o link de pagamento.")
         }
     } catch (error: any) {
         toast.error(error.message || "Erro ao processar upgrade")
+    } finally {
+        setIsLoading(false)
     }
   }
 
@@ -200,84 +289,133 @@ export default function AssinaturaPage() {
         </div>
       </motion.div>
 
+      {/* Cycle Selector */}
+      <div className="flex flex-col items-center gap-8 py-10">
+          <div className="bg-slate-100/50 p-2 rounded-[30px] border border-slate-200 backdrop-blur-sm shadow-inner flex items-center relative gap-2">
+              <div
+                  className={cn(
+                      "absolute top-2 bottom-2 w-[calc(50%-8px)] bg-white rounded-[22px] shadow-xl transition-all duration-500 ease-spring",
+                      billingCycle === "annually" ? "translate-x-full left-1" : "translate-x-0 left-2"
+                  )}
+              />
+              <button
+                  onClick={() => setBillingCycle("monthly")}
+                  className={cn(
+                      "relative z-10 px-10 py-4 rounded-2xl text-sm font-black uppercase tracking-widest transition-colors duration-300",
+                      billingCycle === "monthly" ? "text-slate-900" : "text-slate-400 hover:text-slate-600"
+                  )}
+              >
+                  Mensal
+              </button>
+              <button
+                  onClick={() => setBillingCycle("annually")}
+                  className={cn(
+                      "relative z-10 px-10 py-4 rounded-2xl text-sm font-black uppercase tracking-widest transition-colors duration-300 flex items-center gap-2",
+                      billingCycle === "annually" ? "text-slate-900" : "text-slate-400 hover:text-slate-600"
+                  )}
+              >
+                  Anual
+                  <Badge className="bg-green-500 text-white border-2 border-white text-[8px] font-black italic whitespace-nowrap shadow-lg">
+                      -20% OFF
+                  </Badge>
+              </button>
+          </div>
+      </div>
+
       {/* Plan Selection */}
-      <div className="grid gap-8 lg:grid-cols-3 pt-10">
-        {plans.map((plan, i) => (
-          <motion.div
-            key={plan.id}
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
-            className={cn(
-              "relative flex flex-col rounded-[40px] border p-10 transition-all duration-500",
-              plan.name === 'Profissional' || plan.name === 'Pro' 
-                ? "bg-white border-primary/20 shadow-xl shadow-primary/5 scale-105" 
-                : "bg-white border-slate-200"
-            )}
-          >
-            {plan.name === 'Profissional' && (
-              <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-primary text-white px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg italic">
-                Melhor Escolha
-              </div>
-            )}
-
-            <div className="flex items-center justify-between mb-8">
-              <div className={cn("size-14 rounded-2xl flex items-center justify-center", plan.name === 'Pro' ? "bg-amber-100 text-amber-600" : "bg-rose-50 text-primary")}>
-                {plan.name === 'Iniciante' && <Rocket className="size-7" />}
-                {plan.name === 'Profissional' && <Crown className="size-7" />}
-                {plan.name === 'Pro' && <Zap className="size-7" />}
-              </div>
-            </div>
-
-            <h3 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter mb-2">{plan.name}</h3>
-            <div className="flex items-baseline gap-1 mb-10">
-              <span className="text-4xl font-black text-slate-900 tracking-tighter italic">R$ {plan.price.toLocaleString()}</span>
-              <span className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">/ mês</span>
-            </div>
-
-            <ul className="space-y-5 mb-12 flex-1">
-              <li className="flex items-center gap-3 text-sm font-bold text-slate-600">
-                <div className="size-5 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
-                  <Check className="size-3" />
-                </div>
-                {plan.max_orders === 99999 ? 'Pedidos ilimitados' : `Até ${plan.max_orders} pedidos/mês`}
-              </li>
-              <li className="flex items-center gap-3 text-sm font-bold text-slate-600">
-                <div className="size-5 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
-                  <Check className="size-3" />
-                </div>
-                {plan.max_products === 99999 ? 'Produtos ilimitados' : `Até ${plan.max_products} produtos`}
-              </li>
-              <li className="flex items-center gap-3 text-sm font-bold text-slate-600">
-                <div className="size-5 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
-                  <Check className="size-3" />
-                </div>
-                {plan.max_clients === 99999 ? 'Clientes ilimitados' : `Até ${plan.max_clients} clientes`}
-              </li>
-              {plan.features?.map((f: string) => (
-                <li key={f} className="flex items-center gap-3 text-sm font-bold text-slate-900 italic uppercase">
-                  <div className="size-5 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                    <Check className="size-3" />
-                  </div>
-                  {f}
-                </li>
-              ))}
-            </ul>
-
-            <Button 
-                onClick={() => handleUpgrade(plan.id)}
-                disabled={isCurrentPlan(plan.id)}
-                className={cn(
-                    "h-14 rounded-2xl font-black uppercase tracking-widest text-xs transition-all",
-                    isCurrentPlan(plan.id) 
-                        ? "bg-slate-100 text-slate-400 border-none" 
-                        : "bg-primary hover:bg-primary/90 text-white shadow-xl shadow-primary/20"
-                )}
+      <div className="grid gap-10 lg:grid-cols-3">
+        <AnimatePresence mode="popLayout">
+          {mappedPlans.map((plan, i) => (
+            <motion.div
+              key={plan.id}
+              layout
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1, duration: 0.5 }}
+              className={cn(
+                "flex flex-col rounded-[56px] border border-white/50 relative overflow-hidden transition-all duration-500 group",
+                plan.highlight
+                    ? "bg-white shadow-[0_50px_100px_-30px_rgba(255,47,129,0.2)] scale-105 z-20 border-primary/20"
+                    : "bg-white/40 backdrop-blur-md shadow-xl border-slate-100 hover:bg-white hover:scale-[1.02] z-10"
+              )}
             >
-              {isCurrentPlan(plan.id) ? "Plano Atual" : "Escolher Plano ✨"}
-            </Button>
-          </motion.div>
-        ))}
+              <div className={cn("h-3 w-full bg-gradient-to-r", plan.gradient)} />
+
+              {plan.badge && (
+                  <div className="absolute top-8 right-8">
+                      <div className="bg-primary text-white text-[9px] font-black uppercase tracking-[0.2em] px-4 py-2 rounded-full shadow-xl shadow-primary/20 flex items-center gap-1.5 animate-pulse">
+                          <Star className="size-3 fill-white" />
+                          {plan.badge}
+                      </div>
+                  </div>
+              )}
+
+              <div className="p-10 pt-12 flex flex-col flex-1">
+                <div className="flex items-center gap-4 mb-8">
+                    <div className={cn(
+                        "size-14 rounded-2xl flex items-center justify-center border-2 rotate-6 group-hover:rotate-0 transition-transform duration-500 shadow-inner",
+                        plan.lightColor, plan.textColor
+                    )}>
+                        <plan.icon className="size-7" />
+                    </div>
+                    <div>
+                        <h4 className="text-2xl font-black text-slate-900 italic tracking-tight uppercase leading-none">{plan.name}</h4>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Confeitaria {plan.name}</p>
+                    </div>
+                </div>
+
+                <div className="mb-8 p-6 rounded-3xl bg-slate-50/50 border border-slate-100 group-hover:bg-white transition-colors duration-500">
+                    <div className="flex items-baseline gap-1">
+                        <span className="text-sm font-black text-slate-400">R$</span>
+                        <span className="text-6xl font-black text-slate-900 tracking-tighter italic leading-none">{plan.displayPrice}</span>
+                        <span className="text-sm font-bold text-slate-400">/mês</span>
+                    </div>
+                    {billingCycle === "annually" && (
+                        <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Anual: R$ {plan.yearlyPrice}</span>
+                            <Badge className="bg-green-100 text-green-600 border-none text-[9px] font-black italic">Mais Econômico</Badge>
+                        </div>
+                    )}
+                </div>
+
+                <div className="space-y-4 mb-10 flex-1">
+                    {plan.features?.map((feature: string, idx: number) => (
+                        <div key={idx} className="flex items-start gap-3 group/feat">
+                            <div className={cn(
+                                "size-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 transition-transform group-hover/feat:scale-110",
+                                plan.highlight ? "bg-primary text-white" : "bg-slate-200 text-white"
+                            )}>
+                                <CheckCircle2 className="size-3" />
+                            </div>
+                            <span className="text-sm font-bold text-slate-600 transition-colors group-hover/feat:text-slate-900">{feature}</span>
+                        </div>
+                    ))}
+                </div>
+
+                <Button 
+                    onClick={() => handleUpgrade(plan)}
+                    disabled={isCurrentPlan(plan.id)}
+                    className={cn(
+                        "w-full h-16 rounded-[28px] font-black uppercase italic tracking-tighter text-lg transition-all active:scale-95 group/btn overflow-hidden relative",
+                        plan.highlight
+                            ? "bg-gradient-to-r from-primary to-rose-600 text-white shadow-[0_20px_40px_-10px_rgba(255,47,129,0.4)]"
+                            : "bg-slate-900 hover:bg-slate-800 text-white"
+                    )}
+                >
+                  <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-1000" />
+                  {isCurrentPlan(plan.id) ? (
+                    "Seu Plano Atual"
+                  ) : (
+                    <span className="flex items-center gap-2 relative z-10">
+                        Escolher Plano
+                        <ChevronRight className="size-5 group-hover/btn:translate-x-1 transition-transform" />
+                    </span>
+                  )}
+                </Button>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
     </div>
   )
