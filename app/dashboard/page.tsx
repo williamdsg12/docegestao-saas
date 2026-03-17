@@ -88,8 +88,8 @@ export default function DashboardPage() {
             .select('metric_name, metric_value')
             .eq('company_id', profile.company_id)
             .eq('reference_date', format(new Date(), 'yyyy-MM-dd')),
-          supabase.from('orders')
-            .select('total_value, created_at')
+          supabase.from('pedidos')
+            .select('valor_total, created_at')
             .eq('company_id', profile.company_id),
           supabase.from('transactions')
             .select('amount, created_at, type')
@@ -108,8 +108,8 @@ export default function DashboardPage() {
 
         // 2. Fetch Recent Orders
         const { data: upcomingOrders } = await supabase
-          .from('orders')
-          .select('*, clients(name)')
+          .from('pedidos')
+          .select('*, clientes(nome)')
           .eq('company_id', profile.company_id)
           .gte('delivery_date', new Date().toISOString())
           .order('delivery_date', { ascending: true })
@@ -131,7 +131,7 @@ export default function DashboardPage() {
         ordersRes.data?.forEach(order => {
           const orderDate = format(new Date(order.created_at), 'yyyy-MM-dd')
           const day = last7Days.find(d => d.dateStr === orderDate)
-          if (day) day.vendas += (order.total_value || 0)
+          if (day) day.vendas += (order.valor_total || 0)
         })
 
         transactionsRes.data?.forEach(t => {

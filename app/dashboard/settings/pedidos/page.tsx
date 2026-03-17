@@ -34,7 +34,7 @@ export default function OrderSettingsPage() {
       const { data, error } = await supabase
         .from('configuracoes_delivery')
         .select('*')
-        .eq('empresa_id', business!.id)
+        .eq('company_id', business!.id)
         .maybeSingle()
 
       if (error) throw error
@@ -58,11 +58,11 @@ export default function OrderSettingsPage() {
       const { error } = await supabase
         .from('configuracoes_delivery')
         .upsert({
-          empresa_id: business!.id,
+          company_id: business!.id,
           accept_orders: settings.accept_orders,
           whatsapp_number: settings.whatsapp_number,
           auto_confirm_message: settings.auto_confirm_message,
-        }, { onConflict: 'empresa_id' })
+        }, { onConflict: 'company_id' })
 
       if (error) throw error
       toast.success("Configurações salvas com sucesso!", {

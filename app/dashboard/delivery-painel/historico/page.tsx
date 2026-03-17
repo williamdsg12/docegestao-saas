@@ -56,7 +56,7 @@ export default function HistoricoPage() {
       let query = supabase
         .from('pedidos')
         .select('*, clientes(nome, telefone), itens_pedido(count)')
-        .eq('empresa_id', business!.id)
+        .eq('company_id', business!.id)
         .order('created_at', { ascending: false })
 
       if (statusFilter !== "all") {

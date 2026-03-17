@@ -34,7 +34,7 @@ export default function DeliverySettingsPage() {
       const { data, error } = await supabase
         .from('configuracoes_delivery')
         .select('*')
-        .eq('empresa_id', business!.id)
+        .eq('company_id', business!.id)
         .maybeSingle()
 
       if (error) throw error
@@ -59,12 +59,12 @@ export default function DeliverySettingsPage() {
       const { error } = await supabase
         .from('configuracoes_delivery')
         .upsert({
-          empresa_id: business!.id,
+          company_id: business!.id,
           taxa_base: parseFloat(settings.taxa_base),
           km_maximo: parseFloat(settings.km_maximo),
           taxa_por_km: parseFloat(settings.taxa_por_km),
           tempo_medio: parseInt(settings.tempo_medio),
-        }, { onConflict: 'empresa_id' })
+        }, { onConflict: 'company_id' })
 
       if (error) throw error
       toast.success("Configurações de entrega salvas!", {

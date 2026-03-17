@@ -492,7 +492,7 @@ export default function DigitalMenuPage() {
     p.category?.name.toLowerCase().includes(search.toLowerCase())
   )
 
-  const menuLink = `https://docesgestao.netlify.app/m/${(user as any)?.company_id || "demo"}`
+  const menuLink = `http://localhost:3000/menu/${(user as any)?.company_id || "demo"}`
 
   function handleCopyLink() {
       navigator.clipboard.writeText(menuLink)

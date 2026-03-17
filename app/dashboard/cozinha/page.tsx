@@ -1,84 +1,49 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { motion, AnimatePresence } from "framer-motion"
 import { 
-  ChefHat,
-  Clock,
-  CheckCircle2,
-  Flame,
-  Utensils,
+  ChefHat, 
+  Clock, 
+  CheckCircle2, 
+  Zap,
   AlertCircle,
+  Timer,
   ChevronRight,
-  Maximize2
+  Printer,
+  ShoppingBag,
+  Bell
 } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent } from "@/components/ui/card"
 import { useBusiness } from "@/hooks/useBusiness"
 import { useDeliveryRealtime } from "@/hooks/useDeliveryRealtime"
 import { supabase } from "@/lib/supabase"
-import { toast } from "sonner"
-import { formatDistanceToNow, differenceInMinutes } from "date-fns"
-import { ptBR } from "date-fns/locale"
 import { cn } from "@/lib/utils"
+import { toast } from "sonner"
+import { differenceInMinutes, format } from "date-fns"
 
-// --- Components ---
-
-function LargeTimer({ startTime, limit = 15 }: { startTime: string | null, limit?: number }) {
-  const [elapsed, setElapsed] = useState("0:00")
-  const [isDelayed, setIsDelayed] = useState(false)
-
-  const updateTimer = useCallback(() => {
-    if (!startTime) return
-    const start = new Date(startTime)
-    const now = new Date()
-    const diffMs = now.getTime() - start.getTime()
-    const minutes = Math.floor(diffMs / 60000)
-    const seconds = Math.floor((diffMs % 60000) / 1000)
-    
-    setElapsed(`${minutes}:${seconds.toString().padStart(2, '0')}`)
-    setIsDelayed(minutes >= limit)
-  }, [startTime, limit])
-
-  useEffect(() => {
-    updateTimer()
-    const interval = setInterval(updateTimer, 1000)
-    return () => clearInterval(interval)
-  }, [updateTimer])
-
-  if (!startTime) return null
-
-  return (
-    <div className={cn(
-      "text-5xl font-black tabular-nums tracking-tighter transition-colors",
-      isDelayed ? "text-rose-500 animate-pulse" : "text-slate-900"
-    )}>
-      {elapsed}
-    </div>
-  )
-}
-
-export default function KitchenPage() {
+export default function KDSPage() {
   const { profile } = useBusiness()
   const { newOrders, unlockAudio } = useDeliveryRealtime(profile?.company_id || "")
   const [orders, setOrders] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    if (profile?.company_id) {
-      fetchPrepOrders()
-    }
-  }, [profile])
-
-  async function fetchPrepOrders() {
+  const fetchOrders = useCallback(async () => {
     if (!profile?.company_id) return
     try {
       setLoading(true)
+      // Fetch orders in confirmed or production status
       const { data, error } = await supabase
         .from('pedidos')
-        .select('*, itens_pedido(*), clientes(nome)')
-        .eq('empresa_id', profile.company_id)
-        .in('status', ['confirmado', 'em_preparo'])
+        .select(`
+          *,
+          clientes(nome),
+          itens_pedido(*)
+        `)
+        .eq('company_id', profile.company_id)
+        .in('status', ['novo', 'confirmado', 'preparando'])
         .order('created_at', { ascending: true })
       
       if (error) throw error
@@ -88,170 +53,208 @@ export default function KitchenPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [profile])
+
+  useEffect(() => {
+    fetchOrders()
+  }, [fetchOrders])
 
   useEffect(() => {
     if (newOrders.length > 0) {
-      fetchPrepOrders()
+      fetchOrders()
     }
-  }, [newOrders])
+  }, [newOrders, fetchOrders])
 
-  const updateStatus = async (orderId: string, newStatus: string) => {
+  const handleUpdateStatus = async (orderId: string, currentStatus: string) => {
+    const nextStatus = currentStatus === 'confirmado' ? 'preparando' : 'pronto'
+    
     try {
       const { error } = await supabase
         .from('pedidos')
         .update({ 
-           status: newStatus,
-           ...(newStatus === 'em_preparo' ? { inicio_preparo: new Date().toISOString() } : {}),
-           ...(newStatus === 'pronto' ? { pronto_em: new Date().toISOString() } : {})
+          status: nextStatus,
+          // If status is 'pronto', maybe set a finished_at if columns exist
         })
         .eq('id', orderId)
       
       if (error) throw error
       
-      if (newStatus === 'pronto') {
+      if (nextStatus === 'pronto') {
         setOrders(prev => prev.filter(o => o.id !== orderId))
-        toast.success("Pedido finalizado! 🍰")
+        toast.success("Pedido pronto! Enviado para coleta. 🚀")
       } else {
-        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus, inicio_preparo: new Date().toISOString() } : o))
-        toast.success("Produção iniciada! 🔥")
+        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: nextStatus } : o))
+        toast.info("Iniciando preparação... 👨‍🍳")
       }
     } catch (e) {
-      toast.error("Erro ao atualizar")
+      toast.error("Erro ao atualizar status")
     }
   }
 
+  const getUrgencyColor = (minutes: number) => {
+    if (minutes > 30) return "text-rose-500 bg-rose-50 border-rose-100"
+    if (minutes > 15) return "text-amber-500 bg-amber-50 border-amber-100"
+    return "text-emerald-500 bg-emerald-50 border-emerald-100"
+  }
+
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      {/* Header Profissional */}
-      <div className="bg-white border-b border-slate-200 p-8 shadow-sm">
-        <div className="max-w-[1800px] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex items-center gap-6">
-            <div className="size-20 bg-slate-900 rounded-[28px] flex items-center justify-center text-white shadow-xl rotate-3">
-              <ChefHat className="size-10" />
-            </div>
-            <div>
-              <h1 className="text-5xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">
-                Modo <span className="text-pink-500">Cozinha</span>
-              </h1>
-              <p className="text-slate-500 font-medium italic uppercase text-xs tracking-[0.4em] mt-2">KDS • Real-Time Display</p>
-            </div>
+    <div className="min-h-screen bg-slate-950 text-white p-6 md:p-10 font-sans overflow-x-hidden">
+      {/* KDS Header */}
+      <div className="flex flex-col md:flex-row items-center justify-between gap-8 mb-12">
+        <div className="flex items-center gap-6">
+          <div className="size-16 bg-gradient-to-br from-amber-400 to-orange-600 rounded-[28px] flex items-center justify-center shadow-2xl shadow-orange-500/20 animate-pulse">
+            <ChefHat className="size-8 text-white" />
           </div>
-          
-          <div className="flex items-center gap-4">
-            <Button 
-              onClick={unlockAudio}
-              variant="outline" 
-              className="rounded-2xl border-2 border-slate-200 h-16 px-8 gap-3 font-black uppercase tracking-widest text-xs hover:bg-slate-50"
-            >
-              <AlertCircle className="size-5 text-pink-500" /> Ativar Alertas Sonoros
-            </Button>
-            <div className="px-10 py-5 bg-slate-900 text-white rounded-3xl flex items-center gap-4 shadow-2xl">
-              <div className="animate-pulse size-4 bg-pink-500 rounded-full" />
-              <div className="flex flex-col">
-                <span className="text-3xl font-black tracking-tighter italic leading-none">{orders.length}</span>
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Em Fila</span>
+          <div>
+            <h1 className="text-4xl md:text-5xl font-black tracking-tighter uppercase italic leading-none">
+              Kitchen <span className="text-amber-500">Display</span> System
+            </h1>
+            <p className="text-[10px] uppercase font-black tracking-[0.4em] text-slate-500 italic mt-2">Intelligence Unit V4.0</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+           <div className="px-10 py-5 bg-white/5 rounded-[32px] border border-white/10 backdrop-blur-xl flex items-center gap-8">
+              <div className="text-center">
+                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Pendente</p>
+                 <p className="text-3xl font-black italic text-white leading-none">
+                   {orders.filter(o => o.status === 'confirmado').length}
+                 </p>
               </div>
-            </div>
-          </div>
+              <div className="w-px h-10 bg-white/10" />
+              <div className="text-center">
+                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Preparo</p>
+                 <p className="text-3xl font-black italic text-amber-500 leading-none">
+                   {orders.filter(o => o.status === 'preparando').length}
+                 </p>
+              </div>
+           </div>
+           
+           <Button 
+             onClick={unlockAudio}
+             variant="outline" 
+             className="size-16 rounded-[28px] border-white/10 bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white"
+           >
+             <Bell className="size-6" />
+           </Button>
         </div>
       </div>
 
-      <div className="flex-1 p-8 overflow-y-auto">
-        <div className="max-w-[1800px] mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-          {orders.length > 0 ? (
-            orders.map((order) => (
-              <Card key={order.id} className={cn(
-                "rounded-[48px] border-none shadow-2xl bg-white overflow-hidden flex flex-col min-h-[650px] transition-all",
-                order.status === 'em_preparo' ? "ring-4 ring-amber-500/20 shadow-amber-200/50" : "shadow-slate-200/50"
-              )}>
-                {/* Status Bar */}
-                <div className={cn(
-                  "h-3 w-full",
-                  order.status === 'em_preparo' ? "bg-amber-500" : "bg-blue-500"
-                )} />
-
-                <CardContent className="p-10 flex-1 flex flex-col">
-                  <div className="flex justify-between items-start mb-8">
+      {/* Grid of Kitchen Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8">
+        <AnimatePresence mode="popLayout">
+          {orders.length > 0 ? orders.map((order, idx) => {
+            const minutes = differenceInMinutes(new Date(), new Date(order.created_at))
+            const urgency = getUrgencyColor(minutes)
+            
+            return (
+              <motion.div
+                layout
+                key={order.id}
+                initial={{ opacity: 0, scale: 0.9, y: 30 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.8, x: 100 }}
+                transition={{ type: "spring", stiffness: 100, delay: idx * 0.05 }}
+              >
+                <Card className="rounded-[48px] bg-white border-none shadow-2xl overflow-hidden min-h-[580px] flex flex-col group transition-all duration-500 hover:-translate-y-2">
+                  {/* Card Header */}
+                  <div className={cn(
+                    "p-8 pb-4 flex justify-between items-start transition-colors",
+                    order.status === 'preparando' ? "bg-amber-50/50" : "bg-white"
+                  )}>
                     <div>
-                      <div className="flex items-center gap-3 mb-3 text-slate-400 font-black text-[10px] uppercase tracking-widest">
-                        <Clock className="size-4" /> Criado há {formatDistanceToNow(new Date(order.created_at), { locale: ptBR })}
-                      </div>
-                      <h4 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">
-                        #{order.numero_pedido || order.id.slice(0, 4)}
-                      </h4>
-                      <p className="text-xl font-black text-slate-500 uppercase italic tracking-tight truncate max-w-[200px]">
-                        {order.customer_name || order.clientes?.nome}
+                      <Badge className={cn(
+                        "mb-4 px-4 py-2 border-none rounded-2xl font-black text-[10px] uppercase tracking-widest",
+                        order.status === 'preparando' ? "bg-amber-500 text-white animate-pulse" : "bg-slate-900 text-white"
+                      )}>
+                        {order.status === 'preparando' ? "🔨 Em Preparo" : "📥 Novo Pedido"}
+                      </Badge>
+                      <h3 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic leading-none max-w-[200px] truncate">
+                        {order.clientes?.nome || "Balcão"}
+                      </h3>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2 flex items-center gap-2">
+                         Pedido <span className="text-primary tracking-tighter">#{order.num_serial?.toString().padStart(3, '0') || order.id.slice(0, 5)}</span> <span className="text-slate-200">|</span> <Clock className="size-3" /> {format(new Date(order.created_at), 'HH:mm')}
                       </p>
                     </div>
-                    {order.status === 'em_preparo' ? (
-                      <LargeTimer startTime={order.inicio_preparo || order.created_at} />
-                    ) : (
-                      <div className="px-6 py-3 bg-blue-50 text-blue-600 rounded-3xl font-black text-xs uppercase tracking-widest">
-                        PENDENTE
-                      </div>
-                    )}
+                    
+                    <div className={cn(
+                      "px-4 py-6 rounded-[24px] border border-transparent font-black italic transition-all flex flex-col items-center gap-1",
+                      urgency
+                    )}>
+                      <span className="text-2xl leading-none">{minutes}</span>
+                      <span className="text-[8px] uppercase tracking-widest leading-none">MIN</span>
+                    </div>
                   </div>
 
-                  <div className="flex-1 space-y-4 mb-8">
-                    {order.itens_pedido?.map((item: any) => (
-                      <div key={item.id} className="p-6 bg-slate-50 rounded-[32px] border border-slate-100/50 group hover:bg-white hover:shadow-xl transition-all">
-                        <div className="flex items-center gap-6">
-                          <div className="size-16 bg-white rounded-2xl flex items-center justify-center text-3xl font-black text-slate-900 shadow-sm outline outline-2 outline-slate-100">
-                            {item.quantidade}x
-                          </div>
-                          <div className="flex-1">
-                            <span className="text-2xl font-black text-slate-800 uppercase italic tracking-tighter leading-tight block">
-                              {item.product_name || 'Produto'}
-                            </span>
-                          </div>
+                  {/* Items List */}
+                  <CardContent className="p-8 flex-1">
+                    <div className="space-y-4">
+                       <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em] mb-4">Lista de Produção</p>
+                       <div className="space-y-4 max-h-[250px] overflow-y-auto pr-2 scrollbar-hide">
+                          {order.itens_pedido?.length > 0 ? order.itens_pedido.map((item: any, i: number) => (
+                            <div key={i} className="flex items-center gap-4 group/item cursor-pointer">
+                               <div className="size-10 bg-slate-50 group-hover/item:bg-amber-500 group-hover/item:text-white rounded-xl flex items-center justify-center font-black text-xs transition-colors border border-slate-100">
+                                 {item.quantidade || 1}x
+                               </div>
+                               <div className="flex-1">
+                                 <p className="text-sm font-black text-slate-800 uppercase italic tracking-tighter line-clamp-1">{item.nome || order.product_name}</p>
+                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{item.observacao || 'Sem obs'}</p>
+                               </div>
+                            </div>
+                          )) : (
+                            <div className="flex items-center gap-4">
+                               <div className="size-10 bg-slate-50 rounded-xl flex items-center justify-center font-black text-xs">1x</div>
+                               <p className="text-sm font-black text-slate-800 uppercase italic tracking-tighter">{order.product_name}</p>
+                            </div>
+                          )}
+                       </div>
+                    </div>
+                  </CardContent>
+
+                  {/* Card Actions */}
+                  <div className="p-8 pt-0 mt-auto">
+                    <Button 
+                      onClick={() => handleUpdateStatus(order.id, order.status)}
+                      className={cn(
+                        "w-full h-20 rounded-[32px] font-black uppercase tracking-[0.2em] shadow-2xl transition-all active:scale-95 group-hover:scale-[1.02]",
+                        order.status === 'preparando' 
+                          ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-200" 
+                          : "bg-slate-950 hover:bg-slate-900 text-white shadow-slate-200"
+                      )}
+                    >
+                      {order.status === 'preparando' ? (
+                        <div className="flex items-center gap-3">
+                           FINALIZAR <CheckCircle2 className="size-6 text-emerald-200" />
                         </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {order.observacoes && (
-                    <div className="p-8 bg-rose-50 rounded-[40px] border-2 border-dashed border-rose-200 mb-8 mt-auto animate-pulse">
-                      <p className="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
-                        <AlertCircle className="size-4" /> Atenção Cozinha:
-                      </p>
-                      <p className="text-2xl font-black text-slate-800 italic tracking-tight leading-tight uppercase">
-                        "{order.observacoes}"
-                      </p>
+                      ) : (
+                        <div className="flex items-center gap-3">
+                           INICIAR PREPARO <Zap className="size-6 text-amber-400" />
+                        </div>
+                      )}
+                    </Button>
+                    
+                    <div className="grid grid-cols-2 gap-3 mt-4">
+                       <Button variant="outline" className="h-14 rounded-2xl border-slate-100 bg-slate-50 text-slate-400 hover:bg-slate-100">
+                          <Printer className="size-5" />
+                       </Button>
+                       <Button variant="outline" className="h-14 rounded-2xl border-slate-100 bg-slate-50 text-slate-400 hover:bg-slate-100">
+                          <ChevronRight className="size-5" />
+                       </Button>
                     </div>
-                  )}
-
-                  <div className="mt-auto pt-6 border-t border-slate-100">
-                    {order.status === 'confirmado' ? (
-                      <Button 
-                        onClick={() => updateStatus(order.id, 'em_preparo')}
-                        className="w-full h-24 rounded-[35px] bg-slate-900 hover:bg-slate-800 text-white font-black uppercase tracking-[0.3em] text-lg shadow-2xl transition-all active:scale-95 flex gap-4"
-                      >
-                        <Flame className="size-8 text-amber-500" /> Iniciar Agora
-                      </Button>
-                    ) : (
-                      <Button 
-                        onClick={() => updateStatus(order.id, 'pronto')}
-                        className="w-full h-24 rounded-[35px] bg-pink-500 hover:bg-pink-600 text-white font-black uppercase tracking-[0.3em] text-lg shadow-2xl shadow-pink-100 transition-all active:scale-95 flex gap-4"
-                      >
-                        <CheckCircle2 className="size-8" /> Finalizar Pedido
-                      </Button>
-                    )}
                   </div>
-                </CardContent>
-              </Card>
-            ))
-          ) : (
-            <div className="col-span-full p-32 bg-white rounded-[80px] border border-slate-100 shadow-2xl shadow-slate-200/20 flex flex-col items-center justify-center text-center min-h-[600px]">
-              <div className="size-48 bg-slate-50 rounded-[60px] flex items-center justify-center text-slate-200 mb-10 relative overflow-hidden">
-                <div className="absolute inset-0 bg-slate-100 animate-pulse" />
-                <ChefHat className="size-24 relative z-10" />
-              </div>
-              <h3 className="text-5xl font-black text-slate-900 tracking-tighter uppercase italic">Cozinha em descanso</h3>
-              <p className="text-slate-500 mt-6 text-xl max-w-md font-medium italic">Todos os pedidos foram atendidos. Ótimo trabalho equipe!</p>
+                </Card>
+              </motion.div>
+            )
+          }) : !loading && (
+            <div className="col-span-full py-40 flex flex-col items-center">
+               <div className="size-48 bg-white/5 rounded-[64px] flex items-center justify-center text-slate-800 mb-8 border border-white/5">
+                  <ChefHat className="size-20 opacity-20" />
+               </div>
+               <h3 className="text-3xl font-black text-white/50 tracking-tighter uppercase italic">Cozinha em Descanso</h3>
+               <p className="text-slate-500 font-medium italic mt-4 uppercase tracking-[0.2em]">Aguardando novas ordens de produção...</p>
             </div>
           )}
-        </div>
+        </AnimatePresence>
       </div>
     </div>
   )

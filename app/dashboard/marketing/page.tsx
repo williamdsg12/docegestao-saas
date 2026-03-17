@@ -65,8 +65,8 @@ export default function MarketingPage() {
     try {
       setLoading(true)
       const [couponsRes, rewardsRes] = await Promise.all([
-        supabase.from('cupons').select('*').eq('empresa_id', business!.id).order('created_at', { ascending: false }),
-        supabase.from('recompensas').select('*').eq('empresa_id', business!.id)
+        supabase.from('cupons').select('*').eq('company_id', business!.id).order('created_at', { ascending: false }),
+        supabase.from('recompensas').select('*').eq('company_id', business!.id)
       ])
       setCoupons(couponsRes.data || [])
       setRewards(rewardsRes.data || [])
@@ -81,7 +81,7 @@ export default function MarketingPage() {
     try {
       const { error } = await supabase.from('cupons').insert({
         ...newCoupon,
-        empresa_id: business!.id,
+        company_id: business!.id,
         codigo: newCoupon.codigo.toUpperCase()
       })
       if (error) throw error

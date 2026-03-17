@@ -120,9 +120,9 @@ export default function PedidosPage() {
     try {
       setLoading(true)
       const [ordRes, cliRes, prodRes] = await Promise.all([
-        supabase.from('orders').select('*').eq('company_id', profile.company_id).order('delivery_date', { ascending: true }),
-        supabase.from('clients').select('id, name').eq('company_id', profile.company_id).order('name'),
-        supabase.from('products').select('id, name, price').eq('company_id', profile.company_id).order('name')
+        supabase.from('pedidos').select('*').eq('company_id', profile.company_id).order('created_at', { ascending: false }),
+        supabase.from('clientes').select('id, nome').eq('company_id', profile.company_id).order('nome'),
+        supabase.from('produtos').select('id, nome, preco').eq('company_id', profile.company_id).order('nome')
       ])
 
       if (ordRes.error) throw ordRes.error
@@ -132,7 +132,11 @@ export default function PedidosPage() {
       const clientsData = cliRes.data || []
       const ordersData = ordRes.data?.map((o: any) => ({
         ...o,
-        clients: { name: clientsData.find((c: any) => c.id === o.client_id)?.name || 'Cliente Desconhecido' }
+        product_name: o.product_name || 'Pedido Digital',
+        total_value: o.valor_total || o.total_value || 0,
+        deposit_value: o.deposit_value || 0,
+        delivery_date: o.delivery_date || o.created_at,
+        clients: { name: clientsData.find((c: any) => c.id === (o.cliente_id || o.client_id))?.nome || o.cliente_nome || 'Cliente Desconhecido' }
       })) || []
 
       setOrders(ordersData)
@@ -160,11 +164,11 @@ export default function PedidosPage() {
     try {
       if (editingOrder) {
         const { error } = await supabase
-          .from('orders')
+          .from('pedidos')
           .update({
-            client_id: orderData.client_id,
+            cliente_id: orderData.client_id,
             product_name: orderData.product_name,
-            total_value: parseFloat(orderData.total_value),
+            valor_total: parseFloat(orderData.total_value),
             deposit_value: parseFloat(orderData.deposit_value),
             delivery_date: orderData.delivery_date,
             installments: parseInt(orderData.installments),
@@ -177,13 +181,13 @@ export default function PedidosPage() {
         fetchData() // Refresh to get relations
       } else {
         const { data, error } = await supabase
-          .from('orders')
+          .from('pedidos')
           .insert({
             user_id: user?.id,
             company_id: profile?.company_id,
-            client_id: orderData.client_id,
+            cliente_id: orderData.client_id,
             product_name: orderData.product_name,
-            total_value: parseFloat(orderData.total_value),
+            valor_total: parseFloat(orderData.total_value),
             deposit_value: parseFloat(orderData.deposit_value),
             delivery_date: orderData.delivery_date,
             installments: parseInt(orderData.installments),
@@ -223,7 +227,7 @@ export default function PedidosPage() {
   async function handleDeleteOrder(id: string) {
     if (!window.confirm("Deseja realmente excluir este pedido?")) return
     try {
-      const { error } = await supabase.from('orders').delete().eq('id', id)
+      const { error } = await supabase.from('pedidos').delete().eq('id', id)
       if (error) throw error
       setOrders(prev => prev.filter(o => o.id !== id))
       toast.success("Pedido excluído!")
@@ -237,7 +241,7 @@ export default function PedidosPage() {
   async function handleUpdateStatus(orderId: string, newStatus: OrderStatus) {
     try {
       const { error } = await supabase
-        .from('orders')
+        .from('pedidos')
         .update({ status: newStatus })
         .eq('id', orderId)
 

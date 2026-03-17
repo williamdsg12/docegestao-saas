@@ -170,7 +170,7 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
       const { data: delSettings } = await supabase
         .from('configuracoes_delivery')
         .select('*')
-        .eq('empresa_id', compData.id)
+        .eq('company_id', compData.id)
         .maybeSingle()
       
       if (delSettings) {
@@ -262,7 +262,7 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
         .from('cupons')
         .select('*')
         .eq('codigo', couponCode.toUpperCase())
-        .eq('empresa_id', company.id)
+        .eq('company_id', company.id)
         .eq('ativo', true)
         .single()
 
@@ -351,7 +351,7 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
         const { data: existingClient } = await supabase
           .from('clientes')
           .select('id')
-          .eq('empresa_id', company.id)
+          .eq('company_id', company.id)
           .eq('telefone', customerInfo.phone)
           .maybeSingle()
 
@@ -361,7 +361,7 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
           const { data: newClient } = await supabase
             .from('clientes')
             .insert({
-              empresa_id: company.id,
+              company_id: company.id,
               nome: customerInfo.name,
               telefone: customerInfo.phone,
               endereco: customerInfo.address
@@ -400,7 +400,7 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
         const { data: profOrder } = await supabase
           .from('pedidos')
           .insert({
-            empresa_id: company.id,
+            company_id: company.id,
             cliente_id: clientId,
             tipo_pedido: customerInfo.address ? 'delivery' : 'pickup',
             status: 'recebido',

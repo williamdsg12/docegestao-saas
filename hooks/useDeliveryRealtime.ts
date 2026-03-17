@@ -45,24 +45,25 @@ export function useDeliveryRealtime(companyId: string) {
     }
 
     const channel = supabase
-      .channel("pedidos_v3_realtime")
+      .channel(`delivery-realtime-${companyId}`)
       .on(
-        "postgres_changes",
+        'postgres_changes',
         {
-          event: "INSERT",
-          schema: "public",
-          table: "pedidos",
-          filter: `empresa_id=eq.${companyId}`,
+          event: '*',
+          schema: 'public',
+          table: 'pedidos',
+          filter: `company_id=eq.${companyId}`,
         },
         (payload) => {
-          if (payload.new.status === 'novo' || !payload.new.status) {
+          const newOrder = payload.new as any;
+          if (newOrder.status === 'novo' || !newOrder.status) {
             playNotification()
             toast.success("🚨 NOVO PEDIDO RECEBIDO!", {
-              description: `Cliente: ${payload.new.customer_name || 'Desconhecido'}. Verifique o painel.`,
+              description: `Cliente: ${newOrder.cliente_nome || 'Desconhecido'}. Verifique o painel.`,
               duration: 15000,
             })
           }
-          setNewOrders((prev) => [payload.new, ...prev])
+          setNewOrders((prev) => [newOrder, ...prev])
         }
       )
       .on(
@@ -71,7 +72,7 @@ export function useDeliveryRealtime(companyId: string) {
           event: "UPDATE",
           schema: "public",
           table: "pedidos",
-          filter: `empresa_id=eq.${companyId}`,
+          filter: `company_id=eq.${companyId}`,
         },
         (payload) => {
           const oldStatus = payload.old?.status

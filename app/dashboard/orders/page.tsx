@@ -101,13 +101,38 @@ export default function OnlineOrdersPage() {
     try {
       setLoading(true)
       const { data, error } = await supabase
-        .from('menu_orders')
-        .select('*, menu_order_items(*)')
+        .from('pedidos')
+        .select('*, itens_pedido(*)') // Using standardized table for items too if it exists
         .eq('company_id', profile.company_id)
         .order('created_at', { ascending: false })
 
       if (error) throw error
-      setOrders(data || [])
+      
+      // Map 'pedidos' fields to the 'Order' interface used in this page
+      const mappedOrders = data?.map((o: any) => ({
+        id: o.id,
+        customer_name: o.cliente_nome || 'Cliente',
+        customer_phone: o.cliente_telefone || '',
+        customer_address: o.endereco_entrega || '',
+        customer_cep: o.cep || '',
+        delivery_fee: o.taxa_entrega || 0,
+        subtotal: (o.valor_total || 0) - (o.taxa_entrega || 0),
+        total: o.valor_total || 0,
+        payment_method: o.payment_method || 'Não inf.',
+        payment_status: o.payment_status || 'pending',
+        status: o.status || 'pending',
+        notes: o.observacoes || '',
+        created_at: o.created_at,
+        menu_order_items: (o.itens_pedido || []).map((i: any) => ({
+          id: i.id,
+          product_name: i.product_name || 'Produto',
+          quantity: i.quantidade || 0,
+          price: i.preco || 0,
+          options: []
+        }))
+      })) || []
+
+      setOrders(mappedOrders)
     } catch (error: any) {
       console.error("Error fetching orders:", error.message)
       toast.error("Erro ao carregar pedidos")
@@ -119,24 +144,25 @@ export default function OnlineOrdersPage() {
   function subscribeToOrders() {
     if (!profile?.company_id) return { unsubscribe: () => {} }
     return supabase
-      .channel('menu_orders_realtime')
+      .channel('pedidos_realtime')
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
-        table: 'menu_orders',
+        table: 'pedidos',
         filter: `company_id=eq.${profile.company_id}`
       }, (payload: any) => {
         if (payload.eventType === 'INSERT') {
-          setOrders(prev => [payload.new as Order, ...prev])
-          toast.success("Novo pedido recebido! 🎂", {
-            description: `De: ${payload.new.customer_name}`,
-            duration: 10000,
-          })
           // Play notification sound
           const audio = new Audio('/notification.mp3')
           audio.play().catch(() => {})
-        } else if (payload.eventType === 'UPDATE') {
-          setOrders(prev => prev.map((o: Order) => o.id === payload.new.id ? { ...o, ...payload.new } : o))
+          
+          fetchOrders() // Refresh all to get joined items
+          toast.success("Novo pedido recebido! 🎂", {
+            description: `Novo pedido no painel`,
+            duration: 10000,
+          })
+        } else if (payload.eventType === 'UPDATE' || payload.eventType === 'DELETE') {
+          fetchOrders()
         }
       })
       .subscribe()
@@ -145,7 +171,7 @@ export default function OnlineOrdersPage() {
   async function updateOrderStatus(orderId: string, newStatus: string) {
     try {
       const { error } = await supabase
-        .from('menu_orders')
+        .from('pedidos')
         .update({ status: newStatus })
         .eq('id', orderId)
       

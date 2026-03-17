@@ -60,7 +60,7 @@ export function ProfileTabs() {
   
   // Helper to get the correct base URL for menu links
   const getMenuBaseUrl = () => {
-    const prodDomain = 'https://docesgestao.netlify.app'
+    const prodDomain = 'http://localhost:3000'
     if (typeof window === 'undefined') return process.env.NEXT_PUBLIC_APP_URL || prodDomain
     
     // Se estiver em produção (Netlify ou domínio customizado), usa a origin atual

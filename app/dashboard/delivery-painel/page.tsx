@@ -1,420 +1,598 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import { 
-  DndContext, 
-  DragOverlay, 
-  PointerSensor, 
-  useSensor, 
-  useSensors, 
-  closestCorners,
-  DragStartEvent,
-  DragOverEvent,
-  DragEndEvent,
-  defaultDropAnimationSideEffects
-} from "@dnd-kit/core"
-import { 
-  arrayMove, 
-  SortableContext, 
-  verticalListSortingStrategy,
-  useSortable
-} from "@dnd-kit/sortable"
-import { CSS } from "@dnd-kit/utilities"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { 
-  ShoppingBag, 
-  Clock, 
-  CheckCircle2, 
-  Truck, 
-  XCircle, 
-  Flame,
-  Filter,
-  Bell,
-  Utensils,
-  ChevronRight,
-  AlertCircle
-} from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
-
-import { useDeliveryRealtime } from "@/hooks/useDeliveryRealtime"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { useBusiness } from "@/hooks/useBusiness"
 import { supabase } from "@/lib/supabase"
+import { 
+  Zap, 
+  ChefHat, 
+  ShoppingBag, 
+  Truck, 
+  Search, 
+  Plus, 
+  Printer, 
+  ChevronRight,
+  MessageCircle,
+  MapPin,
+  Clock,
+  Phone,
+  User as UserIcon,
+  Package,
+  Calendar,
+  ExternalLink,
+  X,
+  Bell,
+  CheckCircle2,
+  AlertCircle,
+  MoreVertical,
+  ArrowRight,
+  Filter,
+  CreditCard,
+  Check
+} from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Separator } from "@/components/ui/separator"
+import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
 import { format, differenceInMinutes } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { cn } from "@/lib/utils"
 
-// --- Components ---
+// --- Sub-components (could be separate files, but keeping here for cohesion) ---
 
-function PreparationTimer({ startTime, limit = 15 }: { startTime: string | null, limit?: number }) {
-  const [elapsed, setElapsed] = useState("0:00")
-  const [isDelayed, setIsDelayed] = useState(false)
-
-  const updateTimer = useCallback(() => {
-    if (!startTime) return
-    const start = new Date(startTime)
-    const now = new Date()
-    const diffMs = now.getTime() - start.getTime()
-    const minutes = Math.floor(diffMs / 60000)
-    const seconds = Math.floor((diffMs % 60000) / 1000)
-    
-    setElapsed(`${minutes}:${seconds.toString().padStart(2, '0')}`)
-    setIsDelayed(minutes >= limit)
-  }, [startTime, limit])
-
-  useEffect(() => {
-    updateTimer()
-    const interval = setInterval(updateTimer, 1000)
-    return () => clearInterval(interval)
-  }, [updateTimer])
-
-  if (!startTime) return null
+function OrderListItem({ order, isSelected, onClick }: any) {
+  const age = differenceInMinutes(new Date(), new Date(order.created_at))
+  const isLate = age > 30 && (order.status === 'novo' || order.status === 'confirmado')
 
   return (
-    <div className={cn(
-      "flex items-center gap-2 px-3 py-1.5 rounded-full font-black text-[10px] uppercase tracking-widest",
-      isDelayed ? "bg-rose-500 text-white animate-pulse" : "bg-amber-100 text-amber-600"
-    )}>
-      <Clock className="size-3" />
-      {isDelayed && <span className="mr-1">⚠️ ATRASADO</span>}
-      {elapsed}
-    </div>
-  )
-}
-
-function KanbanCard({ order, isOverlay = false }: { order: any, isOverlay?: boolean }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging
-  } = useSortable({
-    id: order.id,
-    data: { type: "Order", order }
-  })
-
-  const style = {
-    transition,
-    transform: CSS.Translate.toString(transform),
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'novo': return 'bg-blue-500'
-      case 'confirmado': return 'bg-cyan-500'
-      case 'em_preparo': return 'bg-amber-500'
-      case 'pronto': return 'bg-emerald-500'
-      case 'saiu_entrega': return 'bg-indigo-500'
-      case 'entregue': return 'bg-green-500'
-      case 'cancelado': return 'bg-rose-500'
-      default: return 'bg-slate-500'
-    }
-  }
-
-  // Calculate if order is delayed (> 15 min since creation if not started, or > preparation_time if in progress)
-  const isDelayed = order.status === 'em_preparo' 
-    ? differenceInMinutes(new Date(), new Date(order.inicio_preparo || order.created_at)) > 15
-    : differenceInMinutes(new Date(), new Date(order.created_at)) > 30
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
+    <button 
+      onClick={() => onClick(order)}
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-[32px] border border-slate-100 bg-white p-6 transition-all",
-        isDragging ? "opacity-30" : "hover:shadow-2xl hover:shadow-slate-200/50 hover:-translate-y-1",
-        isOverlay ? "shadow-2xl ring-2 ring-pink-500/20 cursor-grabbing" : "cursor-grab",
-        isDelayed && order.status !== 'entregue' && order.status !== 'cancelado' ? "border-rose-200 bg-rose-50/30" : ""
+        "w-full p-5 text-left transition-all border-b border-slate-50 relative group",
+        isSelected ? "bg-pink-50/50 border-r-4 border-r-pink-500" : "hover:bg-slate-50",
+        isLate && !isSelected && "bg-rose-50/20"
       )}
     >
-      <div className={cn("absolute top-0 right-0 w-24 h-24 blur-[60px] -mr-12 -mt-12 opacity-20", getStatusColor(order.status))} />
+      <div className="flex justify-between items-start mb-2">
+        <div className="flex items-center gap-2">
+           <span className="text-[10px] font-black text-slate-300 uppercase tracking-tighter">#{order.num_serial || order.id.slice(0, 4)}</span>
+           <span className={cn(
+             "size-2 rounded-full",
+             order.status === 'novo' ? "bg-pink-500 animate-pulse" : 
+             order.status === 'saiu_entrega' ? "bg-emerald-500" : "bg-slate-300"
+           )} />
+        </div>
+        <span className={cn("text-[10px] font-black italic", isLate ? "text-rose-500" : "text-slate-400")}>
+           {age} min
+        </span>
+      </div>
       
-      <div className="flex justify-between items-start mb-4 relative z-10">
-        <div className="flex items-center gap-3">
-          <div className={cn("size-10 rounded-xl flex items-center justify-center text-white shadow-lg", getStatusColor(order.status))}>
-            <ShoppingBag className="size-5" />
-          </div>
-          <div>
-            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">#{order.numero_pedido || order.id.slice(0, 4)}</p>
-            <h4 className="text-xs font-black text-slate-900 uppercase italic tracking-tight leading-none truncate max-w-[100px]">
-              {order.customer_name || order.clientes?.nome || "Cliente"}
-            </h4>
-          </div>
-        </div>
-        {order.status === 'em_preparo' && (
-          <PreparationTimer startTime={order.inicio_preparo || order.created_at} />
-        )}
+      <p className="font-black text-slate-900 uppercase italic tracking-tighter truncate leading-none mb-1">
+        {order.clientes?.nome || order.cliente_nome || "Cliente"}
+      </p>
+      
+      <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+         <span>{order.tipo_pedido === 'entrega' ? 'Delivery' : 'Retirada'}</span>
+         <span className="text-slate-900 font-black">R$ {order.valor_total?.toFixed(2)}</span>
       </div>
 
-      <div className="flex items-center justify-between mt-2 pt-4 border-t border-slate-50 relative z-10">
-        <div className="flex flex-col">
-          <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Total</span>
-          <span className="text-sm font-black text-slate-900 tracking-tighter">R$ {order.valor_total?.toFixed(2)}</span>
-        </div>
-        <Badge className="bg-slate-100 text-slate-500 border-none px-3 py-1 rounded-lg font-black text-[8px] uppercase tracking-widest">
-          {order.tipo_pedido || 'DELIVERY'}
-        </Badge>
-      </div>
-
-      {isDelayed && order.status !== 'entregue' && order.status !== 'cancelado' && (
-        <div className="mt-3 flex items-center gap-1.5 text-rose-500 font-black text-[8px] uppercase tracking-widest animate-pulse">
-          <AlertCircle className="size-3" /> Pedido Atrasado
-        </div>
+      {isLate && (
+         <div className="absolute top-2 right-12">
+            <Badge className="bg-rose-500 text-white border-none text-[8px] px-1 py-0 animate-bounce">ATRASADO</Badge>
+         </div>
       )}
-    </div>
-  )
-}
-
-function KanbanColumn({ status, title, orders }: { status: string, title: string, orders: any[] }) {
-  const { setNodeRef } = useSortable({
-    id: status,
-    data: { type: "Column", status }
-  })
-
-  return (
-    <div className="flex flex-col min-w-[320px] max-w-[320px] bg-slate-50/50 rounded-[40px] p-4 h-[calc(100vh-280px)] border border-slate-100 shadow-inner">
-      <div className="flex items-center justify-between px-4 mb-6">
-        <div className="flex items-center gap-3">
-          <div className={cn(
-            "size-3 rounded-full shadow-sm",
-            status === 'novo' ? 'bg-blue-500 shadow-blue-200' :
-            status === 'em_preparo' ? 'bg-amber-500 shadow-amber-200' :
-            status === 'pronto' ? 'bg-emerald-500 shadow-emerald-200' :
-            status === 'saiu_entrega' ? 'bg-indigo-500 shadow-indigo-200' :
-            status === 'entregue' ? 'bg-green-500 shadow-green-200' : 'bg-rose-500 shadow-rose-200'
-          )} />
-          <h2 className="text-xs font-black text-slate-900 uppercase italic tracking-[0.2em]">{title}</h2>
-        </div>
-        <Badge className="bg-slate-200/50 text-slate-500 border-none font-black text-[10px] rounded-lg">
-          {orders.length}
-        </Badge>
-      </div>
-
-      <div ref={setNodeRef} className="flex-1 space-y-4 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
-        <SortableContext items={orders.map(o => o.id)} strategy={verticalListSortingStrategy}>
-          {orders.map((order) => (
-            <KanbanCard key={order.id} order={order} />
-          ))}
-        </SortableContext>
-        
-        {orders.length === 0 && (
-          <div className="h-32 border-2 border-dashed border-slate-200 rounded-[32px] flex items-center justify-center text-slate-300 text-[10px] font-black uppercase tracking-widest">
-            Vazio
-          </div>
-        )}
-      </div>
-    </div>
+    </button>
   )
 }
 
 // --- Main Page ---
 
-export default function DeliveryPainelPage() {
-  const { profile } = useBusiness()
-  const { newOrders, unlockAudio } = useDeliveryRealtime(profile?.company_id || "")
+export default function GestorPedidos() {
+  const { profile, business, loadingBusiness } = useBusiness()
   const [orders, setOrders] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [activeOrder, setActiveOrder] = useState<any | null>(null)
+  const [selectedOrder, setSelectedOrder] = useState<any>(null)
+  const [search, setSearch] = useState("")
+  const [activeTab, setActiveTab] = useState<'abertos' | 'concluidos'>('abertos')
+  const [autoAccept, setAutoAccept] = useState(false)
+  const [audioEnabled, setAudioEnabled] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    })
-  )
-
-  useEffect(() => {
-    if (profile?.company_id) {
-      fetchOrders()
+  const toggleAudio = () => {
+    // Establishing audio context on user gesture
+    if (!audioEnabled) {
+       const audio = new Audio("/sounds/notificacao.mp3")
+       audio.volume = 0
+       audio.play().then(() => {
+          setAudioEnabled(true)
+          toast.success("Alertas sonoros ativados!")
+       }).catch(() => {
+          toast.error("Clique para ativar o som")
+       })
+    } else {
+       setAudioEnabled(false)
     }
-  }, [profile])
+  }
 
-  async function fetchOrders() {
+  const fetchOrders = useCallback(async () => {
     if (!profile?.company_id) return
+    
     try {
-      setLoading(true)
       const { data, error } = await supabase
         .from('pedidos')
-        .select('*, clientes(nome)')
-        .eq('empresa_id', profile.company_id)
+        .select('*, clientes(*)')
+        .eq('company_id', profile.company_id)
         .order('created_at', { ascending: false })
       
       if (error) throw error
       setOrders(data || [])
+      
+      // If we have data and no selected order, select the first one in the list
+      if (data && data.length > 0 && !selectedOrder) {
+        // setSelectedOrder(data[0]) // Auto-select might be annoying, let's keep it null
+      }
     } catch (error) {
       console.error("Error fetching orders:", error)
     } finally {
-      setLoading(false)
+      setIsLoading(false)
+    }
+  }, [profile?.company_id])
+
+  const playAlert = useCallback(() => {
+    const audio = new Audio("/sounds/notificacao.mp3")
+    audio.play().catch(e => console.log("Sound alert blocked by browser"))
+  }, [])
+
+  const handleStatusUpdate = async (orderId: string, newStatus: string) => {
+     try {
+       const { error } = await supabase
+         .from('pedidos')
+         .update({ 
+           status: newStatus,
+           ...(newStatus === 'confirmado' ? { inicio_preparo: new Date().toISOString() } : {}),
+           ...(newStatus === 'pronto' ? { preparado_em: new Date().toISOString() } : {}),
+           ...(newStatus === 'entregue' ? { finalizado_em: new Date().toISOString() } : {})
+         })
+         .eq('id', orderId)
+       
+       if (error) throw error
+       
+       toast.success(`Pedido ${newStatus}!`)
+       fetchOrders()
+       
+       if (selectedOrder?.id === orderId) {
+         setSelectedOrder((prev: any) => ({ ...prev, status: newStatus }))
+       }
+     } catch (error) {
+       toast.error("Erro ao atualizar status")
+     }
+  }
+
+  const fetchOrderItems = async (orderId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('itens_pedido')
+        .select('*, produtos(nome)')
+        .eq('pedido_id', orderId)
+      
+      if (error) throw error
+      
+      const items = data?.map(i => ({
+        ...i,
+        product_name: i.produtos?.nome || 'Produto'
+      })) || []
+      
+      setSelectedOrder((prev: any) => {
+        if (prev?.id === orderId) {
+          return { ...prev, itens_pedido: items }
+        }
+        return prev
+      })
+    } catch (error) {
+      console.error("Error fetching items:", error)
     }
   }
 
   useEffect(() => {
-    if (newOrders.length > 0) {
+    if (selectedOrder && !selectedOrder.itens_pedido) {
+      fetchOrderItems(selectedOrder.id)
+    }
+  }, [selectedOrder?.id])
+
+  useEffect(() => {
+    if (profile?.company_id) {
       fetchOrders()
-    }
-  }, [newOrders])
-
-  const onDragStart = (event: DragStartEvent) => {
-    if (event.active.data.current?.type === "Order") {
-      setActiveOrder(event.active.data.current.order)
-    }
-  }
-
-  const onDragOver = (event: DragOverEvent) => {
-    const { active, over } = event
-    if (!over) return
-
-    const activeId = active.id
-    const overId = over.id
-
-    if (activeId === overId) return
-
-    const isActiveAnOrder = active.data.current?.type === "Order"
-    const isOverAnOrder = over.data.current?.type === "Order"
-    const isOverAColumn = over.data.current?.type === "Column"
-
-    if (!isActiveAnOrder) return
-
-    // Dropping an order over another order
-    if (isActiveAnOrder && isOverAnOrder) {
-      setOrders((prev) => {
-        const activeIndex = prev.findIndex((o) => o.id === activeId)
-        const overIndex = prev.findIndex((o) => o.id === overId)
-        
-        if (prev[activeIndex].status !== prev[overIndex].status) {
-          const updated = [...prev]
-          updated[activeIndex] = { ...updated[activeIndex], status: updated[overIndex].status }
-          return arrayMove(updated, activeIndex, overIndex)
-        }
-        
-        return arrayMove(prev, activeIndex, overIndex)
-      })
-    }
-
-    // Dropping an order over a column
-    if (isActiveAnOrder && isOverAColumn) {
-      setOrders((prev) => {
-        const activeIndex = prev.findIndex((o) => o.id === activeId)
-        const updated = [...prev]
-        updated[activeIndex] = { ...updated[activeIndex], status: overId }
-        return arrayMove(updated, activeIndex, activeIndex)
-      })
-    }
-  }
-
-  const onDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event
-    setActiveOrder(null)
-
-    if (!over) return
-
-    const orderId = active.id as string
-    const newStatus = (over.data.current?.type === "Column" ? over.id : (over.data.current?.order?.status)) as string
-
-    if (!newStatus) return
-
-    try {
-      const { error } = await supabase
-        .from('pedidos')
-        .update({ 
-          status: newStatus,
-          // Automations for preparation tracking (matching migration triggers for robustness)
-          ...(newStatus === 'em_preparo' ? { inicio_preparo: new Date().toISOString() } : {}),
-          ...(newStatus === 'pronto' ? { pronto_em: new Date().toISOString() } : {})
+      
+      const subscription = supabase
+        .channel('pedidos-manager')
+        .on('postgres_changes', { 
+           event: 'INSERT', 
+           schema: 'public', 
+           table: 'pedidos',
+           filter: `company_id=eq.${profile.company_id}`
+        }, (payload) => {
+           playAlert()
+           toast.info("Novo pedido recebido!")
+           
+           if (autoAccept) {
+              handleStatusUpdate(payload.new.id, 'confirmado')
+           } else {
+              fetchOrders()
+           }
         })
-        .eq('id', orderId)
+        .on('postgres_changes', { 
+           event: '*', 
+           schema: 'public', 
+           table: 'pedidos',
+           filter: `company_id=eq.${profile.company_id}`
+        }, fetchOrders)
+        .subscribe()
       
-      if (error) throw error
-      
-      toast.success(`Pedido movido para ${newStatus.toUpperCase()}`)
-    } catch (e) {
-      toast.error("Erro ao sincronizar com o servidor")
-      fetchOrders() // Revert to server state
+      return () => { supabase.removeChannel(subscription) }
     }
-  }
+  }, [profile?.company_id, autoAccept, playAlert, fetchOrders])
 
-  const columns = [
-    { id: 'novo', title: 'Novos' },
-    { id: 'confirmado', title: 'Confirmados' },
-    { id: 'em_preparo', title: 'Em Preparo' },
-    { id: 'pronto', title: 'Prontos' },
-    { id: 'saiu_entrega', title: 'Na Rua' },
-    { id: 'entregue', title: 'Concluídos' },
-  ]
+  const filteredOrders = useMemo(() => {
+     return orders.filter(o => {
+        const matchesSearch = o.id.includes(search) || 
+                             o.clientes?.nome?.toLowerCase().includes(search.toLowerCase()) || 
+                             o.cliente_nome?.toLowerCase().includes(search.toLowerCase())
+        
+        if (activeTab === 'abertos') {
+           return matchesSearch && o.status !== 'entregue' && o.status !== 'cancelado'
+        } else {
+           return matchesSearch && (o.status === 'entregue' || o.status === 'cancelado')
+        }
+     })
+  }, [orders, search, activeTab])
+
+  if (loadingBusiness || (isLoading && !orders.length)) {
+    return (
+       <div className="h-screen flex items-center justify-center bg-slate-50 font-black italic uppercase tracking-tighter text-2xl animate-pulse">
+          Sincronizando Gestor...
+       </div>
+    )
+  }
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-slate-50/30">
-      <div className="p-8 pb-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic leading-none mb-2">
-              Painel <span className="text-pink-500 tracking-tight">Kanban</span>
-            </h1>
-            <p className="text-slate-500 font-medium italic uppercase text-[10px] tracking-[0.3em]">Operational Drag & Drop Dashboard</p>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <Button 
-              onClick={unlockAudio}
-              className="rounded-2xl bg-slate-900 hover:bg-slate-800 text-white h-12 gap-2 font-black uppercase tracking-widest text-[10px] shadow-2xl px-8"
-            >
-              <Bell className="size-4 text-pink-500" /> Ativar Alertas
-            </Button>
-            <div className="px-6 py-3 bg-white rounded-2xl border border-slate-100 flex items-center gap-4 shadow-sm">
-               <div className="flex items-center gap-2">
-                  <div className="size-2 bg-pink-500 rounded-full animate-ping" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Ao Vivo</span>
+    <div className="h-screen flex bg-slate-100 overflow-hidden font-sans">
+      
+      {/* SIDEBAR: Order List */}
+      <aside className="w-96 flex flex-col bg-white border-r border-slate-200">
+         <div className="p-6 space-y-4 shrink-0 border-b border-slate-100 bg-white z-10">
+            <div className="flex items-center justify-between mb-2">
+               <div className="flex items-center gap-3">
+                  <div className="size-10 bg-pink-500 rounded-2xl flex items-center justify-center shadow-lg shadow-pink-500/20">
+                     <Zap className="size-5 text-white" />
+                  </div>
+                  <div>
+                     <h1 className="text-xl font-black tracking-tighter uppercase italic leading-none">Gestor</h1>
+                     <span className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] italic">De Pedidos</span>
+                  </div>
                </div>
-               <div className="w-[1px] h-4 bg-slate-100" />
-               <span className="text-xs font-black text-slate-900 italic uppercase">
-                  {orders.length} Total
-               </span>
+               <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-xl">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => setAutoAccept(!autoAccept)}
+                    className={cn("size-8 rounded-lg transition-all", autoAccept ? "bg-emerald-100 text-emerald-600 shadow-sm" : "text-slate-400")}
+                    title="Aceite Automático"
+                  >
+                     <Check className={cn("size-4", autoAccept && "scale-110")} />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={toggleAudio}
+                    className={cn("size-8 rounded-lg transition-all", audioEnabled ? "bg-emerald-100 text-emerald-600 shadow-sm" : "text-slate-400")}
+                    title={audioEnabled ? "Alertas de Som Ativados" : "Ativar Alertas de Som"}
+                  >
+                     <Bell className={cn("size-4", audioEnabled && "animate-bounce")} />
+                  </Button>
+               </div>
             </div>
-          </div>
-        </div>
-      </div>
 
-      <div className="flex-1 overflow-x-auto p-8 pt-4 scrollbar-hide">
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCorners}
-          onDragStart={onDragStart}
-          onDragOver={onDragOver}
-          onDragEnd={onDragEnd}
-        >
-          <div className="flex gap-8 h-full min-w-max pb-10">
-            {columns.map((col) => (
-              <KanbanColumn 
-                key={col.id} 
-                status={col.id} 
-                title={col.title} 
-                orders={orders.filter(o => o.status === col.id || (col.id === 'em_preparo' && o.status === 'confirmado'))} 
-              />
-            ))}
-          </div>
+            <div className="relative">
+               <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+               <Input 
+                 placeholder="BUSCAR CLIENTE OU ID..." 
+                 value={search}
+                 onChange={e => setSearch(e.target.value)}
+                 className="h-12 pl-12 rounded-2xl border-none bg-slate-100 text-[10px] font-black tracking-widest uppercase focus-visible:ring-pink-500/20 shadow-inner"
+               />
+            </div>
 
-          <DragOverlay dropAnimation={{
-            sideEffects: defaultDropAnimationSideEffects({
-              styles: {
-                active: {
-                  opacity: "0.5",
-                },
-              },
-            }),
-          }}>
-            {activeOrder ? (
-              <KanbanCard order={activeOrder} isOverlay />
-            ) : null}
-          </DragOverlay>
-        </DndContext>
-      </div>
+            <div className="flex bg-slate-100 p-1 rounded-2xl">
+               <button 
+                  onClick={() => setActiveTab('abertos')}
+                  className={cn(
+                    "flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                    activeTab === 'abertos' ? "bg-white text-pink-500 shadow-sm" : "text-slate-400"
+                  )}
+               >
+                 Abertos ({orders.filter(o => o.status !== 'entregue' && o.status !== 'cancelado').length})
+               </button>
+               <button 
+                  onClick={() => setActiveTab('concluidos')}
+                  className={cn(
+                    "flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                    activeTab === 'concluidos' ? "bg-white text-pink-500 shadow-sm" : "text-slate-400"
+                  )}
+               >
+                 Concluídos
+               </button>
+            </div>
+         </div>
+
+         <ScrollArea className="flex-1">
+            <div className="divide-y divide-slate-50">
+               {filteredOrders.length > 0 ? (
+                 filteredOrders.map(order => (
+                    <OrderListItem 
+                      key={order.id} 
+                      order={order} 
+                      isSelected={selectedOrder?.id === order.id}
+                      onClick={setSelectedOrder}
+                    />
+                 ))
+               ) : (
+                 <div className="p-12 text-center opacity-20 flex flex-col items-center">
+                    <ShoppingBag className="size-12 mb-4 stroke-1" />
+                    <p className="font-black uppercase tracking-widest text-[10px]">Nenhum pedido</p>
+                 </div>
+               )}
+            </div>
+         </ScrollArea>
+         
+         <div className="p-4 border-t border-slate-100 bg-slate-50 shrink-0">
+            <div className="flex items-center justify-between px-2">
+               <div className="flex items-center gap-2">
+                  <div className={cn("size-2 rounded-full", autoAccept ? "bg-emerald-500" : "bg-slate-300")} />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Aceite Automático</span>
+               </div>
+               <Switch checked={autoAccept} onCheckedChange={setAutoAccept} />
+            </div>
+         </div>
+      </aside>
+
+      {/* MAIN CONTENT: Order Details */}
+      <main className="flex-1 flex flex-col min-w-0 bg-slate-50">
+         {selectedOrder ? (
+            <div className="flex-1 flex flex-col overflow-hidden">
+               {/* Detail Header */}
+               <header className="p-8 bg-white border-b border-slate-200 flex items-center justify-between shrink-0">
+                  <div className="flex items-center gap-6">
+                     <div className="size-16 rounded-[24px] bg-slate-900 flex items-center justify-center font-black text-white italic text-xl shadow-xl transform -rotate-3">
+                        #{selectedOrder.num_serial || selectedOrder.id.slice(0, 3)}
+                     </div>
+                     <div>
+                        <div className="flex items-center gap-3 mb-1">
+                           <h2 className="text-3xl font-black italic uppercase tracking-tighter text-slate-900 leading-none">
+                              {selectedOrder.clientes?.nome || selectedOrder.cliente_nome}
+                           </h2>
+                           <Badge className={cn("border-none text-[10px] font-black uppercase tracking-widest px-3", 
+                             selectedOrder.status === 'novo' ? "bg-pink-500" : "bg-slate-900"
+                           )}>
+                              {selectedOrder.status}
+                           </Badge>
+                        </div>
+                        <p className="text-slate-400 font-bold text-sm flex items-center gap-4">
+                           <span className="flex items-center gap-1.5"><Clock className="size-3" /> Recebido às {format(new Date(selectedOrder.created_at), 'HH:mm')}</span>
+                           <span className="flex items-center gap-1.5"><Truck className="size-3" /> {selectedOrder.tipo_pedido === 'entrega' ? 'Para Entrega' : 'Para Retirada'}</span>
+                        </p>
+                     </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                     <Button variant="outline" className="h-14 px-6 rounded-2xl border-slate-200 text-slate-600 font-bold uppercase text-[10px] tracking-widest gap-2">
+                        <Printer className="size-4" /> Imprimir
+                     </Button>
+                     <Button 
+                        onClick={() => handleStatusUpdate(selectedOrder.id, 'cancelado')}
+                        variant="outline" 
+                        className="h-14 px-6 rounded-2xl border-rose-100 text-rose-500 font-bold uppercase text-[10px] tracking-widest hover:bg-rose-50"
+                     >
+                        Cancelar
+                     </Button>
+                  </div>
+               </header>
+
+               {/* Detail Content */}
+               <div className="flex-1 flex flex-col md:flex-row min-h-0 bg-slate-50/50">
+                  <ScrollArea className="flex-1">
+                     <div className="p-12 space-y-12">
+                        {/* Customer & Logistics */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                           <div className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm space-y-6">
+                              <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-300 italic">Cliente</h3>
+                              <div className="flex items-center justify-between">
+                                 <div>
+                                    <p className="text-lg font-black text-slate-900 uppercase italic tracking-tighter leading-none mb-1">
+                                       {selectedOrder.clientes?.nome || selectedOrder.cliente_nome}
+                                    </p>
+                                    <p className="text-slate-400 font-bold text-sm tracking-wide">{selectedOrder.cliente_telefone || "Sem Telefone"}</p>
+                                 </div>
+                                 <div className="flex gap-2">
+                                    <Button variant="ghost" size="icon" className="size-12 rounded-2xl bg-emerald-50 text-emerald-600 shadow-sm"><MessageCircle className="size-5" /></Button>
+                                    <Button variant="ghost" size="icon" className="size-12 rounded-2xl bg-blue-50 text-blue-600 shadow-sm"><Phone className="size-5" /></Button>
+                                 </div>
+                              </div>
+                           </div>
+
+                           <div className="bg-white p-8 rounded-[40px] border border-slate-100 shadow-sm space-y-6">
+                              <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-300 italic">Endereço</h3>
+                              <div className="flex gap-4 items-start">
+                                 <div className="p-3 bg-pink-50 rounded-2xl text-pink-500">
+                                    <MapPin className="size-6" />
+                                 </div>
+                                 <div>
+                                    <p className="text-sm font-black text-slate-900 uppercase italic tracking-tighter leading-tight">
+                                       {selectedOrder.endereco_entrega || "Retirada no Local"}
+                                    </p>
+                                    <p className="text-slate-400 font-bold text-xs mt-1">
+                                       {selectedOrder.clientes?.bairro && `${selectedOrder.clientes.bairro} • `}
+                                       {selectedOrder.complemento_endereco && `${selectedOrder.complemento_endereco}`}
+                                    </p>
+                                 </div>
+                              </div>
+                           </div>
+                        </div>
+
+                        {/* Items Section */}
+                        <div className="space-y-6">
+                           <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-300 italic">Produtos</h3>
+                           <div className="bg-white rounded-[48px] border border-slate-100 shadow-sm overflow-hidden">
+                              <table className="w-full">
+                                 <thead>
+                                    <tr className="bg-slate-50/50 border-b border-slate-100">
+                                       <th className="px-8 py-5 text-left text-[10px] font-black uppercase tracking-widest text-slate-400">Qtd</th>
+                                       <th className="px-8 py-5 text-left text-[10px] font-black uppercase tracking-widest text-slate-400">Produto</th>
+                                       <th className="px-8 py-5 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">Preço</th>
+                                       <th className="px-8 py-5 text-right text-[10px) font-black uppercase tracking-widest text-slate-400">Total</th>
+                                    </tr>
+                                 </thead>
+                                 <tbody className="divide-y divide-slate-50">
+                                    {(selectedOrder.itens_pedido || []).map((item: any, i: number) => (
+                                       <tr key={i} className="group hover:bg-slate-50/30 transition-colors">
+                                          <td className="px-8 py-6 font-black text-slate-400">{item.quantidade}x</td>
+                                          <td className="px-8 py-6">
+                                             <p className="font-black text-slate-900 uppercase italic tracking-tighter">{item.product_name || "Produto"}</p>
+                                             {item.observacoes && <p className="text-[10px] font-bold text-pink-500 italic uppercase">Obs: {item.observacoes}</p>}
+                                          </td>
+                                          <td className="px-8 py-6 text-right font-bold text-slate-400 text-sm italic">R$ {item.preco?.toFixed(2)}</td>
+                                          <td className="px-8 py-6 text-right font-black text-slate-900 italic">R$ {(item.quantidade * item.preco).toFixed(2)}</td>
+                                       </tr>
+                                    ))}
+                                    {(!selectedOrder.itens_pedido || selectedOrder.itens_pedido.length === 0) && (
+                                       <tr>
+                                          <td colSpan={4} className="px-8 py-12 text-center text-slate-300 font-bold italic">Sem itens detalhados</td>
+                                       </tr>
+                                    )}
+                                 </tbody>
+                              </table>
+                              
+                              <div className="bg-slate-950 p-10 flex justify-between items-center text-white">
+                                 <div className="space-y-2">
+                                    <div className="flex items-center gap-3">
+                                       <CreditCard className="size-4 text-emerald-400" />
+                                       <span className="text-[10px] font-black uppercase tracking-widest text-white/50">{selectedOrder.payment_method || "PAGAMENTO"}</span>
+                                    </div>
+                                    <Badge className={cn("bg-emerald-500 hover:bg-emerald-600 text-white border-none font-black text-[9px] uppercase tracking-[0.2em]")}>
+                                       {selectedOrder.status_pagamento === 'pago' ? 'Confirmado' : 'Pendente'}
+                                    </Badge>
+                                 </div>
+                                 <div className="text-right">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-pink-500 mb-1 leading-none">Total à Pagar</p>
+                                    <p className="text-5xl font-black italic tracking-tighter leading-none">R$ {selectedOrder.valor_total?.toFixed(2)}</p>
+                                 </div>
+                              </div>
+                           </div>
+                        </div>
+
+                        {selectedOrder.observacoes && (
+                           <div className="p-8 bg-amber-50 rounded-[32px] border border-amber-100 flex gap-4 items-start">
+                              <AlertCircle className="size-6 text-amber-500 mt-1 shrink-0" />
+                              <div>
+                                 <p className="text-[10px] font-black uppercase tracking-widest text-amber-600 mb-1">Atenção para as Observações:</p>
+                                 <p className="font-bold italic text-slate-700 text-lg">"{selectedOrder.observacoes}"</p>
+                              </div>
+                           </div>
+                        )}
+                        <div className="h-20" />
+                     </div>
+                  </ScrollArea>
+
+                  {/* Actions Sidebar */}
+                  <div className="w-full md:w-96 p-10 space-y-10 shrink-0 bg-white border-l border-slate-100">
+                     <div className="space-y-4">
+                        <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-300 italic">Ações do Pedido</h3>
+                        
+                        {selectedOrder.status === 'novo' && (
+                           <Button 
+                              onClick={() => handleStatusUpdate(selectedOrder.id, 'confirmado')}
+                              className="w-full h-20 rounded-[32px] bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase italic text-lg tracking-widest shadow-xl shadow-emerald-500/20 gap-3 group"
+                           >
+                              <Zap className="size-6 group-hover:animate-pulse" /> Confirmar Pedido
+                           </Button>
+                        )}
+
+                        {selectedOrder.status === 'confirmado' && (
+                           <Button 
+                              onClick={() => handleStatusUpdate(selectedOrder.id, 'preparando')}
+                              className="w-full h-20 rounded-[32px] bg-amber-500 hover:bg-amber-600 text-white font-black uppercase italic text-lg tracking-widest shadow-xl shadow-amber-500/20 gap-3 group"
+                           >
+                              <ChefHat className="size-6" /> Iniciar Preparo
+                           </Button>
+                        )}
+
+                        {selectedOrder.status === 'preparando' && (
+                           <Button 
+                              onClick={() => handleStatusUpdate(selectedOrder.id, 'pronto')}
+                              className="w-full h-20 rounded-[32px] bg-indigo-500 hover:bg-indigo-600 text-white font-black uppercase italic text-lg tracking-widest shadow-xl shadow-indigo-500/20 gap-3 group"
+                           >
+                              <ShoppingBag className="size-6" /> Marcar como Pronto
+                           </Button>
+                        )}
+
+                        {selectedOrder.status === 'pronto' && (
+                           <Button 
+                              onClick={() => handleStatusUpdate(selectedOrder.id, 'saiu_entrega')}
+                              className="w-full h-20 rounded-[32px] bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase italic text-lg tracking-widest shadow-xl shadow-emerald-600/20 gap-3 group"
+                           >
+                              <Truck className="size-6 shadow-glow" /> Despachar Pedido
+                           </Button>
+                        )}
+
+                        {selectedOrder.status === 'saiu_entrega' && (
+                           <Button 
+                              onClick={() => handleStatusUpdate(selectedOrder.id, 'entregue')}
+                              className="w-full h-20 rounded-[32px] bg-slate-900 hover:bg-black text-white font-black uppercase italic text-lg tracking-widest shadow-xl gap-3 group"
+                           >
+                              <CheckCircle2 className="size-6" /> Concluir Entrega
+                           </Button>
+                        )}
+                     </div>
+
+                     <Separator className="bg-slate-50" />
+
+                     <div className="space-y-6">
+                        <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 flex items-center justify-between">
+                           <div>
+                              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-0.5">Pagamento</p>
+                              <p className="font-black text-slate-900 uppercase italic tracking-tighter">{selectedOrder.payment_method}</p>
+                           </div>
+                           <Badge className="bg-white text-emerald-500 border-none font-black shadow-sm italic text-[10px] uppercase tracking-widest">
+                              {selectedOrder.status_pagamento === 'pago' ? 'PAGO' : 'PENDENTE'}
+                           </Badge>
+                        </div>
+
+                        <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 flex items-center justify-between">
+                           <div>
+                              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-0.5">Logística</p>
+                              <p className="font-black text-slate-900 uppercase italic tracking-tighter">{selectedOrder.tipo_pedido}</p>
+                           </div>
+                           <Badge className="bg-white text-pink-500 border-none font-black shadow-sm italic text-[10px] uppercase tracking-widest">
+                              {selectedOrder.id_entregador ? 'COM MOTO' : 'SEM MOTO'}
+                           </Badge>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+         ) : (
+            <div className="flex-1 flex flex-col items-center justify-center text-center p-12 space-y-6 opacity-30 select-none">
+               <div className="size-32 bg-slate-200 rounded-[50px] flex items-center justify-center border-4 border-slate-300">
+                  <ShoppingBag className="size-16 stroke-1 text-slate-400" />
+               </div>
+               <div>
+                  <h3 className="text-2xl font-black italic uppercase tracking-tighter text-slate-500">Nenhum Pedido Selecionado</h3>
+                  <p className="text-sm font-bold uppercase tracking-widest text-slate-400">Clique em um pedido na lateral para ver os detalhes</p>
+               </div>
+            </div>
+         )}
+      </main>
     </div>
   )
 }

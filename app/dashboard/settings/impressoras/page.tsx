@@ -68,8 +68,8 @@ export default function ImpressorasPage() {
     try {
       setLoading(true)
       const [printersRes, queueRes] = await Promise.all([
-        supabase.from('impressoras').select('*').eq('empresa_id', business!.id),
-        supabase.from('fila_impressao').select('*, pedidos(numero_pedido, total_value)').eq('empresa_id', business!.id).order('created_at', { ascending: false }).limit(20)
+        supabase.from('impressoras').select('*').eq('company_id', business!.id),
+        supabase.from('fila_impressao').select('*, pedidos(numero_pedido, total_value)').eq('company_id', business!.id).order('created_at', { ascending: false }).limit(20)
       ])
       setPrinters(printersRes.data || [])
       setPrintQueue(queueRes.data || [])
@@ -84,7 +84,7 @@ export default function ImpressorasPage() {
     try {
       const { error } = await supabase.from('impressoras').insert({
         ...newPrinter,
-        empresa_id: business!.id
+        company_id: business!.id
       })
       if (error) throw error
       toast.success("Impressora configurada!")

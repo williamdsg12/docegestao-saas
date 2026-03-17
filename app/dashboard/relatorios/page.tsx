@@ -58,14 +58,14 @@ export default function RelatoriosPage() {
             const { data: pedidosData } = await supabase
                 .from('pedidos')
                 .select('valor_total, created_at')
-                .eq('empresa_id', profile?.company_id)
+                .eq('company_id', profile?.company_id)
                 .gte('created_at', startDate.toISOString())
 
             // 2. Fetch clients from NEW table
             const { count: totalClientes } = await supabase
                 .from('clientes')
                 .select('id', { count: 'exact' })
-                .eq('empresa_id', profile?.company_id)
+                .eq('company_id', profile?.company_id)
                 .gte('created_at', startDate.toISOString())
 
             const totalFaturamento = pedidosData?.reduce((acc, p) => acc + (p.valor_total || 0), 0) || 0

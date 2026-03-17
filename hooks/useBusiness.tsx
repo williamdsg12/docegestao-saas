@@ -6,12 +6,14 @@ import { useAuth } from "@/hooks/useAuth"
 
 interface Company {
     id: string
-    name: string
+    nome: string
     owner_id: string
     logo_url?: string
     instagram?: string
     website?: string
     description?: string
+    endereco?: string
+    telefone?: string
     address_street?: string
     address_number?: string
     address_complement?: string
@@ -19,7 +21,10 @@ interface Company {
     address_city?: string
     address_state?: string
     address_zip?: string
+    address_lat?: number
+    address_lng?: number
     delivery_radius?: number
+    config?: any
     delivery_fee?: number
     min_order_value?: number
     accept_pix?: boolean
@@ -87,9 +92,9 @@ export const BusinessProvider = ({ children }: { children: React.ReactNode }) =>
                 setProfile(profileData as Profile)
                 
                 if (profileData.company_id) {
-                    // 2. Fetch Company details
+                    // 2. Fetch Company details from 'empresas' (Standardized)
                     const { data: companyData, error: companyError } = await supabase
-                        .from('companies')
+                        .from('empresas')
                         .select('*')
                         .eq('id', profileData.company_id)
                         .maybeSingle()
