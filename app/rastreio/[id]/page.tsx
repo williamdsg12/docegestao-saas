@@ -44,7 +44,7 @@ export default function TrackingPage({ params }: { params: Promise<{ id: string 
   }, [id])
 
   useEffect(() => {
-    if (order?.status === 'saiu_entrega') {
+    if (order?.status === 'out_for_delivery') {
       // Subscribe to courier location if shipping
       const locationChannel = supabase
         .channel(`courier_tracking_${id}`)
@@ -78,7 +78,7 @@ export default function TrackingPage({ params }: { params: Promise<{ id: string 
   }
 
   const getStatusStep = (status: string) => {
-    const steps = ['novo', 'confirmado', 'em_preparo', 'pronto', 'saiu_entrega', 'entregue']
+    const steps = ['pending', 'accepted', 'preparing', 'ready', 'out_for_delivery', 'delivered']
     return steps.indexOf(status)
   }
 
@@ -138,10 +138,10 @@ export default function TrackingPage({ params }: { params: Promise<{ id: string 
         <div className="bg-white rounded-[48px] p-10 shadow-xl border border-white space-y-10">
            <div className="flex flex-col gap-10">
               {[
-                { s: 'confirmado', label: 'Pedido Confirmado', time: '10:30', icon: CheckCircle2, desc: 'A loja aceitou seu pedido' },
-                { s: 'em_preparo', label: 'Em Preparo', time: '10:35', icon: Clock, desc: 'Estamos preparando seu doce' },
-                { s: 'saiu_entrega', label: 'Saiu para Entrega', time: '10:50', icon: Truck, desc: 'O entregador está a caminho' },
-                { s: 'entregue', label: 'Pedido Entregue', time: '11:05', icon: CheckCircle2, desc: 'Bom apetite!' }
+                { s: 'accepted', label: 'Pedido Confirmado', time: '10:30', icon: CheckCircle2, desc: 'A loja aceitou seu pedido' },
+                { s: 'preparing', label: 'Em Preparo', time: '10:35', icon: Clock, desc: 'Estamos preparando seu doce' },
+                { s: 'out_for_delivery', label: 'Saiu para Entrega', time: '10:50', icon: Truck, desc: 'O entregador está a caminho' },
+                { s: 'delivered', label: 'Pedido Entregue', time: '11:05', icon: CheckCircle2, desc: 'Bom apetite!' }
               ].map((step, idx) => {
                 const isActive = getStatusStep(order.status) >= getStatusStep(step.s)
                 return (
@@ -164,7 +164,7 @@ export default function TrackingPage({ params }: { params: Promise<{ id: string 
         </div>
 
         {/* Courier Info */}
-        {order.status === 'saiu_entrega' && (
+        {order.status === 'out_for_delivery' && (
            <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="bg-white rounded-[48px] p-8 shadow-xl border border-white flex items-center justify-between">
               <div className="flex items-center gap-6">
                  <div className="size-16 rounded-[24px] bg-slate-900 flex items-center justify-center text-pink-500 font-black text-xl italic tracking-widest">

@@ -1,89 +1,114 @@
-import { NextResponse } from "next/server"
-import { supabase } from "@/lib/supabase"
-import { stripe } from "@/lib/stripe"
+import { NextResponse } from 'next/server'
+import { stripe } from '@/lib/stripe'
+import { supabaseAdmin } from '@/lib/supabase-admin'
+import { headers } from 'next/headers'
 
-export const dynamic = 'force-dynamic'
-import { headers } from "next/headers"
-
-/**
- * POST /api/webhook/stripe
- * Stripe Webhook Handler
- */
 export async function POST(req: Request) {
     const body = await req.text()
-    const sig = (await headers()).get('stripe-signature') as string
+    const signature = (await headers()).get('stripe-signature') as string
 
     let event
 
     try {
         event = stripe.webhooks.constructEvent(
             body,
-            sig,
+            signature,
             process.env.STRIPE_WEBHOOK_SECRET || ''
         )
     } catch (err: any) {
-        console.error(`Webhook signature verification failed: ${err.message}`)
-        return NextResponse.json({ error: `Webhook Error: ${err.message}` }, { status: 400 })
+        console.error(`[Stripe Webhook] Erro de assinatura: ${err.message}`)
+        return NextResponse.json({ error: 'Webhook Error' }, { status: 400 })
     }
 
-    console.log("Stripe Event received:", event.type)
-
+    // Processar o evento
     try {
         switch (event.type) {
-            case 'checkout.session.completed': {
-                const session = event.data.object as any
-                const { userId, planId, subscriptionId } = session.metadata
+            case 'account.updated': {
+                const account = event.data.object as any
+                const { error } = await supabaseAdmin
+                    .from('payment_settings')
+                    .update({
+                        stripe_charges_enabled: account.charges_enabled,
+                        stripe_payouts_enabled: account.payouts_enabled,
+                        stripe_onboarding_complete: account.details_submitted,
+                        stripe_account_status: (account.charges_enabled && account.payouts_enabled) ? 'ativo' : (account.details_submitted ? 'restrito' : 'pendente'),
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('stripe_account_id', account.id)
+                break
+            }
 
-                if (subscriptionId) {
-                    // 1. Get Plan to see duration
-                    const { data: plan } = await supabase.from('plans').select('*').eq('id', planId).single()
-                    const daysToAdd = plan?.billing_cycle === 'annually' ? 365 : 30
+            case 'charge.dispute.created': {
+                const dispute = event.data.object as any
+                const paymentIntentId = dispute.payment_intent
+                
+                // 1. Buscar pedido no banco
+                const { data: order } = await supabaseAdmin
+                    .from('orders')
+                    .select('*')
+                    .eq('stripe_payment_intent_id', paymentIntentId)
+                    .single()
 
-                    // 2. Resolve Payment Method Name
-                    const methodUsed = session.payment_method_types?.[0] === 'pix' ? 'PIX' : 'CREDIT_CARD'
+                if (order) {
+                    // 2. Criar registro de disputa
+                    await supabaseAdmin.from('payment_disputes').insert({
+                        tenant_id: order.tenant_id,
+                        order_id: order.id,
+                        stripe_dispute_id: dispute.id,
+                        stripe_payment_intent_id: paymentIntentId,
+                        amount: dispute.amount,
+                        reason: dispute.reason,
+                        status: 'needs_response'
+                    })
 
-                    // 2. Activate Subscription
-                    await supabase
-                        .from('subscriptions')
-                        .update({
-                            status: 'active',
-                            plan_id: planId,
-                            stripe_subscription_id: session.subscription, // Important for future cancellation
-                            current_period_end: new Date(Date.now() + daysToAdd * 24 * 60 * 60 * 1000).toISOString()
-                        })
-                        .eq('id', subscriptionId)
-
-                    // 3. Record Payment
-                    await supabase
-                        .from('payments')
-                        .insert({
-                            subscription_id: subscriptionId,
-                            amount: session.amount_total / 100,
-                            payment_method: methodUsed,
-                            status: 'RECEIVED',
-                            gateway: 'Stripe',
-                            gateway_payment_id: session.id
-                        })
-
-                    console.log(`[Webhook] Payment processed successfully for user ${userId}. Method: ${methodUsed}`)
+                    // 3. REVERTER TRANSFERÊNCIA (Transfer Reversal)
+                    // Como a Stripe debita a plataforma, nós retiramos do lojista
+                    if (order.stripe_transfer_id) {
+                        try {
+                            await stripe.transfers.createReversal(order.stripe_transfer_id, {
+                                amount: dispute.amount,
+                                description: `Reversão automática por disputa: ${dispute.id}`,
+                            })
+                        } catch (e: any) {
+                            console.error(`[Webhook] Erro ao reverter transferência ${order.stripe_transfer_id}:`, e.message)
+                        }
+                    }
                 }
                 break
             }
 
-            case 'customer.subscription.deleted': {
-                const stripeSub = event.data.object as any
-                // Handle cancellation logic...
-                await supabase
-                    .from('subscriptions')
-                    .update({ status: 'canceled' })
-                    .eq('stripe_subscription_id', stripeSub.id) // We should save this ID in activation
+            case 'charge.refunded': {
+                const charge = event.data.object as any
+                const paymentIntentId = charge.payment_intent
+                
+                // Reverter parte da transferência proporcional ao reembolso
+                const { data: order } = await supabaseAdmin
+                    .from('orders')
+                    .select('*')
+                    .eq('stripe_payment_intent_id', paymentIntentId)
+                    .single()
+
+                if (order && order.stripe_transfer_id) {
+                    try {
+                        await stripe.transfers.createReversal(order.stripe_transfer_id, {
+                            amount: charge.amount_refunded,
+                            description: `Reversão por reembolso: ${charge.id}`,
+                        })
+                    } catch (e: any) {
+                        console.error(`[Webhook] Erro ao reverter transferência por reembolso:`, e.message)
+                    }
+                }
                 break
             }
+
+            default:
+                console.log(`[Stripe Webhook] Evento não processado: ${event.type}`)
         }
 
-        return NextResponse.json({ received: true }, { status: 200 })
+        return NextResponse.json({ received: true })
+
     } catch (error: any) {
-        console.error("Webhook processing error:", error)
-        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
+        console.error('[Stripe Webhook] Erro interno:', error.message)
+        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
     }
 }

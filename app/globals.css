@@ -5,14 +5,17 @@
 
 :root {
   --bg-app: #f8fafc;
-  --bg-sidebar: #ffffff;
+  --bg-sidebar: #0f172a; /* Dark Sidebar Default */
   --bg-card: #ffffff;
   --text-primary: #0f172a;
   --text-secondary: #64748b;
   --border: #e2e8f0;
-  --primary: #ec4899;
-  --primary-hover: #db2777;
-  --shadow-card: 0 4px 20px rgba(0,0,0,0.05);
+  --primary: #3b82f6; /* Professional Blue */
+  --success: #22c55e;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --shadow-premium: 0 10px 40px -10px rgba(0,0,0,0.1);
+  --shadow-card: 0 4px 12px rgba(0,0,0,0.03);
 
   /* Mapping to Shadcn/UI standards */
   --background: var(--bg-app);
@@ -22,26 +25,36 @@
   --popover: var(--bg-card);
   --popover-foreground: var(--text-primary);
   --primary-foreground: #ffffff;
-  --secondary: #7C3AED;
+  --secondary: #64748b;
   --secondary-foreground: #ffffff;
   --muted: #f1f5f9;
-  --muted-foreground: var(--text-secondary);
+  --muted-foreground: #94a3b8;
   --accent: #f1f5f9;
   --accent-foreground: var(--text-primary);
-  --destructive: #ef4444;
+  --destructive: var(--danger);
   --destructive-foreground: #ffffff;
   --border-shadcn: var(--border);
   --input: var(--border);
   --ring: var(--primary);
-  --radius: 0.75rem;
-
-  /* Glassmorphism Variables */
-  --glass-background: rgba(255, 255, 255, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.4);
-  --glass-shadow: 0 8px 32px 0 rgba(236, 72, 153, 0.08);
+  --radius: 1rem;
 
   /* Premium Gradients */
-  --grad-premium: linear-gradient(135deg, var(--primary) 0%, #7C3AED 100%);
+  --grad-premium: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  --grad-success: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+
+  /* iFood Premium Design System */
+  --ifood-red: #EA1D2C;
+  --ifood-red-dark: #C21824;
+  --ifood-bg-light: #F7F7F7;
+  --ifood-text-main: #3E3E3E;
+  --ifood-text-muted: #717171;
+  
+  --shadow-ifood: 0 4px 16px rgba(0,0,0,0.08);
+  --shadow-ifood-hover: 0 8px 24px rgba(0,0,0,0.12);
+  --shadow-ifood-bottom-bar: 0 -4px 16px rgba(0,0,0,0.06);
+
+  --radius-ifood: 0.75rem;
+  --radius-ifood-lg: 1rem;
 }
 
 [data-theme="dark"] {
@@ -140,7 +153,32 @@
   }
 
   .responsive-container {
-    @apply w-full max-w-[1400px] mx-auto px-4 md:px-8 xl:px-10;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0 2.5rem;
+  }
+
+  /* Standardized Page Content Grid */
+  .dashboard-grid {
+    @apply grid gap-6;
+  }
+
+  .kpi-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6;
+  }
+
+  .main-content-split {
+    @apply grid grid-cols-1 lg:grid-cols-3 gap-6;
+  }
+
+  .main-content-split > :first-child {
+    @apply lg:col-span-2;
+  }
+
+  /* Standardized Card Style */
+  .kpi-card {
+    @apply bg-white rounded-[24px] p-6 border border-slate-100 shadow-sm flex flex-col justify-between h-[130px] transition-all hover:shadow-md hover:border-pink-100 hover:scale-[1.02];
   }
 
   /* Accessibility & Touch Targets */
@@ -165,5 +203,36 @@
   body {
     @apply bg-background text-foreground font-inter;
     transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+    overflow-x: hidden;
+  }
+
+  /* Google Maps Autocomplete Fix for Modals */
+  .pac-container {
+    z-index: 9999 !important;
+    pointer-events: auto !important;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    margin-top: 4px;
+    font-family: inherit;
+  }
+
+  .pac-item {
+    padding: 12px 16px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .pac-item:hover {
+    background-color: #f8fafc;
+  }
+
+  .pac-item-query {
+    font-size: 14px;
+    color: #0f172a;
+    font-weight: 600;
   }
 }

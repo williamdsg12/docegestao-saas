@@ -1,8 +1,6 @@
-import { createClient } from '@supabase/supabase-js'
-import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabaseAdmin'
-import { getServerUser } from '@/lib/supabaseAuth'
+import { supabaseAdmin } from '@/lib/supabase-admin'
+import { getServerUser, isSuperAdmin } from '@/lib/supabaseAuth'
 import { startOfMonth, subMonths, format, endOfMonth } from 'date-fns'
 
 export const dynamic = 'force-dynamic'
@@ -10,15 +8,7 @@ export const dynamic = 'force-dynamic'
 export async function GET() {
     try {
         const user = await getServerUser()
-        if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
-
-        const { data: profile } = await supabaseAdmin
-            .from('profiles')
-            .select('role')
-            .eq('id', user.id)
-            .single()
-
-        if (profile?.role !== 'admin') {
+        if (!isSuperAdmin(user)) {
             return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
         }
 
@@ -35,18 +25,27 @@ export async function GET() {
         const financialData = await Promise.all(months.map(async (month) => {
             // Count companies created up to this month
             const { count: companiesCount } = await supabaseAdmin
-                .from('companies')
+                .from('empresas')
                 .select('*', { count: 'exact', head: true })
                 .lte('created_at', month.end)
 
-            // Calculate MRR (sum of price of active subscriptions)
+            // Calculate MRR (sum of price of active subscriptions) 
             const { data: activeSubs } = await supabaseAdmin
                 .from('subscriptions')
-                .select('plans(price)')
+                .select('plan_id')
                 .eq('status', 'active')
                 .lte('created_at', month.end)
 
-            const mrr = activeSubs?.reduce((acc, sub: any) => acc + (sub.plans?.price || 0), 0) || 0
+            const activePlanIds = activeSubs?.map(s => s.plan_id).filter(Boolean) || []
+            const { data: plans } = await supabaseAdmin
+                .from('plans')
+                .select('id, price')
+                .in('id', activePlanIds)
+
+            const planMap = new Map()
+            plans?.forEach(p => planMap.set(p.id, p.price))
+
+            const mrr = activeSubs?.reduce((acc, sub: any) => acc + (planMap.get(sub.plan_id) || 0), 0) || 0
 
             return {
                 name: month.name,
@@ -58,7 +57,7 @@ export async function GET() {
 
         // Overall KPIs
         const { count: totalCompanies } = await supabaseAdmin
-            .from('companies')
+            .from('empresas')
             .select('*', { count: 'exact', head: true })
 
         const { count: totalUsers } = await supabaseAdmin
@@ -67,10 +66,19 @@ export async function GET() {
 
         const { data: currentMRRData } = await supabaseAdmin
             .from('subscriptions')
-            .select('plans(price)')
+            .select('plan_id')
             .eq('status', 'active')
 
-        const currentMRR = currentMRRData?.reduce((acc, sub: any) => acc + (sub.plans?.price || 0), 0) || 0
+        const currentPlanIds = currentMRRData?.map(s => s.plan_id).filter(Boolean) || []
+        const { data: currentPlans } = await supabaseAdmin
+            .from('plans')
+            .select('id, price')
+            .in('id', currentPlanIds)
+
+        const currentPlanMap = new Map()
+        currentPlans?.forEach(p => currentPlanMap.set(p.id, p.price))
+
+        const currentMRR = currentMRRData?.reduce((acc, sub: any) => acc + (currentPlanMap.get(sub.plan_id) || 0), 0) || 0
 
         // Churn calculation (last 30 days)
         const thirtyDaysAgo = subMonths(new Date(), 1).toISOString()

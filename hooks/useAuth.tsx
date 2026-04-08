@@ -16,6 +16,12 @@ interface AuthContextType {
     isAdmin: boolean
     role: string | null
     loadingSubscription: boolean
+    hasAccess: boolean
+    isTrial: boolean
+    daysLeft: number
+    plan: string | null
+    trial_ends_at: string | null
+    subscription_status: string | null
     logout: () => Promise<void>
 }
 
@@ -27,6 +33,12 @@ const AuthContext = createContext<AuthContextType>({
     isAdmin: false,
     role: null,
     loadingSubscription: true,
+    hasAccess: false,
+    isTrial: false,
+    daysLeft: 0,
+    plan: null,
+    trial_ends_at: null,
+    subscription_status: null,
     signInWithGoogle: async () => { },
     signInWithEmail: async () => ({ error: null }),
     signUp: async () => ({ error: null }),
@@ -42,6 +54,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [isAdmin, setIsAdmin] = useState(false)
     const [role, setRole] = useState<string | null>(null)
     const [loadingSubscription, setLoadingSubscription] = useState(true)
+    const [trialEndsAt, setTrialEndsAt] = useState<string | null>(null)
+    const [userPlan, setUserPlan] = useState<string | null>(null)
+    const [subStatus, setSubStatus] = useState<string | null>(null)
 
     const fetchSubscription = async (userId: string) => {
         setLoadingSubscription(true)
@@ -56,7 +71,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             // Fetch Admin Status and Role from profiles
             const profilePromise = supabase
                 .from('profiles')
-                .select('is_admin, role')
+                .select('is_admin, role, trial_ends_at, plan, subscription_status')
                 .eq('id', userId)
                 .maybeSingle()
 
@@ -83,13 +98,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
             if (profRes.data) {
                 console.log("DEBUG AUTH: Profile found, role:", profRes.data.role)
-                const isSystemAdmin = profRes.data.role === 'admin' || profRes.data.is_admin === true
+                const isSystemAdmin = profRes.data.is_admin === true
                 setIsAdmin(isSystemAdmin)
-                setRole(profRes.data.role || (profRes.data.is_admin ? 'admin' : 'user'))
+                setRole(profRes.data.role || (isSystemAdmin ? 'admin' : 'user'))
+                setTrialEndsAt(profRes.data.trial_ends_at)
+                setUserPlan(profRes.data.plan)
+                setSubStatus(profRes.data.subscription_status)
             } else {
                 console.warn("DEBUG AUTH: No profile found for user ID:", userId)
                 setIsAdmin(false)
                 setRole(null)
+                setTrialEndsAt(null)
+                setUserPlan(null)
+                setSubStatus(null)
             }
         } catch (error: any) {
             console.error("Error fetching auth data:", error.message || error)
@@ -99,6 +120,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setLoadingSubscription(false)
         }
     }
+
+    useEffect(() => {
+        // Synchronize session to cookie for server-side access (getServerUser)
+        if (session) {
+            const expiration = new Date()
+            expiration.setTime(expiration.getTime() + (30 * 24 * 60 * 60 * 1000)) // 30 days
+            document.cookie = `supabase-session=${session.access_token}; Path=/; Expires=${expiration.toUTCString()}; SameSite=Lax`
+        } else {
+            document.cookie = `supabase-session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT`
+        }
+    }, [session])
 
     useEffect(() => {
         // Get initial session
@@ -126,6 +158,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 setSubscription(null)
                 setLoadingSubscription(false)
                 setIsAdmin(false)
+                setRole(null)
+                setTrialEndsAt(null)
+                setUserPlan(null)
+                setSubStatus(null)
             }
             setLoading(false)
         })
@@ -136,8 +172,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const signInWithGoogle = async () => {
         try {
             const baseUrl = process.env.NEXT_PUBLIC_APP_URL || (typeof window !== 'undefined' ? window.location.origin : '')
-            // In dev, use location.origin to allow localhost redirects
-            // In prod, use the canonical NEXT_PUBLIC_APP_URL
             const redirectTo = typeof window !== 'undefined' && window.location.hostname === 'localhost'
                 ? `${window.location.origin}/dashboard`
                 : `${baseUrl}/dashboard`
@@ -184,27 +218,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const updateProfile = async (metadata: any) => {
         try {
-            // Ensure we have a valid session before updating auth metadata
             const { data: { session: currentSession } } = await supabase.auth.getSession()
-            
-            if (!currentSession) {
-                console.warn("DEBUG AUTH: updateProfile called without session, attempting to recover...")
-            }
-
-            // Update Auth User Metadata
             const { data, error: authError } = await supabase.auth.updateUser({
                 data: metadata
             })
 
-            if (authError) {
-                console.error("DEBUG AUTH: Auth metadata update failed:", authError.message)
-                return { error: authError }
-            }
+            if (authError) return { error: authError }
 
             if (data?.user) {
                 setUser(data.user)
-                
-                // Sync important fields to profile table for redundancy and standard DB access
                 const profileUpdates: any = {}
                 if (metadata.store_name) profileUpdates.business_name = metadata.store_name
                 if (metadata.full_name) profileUpdates.owner_name = metadata.full_name
@@ -219,7 +241,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             
             return { error: null }
         } catch (error: any) {
-            console.error("DEBUG AUTH: updateProfile exception:", error.message || error)
             return { error }
         }
     }
@@ -232,19 +253,36 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     }
 
+    // Calcular acesso real
+    const now = new Date()
+    const trialDate = trialEndsAt ? new Date(trialEndsAt) : null
+    const isTrialActive = !!(trialDate && trialDate > now)
+    const hasPaidPlan = !!(userPlan && !['free', 'inactive'].includes(userPlan.toLowerCase()))
+    
+    const hasAccess = !!(isAdmin || isTrialActive || hasPaidPlan)
+    const daysLeft = trialDate 
+        ? Math.max(0, Math.ceil((trialDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+        : 0
+
     return (
         <AuthContext.Provider value={{
             user,
             session,
             loading,
-            subscription,
-            isAdmin,
-            role,
-            loadingSubscription,
             signInWithGoogle,
             signInWithEmail,
             signUp,
             updateProfile,
+            subscription,
+            isAdmin,
+            role,
+            loadingSubscription,
+            hasAccess,
+            isTrial: isTrialActive,
+            daysLeft,
+            plan: userPlan,
+            trial_ends_at: trialEndsAt,
+            subscription_status: subStatus,
             logout
         }}>
             {children}

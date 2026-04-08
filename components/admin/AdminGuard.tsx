@@ -1,6 +1,7 @@
 "use client"
 
 import { useAuth } from "@/hooks/useAuth"
+import { SUPER_ADMIN_EMAIL, isSuperAdmin } from "@/lib/admin-config"
 import { Lock, ShieldAlert, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
@@ -22,7 +23,10 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
         )
     }
 
-    if (!user || (!isAdmin && role !== 'admin')) {
+    // Verifica se o usuário está logado E se o email é o autorizado
+    const hasAccess = user && user.email === SUPER_ADMIN_EMAIL
+
+    if (!hasAccess) {
         return (
             <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/40 backdrop-blur-md p-4">
                 <motion.div

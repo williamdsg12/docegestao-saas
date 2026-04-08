@@ -79,7 +79,7 @@ interface Product {
 
 export default function DigitalMenuPage() {
   const { user } = useAuth()
-  const { profile } = useBusiness()
+  const { profile, business } = useBusiness()
   const router = useRouter()
   const [categories, setCategories] = useState<Category[]>([])
   const [products, setProducts] = useState<Product[]>([])
@@ -115,10 +115,10 @@ export default function DigitalMenuPage() {
   })
 
   useEffect(() => {
-    if (user && profile?.company_id) {
+    if (user && profile?.tenant_id) {
       fetchData()
     }
-  }, [user, profile?.company_id])
+  }, [user, profile?.tenant_id])
 
   // draft persistence
   useEffect(() => {
@@ -139,49 +139,50 @@ export default function DigitalMenuPage() {
     }
   }, [productData, isProductDialogOpen])
 
-  // Robustly resolve or self-heal company_id
-  async function resolveCompanyId() {
+  // Robustly resolve or self-heal tenant_id
+  async function resolveTenantId() {
     // 1. Check current state
-    let cid = profile?.company_id || (user as any)?.company_id || (user as any)?.user_metadata?.company_id
+    let tid = profile?.tenant_id || (user as any)?.user_metadata?.tenant_id || profile?.company_id
     
-    if (cid) return cid
+    if (tid) return tid
 
     // 2. Database look-up
     if (user) {
         const { data: profileCheck } = await supabase
             .from('profiles')
-            .select('company_id')
+            .select('tenant_id')
             .eq('id', user.id)
             .maybeSingle()
         
-        if (profileCheck?.company_id) return profileCheck.company_id
+        if (profileCheck?.tenant_id) return profileCheck.tenant_id
 
-        // 3. Search for existing company owned by this user
-        const { data: companyCheck } = await supabase
-            .from('companies')
+        // 3. Search for existing tenant owned by this user
+        const { data: tenantCheck } = await supabase
+            .from('tenants')
             .select('id')
             .eq('owner_id', user.id)
             .maybeSingle()
         
-        if (companyCheck?.id) {
-            // Self-heal: link company to profile
-            await supabase.from('profiles').update({ company_id: companyCheck.id }).eq('id', user.id)
-            return companyCheck.id
+        if (tenantCheck?.id) {
+            // Self-heal: link tenant to profile
+            await supabase.from('profiles').update({ tenant_id: tenantCheck.id }).eq('id', user.id)
+            return tenantCheck.id
         }
 
         // 4. Final Fallback: Create a default business for the user
-        const { data: newCompany, error: createError } = await supabase
-            .from('companies')
+        const { data: newTenant, error: createError } = await supabase
+            .from('tenants')
             .insert({
                 name: (user as any)?.user_metadata?.store_name || "Minha Confeitaria",
+                slug: `loja-${user.id.slice(0, 5)}`,
                 owner_id: user.id
             })
             .select()
             .single()
         
-        if (newCompany) {
-            await supabase.from('profiles').update({ company_id: newCompany.id }).eq('id', user.id)
-            return newCompany.id
+        if (newTenant) {
+            await supabase.from('profiles').update({ tenant_id: newTenant.id }).eq('id', user.id)
+            return newTenant.id
         }
     }
     
@@ -189,14 +190,14 @@ export default function DigitalMenuPage() {
   }
 
   async function fetchData() {
-    const companyId = await resolveCompanyId()
-    if (!companyId) return
+    const tenantId = await resolveTenantId()
+    if (!tenantId) return
 
     try {
       setLoading(true)
       const [catRes, prodRes] = await Promise.all([
-        supabase.from('menu_categories').select('*').eq('company_id', companyId).order('position'),
-        supabase.from('menu_products').select('*').eq('company_id', companyId).order('created_at', { ascending: false })
+        supabase.from('product_categories').select('*').eq('tenant_id', tenantId).order('position'),
+        supabase.from('products').select('*').eq('tenant_id', tenantId).order('created_at', { ascending: false })
       ])
 
       const categoriesData = catRes.data || []
@@ -222,23 +223,23 @@ export default function DigitalMenuPage() {
     if (!categoryName) return
     
     try {
-      const companyId = await resolveCompanyId()
-      if (!companyId) {
+      const tenantId = await resolveTenantId()
+      if (!tenantId) {
         toast.error("Erro ao identificar empresa")
         return
       }
 
       if (editingCategory) {
         const { error } = await supabase
-          .from('menu_categories')
+          .from('product_categories')
           .update({ name: categoryName })
           .eq('id', editingCategory.id)
         if (error) throw error
         toast.success("Categoria atualizada!")
       } else {
         const { error } = await supabase
-          .from('menu_categories')
-          .insert({ name: categoryName, company_id: companyId })
+          .from('product_categories')
+          .insert({ name: categoryName, tenant_id: tenantId })
         if (error) throw error
         toast.success("Categoria criada!")
       }
@@ -247,8 +248,8 @@ export default function DigitalMenuPage() {
       setEditingCategory(null)
       fetchData()
     } catch (error: any) {
-      console.error("Error saving category:", error.message)
-      toast.error("Erro ao salvar categoria")
+      console.error("Error saving category:", error)
+      toast.error("Erro ao salvar categoria: " + (error.message || ""))
     }
   }
 
@@ -261,29 +262,29 @@ export default function DigitalMenuPage() {
     }
 
     try {
-      const companyId = await resolveCompanyId()
-
-      if (!companyId) {
+      const tenantId = await resolveTenantId()
+ 
+      if (!tenantId) {
         toast.error("Erro: ID da empresa não pôde ser recuperado ou criado.")
         return
       }
-
+ 
       const payload = {
         ...productData,
         price: parseFloat(productData.price),
-        company_id: companyId
+        tenant_id: tenantId
       }
-
+ 
       if (editingProduct) {
         const { error } = await supabase
-          .from('menu_products')
+          .from('products')
           .update(payload)
           .eq('id', editingProduct.id)
         if (error) throw error
         toast.success("Produto atualizado!")
       } else {
         const { error } = await supabase
-          .from('menu_products')
+          .from('products')
           .insert(payload)
         if (error) throw error
         toast.success("Produto criado!")
@@ -294,7 +295,8 @@ export default function DigitalMenuPage() {
       setEditingProduct(null)
       fetchData()
     } catch (error: any) {
-      toast.error("Erro ao salvar produto")
+      console.error("Error saving product:", error)
+      toast.error("Erro ao salvar produto: " + (error.message || ""))
     }
   }
 
@@ -347,7 +349,7 @@ export default function DigitalMenuPage() {
     if (!extractedBulkData || (!user && !profile)) return
     
     setIsSavingBulk(true)
-    const companyId = await resolveCompanyId()
+    const companyId = await resolveTenantId()
 
     if (!companyId) {
         toast.error("Erro crítico: ID da empresa não encontrado após tentativa de recuperação.")
@@ -399,7 +401,7 @@ export default function DigitalMenuPage() {
         fetchData()
     } catch (error: any) {
         console.error("Erro detalhado no bulk import:", error)
-        toast.error("Erro ao importar dados em massa: " + (error?.message || "Erro desconhecido"))
+        toast.error("Erro ao importar dados em massa: " + (error.message || "Erro desconhecido"))
     } finally {
         setIsSavingBulk(false)
     }
@@ -448,7 +450,7 @@ export default function DigitalMenuPage() {
 
     try {
       setIsUploading(true)
-      const companyId = await resolveCompanyId()
+      const companyId = await resolveTenantId()
       if (!companyId || !user) throw new Error("ID da empresa ou usuário não encontrado")
 
       const fileExt = file.name.split('.').pop()
@@ -492,14 +494,18 @@ export default function DigitalMenuPage() {
     p.category?.name.toLowerCase().includes(search.toLowerCase())
   )
 
-  const menuLink = `http://localhost:3000/menu/${(user as any)?.company_id || "demo"}`
+  const menuLink = typeof window !== 'undefined' 
+    ? `${window.location.origin}/menu/${business?.slug || profile?.tenant_id || profile?.company_id || (user as any)?.company_id || "demo"}`
+    : ""
 
   function handleCopyLink() {
+      if (!menuLink) return
       navigator.clipboard.writeText(menuLink)
       toast.success("Link copiado para a área de transferência!")
   }
 
   function handleOpenMenu() {
+      if (!menuLink) return
       window.open(menuLink, '_blank')
   }
 

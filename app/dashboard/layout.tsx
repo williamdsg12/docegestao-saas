@@ -3,7 +3,7 @@
 import { DashboardSidebar } from "@/components/dashboard/sidebar"
 import { SubscriptionGuard } from "@/components/dashboard/SubscriptionGuard"
 import { useAuth } from "@/hooks/useAuth"
-import { Bell, User, Clock, ChevronDown } from "lucide-react"
+import { Bell, User, Clock, ChevronDown, Search } from "lucide-react"
 import { UserAvatarMenu } from "@/components/dashboard/user-avatar-menu"
 import { differenceInDays } from "date-fns"
 import { Badge } from "@/components/ui/badge"
@@ -14,6 +14,9 @@ import { NotificationBell } from "@/components/dashboard/NotificationBell"
 import { useState, useEffect } from "react"
 import { toast } from "sonner"
 import { SidebarTrigger } from "@/components/dashboard/sidebar"
+import { CommandPalette } from "@/components/dashboard/CommandPalette"
+
+import { AuthGuard } from "@/components/auth/AuthGuard"
 
 export default function DashboardLayout({
   children,
@@ -22,6 +25,7 @@ export default function DashboardLayout({
 }) {
   const { user, subscription, isAdmin, loadingSubscription } = useAuth()
   const [showOnboarding, setShowOnboarding] = useState(false)
+  const [commandOpen, setCommandOpen] = useState(false)
 
   // Update showOnboarding if user data changes later (e.g. after login)
   useEffect(() => {
@@ -34,6 +38,7 @@ export default function DashboardLayout({
   }, [user, isAdmin, loadingSubscription])
 
   const calculateDaysLeft = () => {
+    // ... logic preserved (omitted for brevity in replacement but kept in tool call)
     if (subscription?.trial_end) {
       return differenceInDays(new Date(subscription.trial_end), new Date())
     }
@@ -55,48 +60,64 @@ export default function DashboardLayout({
   }
 
   return (
-    <SubscriptionGuard>
-      <div className="flex h-screen w-full bg-gray-50 overflow-hidden">
-        {showOnboarding && (
-          <OnboardingModal onComplete={() => setShowOnboarding(false)} />
-        )}
-        <DashboardSidebar>
-          <div className="flex flex-col h-full">
-            {/* Header with soft pink gradient - Refined Style */}
-            <header className="h-16 md:h-20 bg-gradient-to-r from-[#FBCFE8] via-[#F472B6] to-[#FBCFE8] px-4 md:px-6 flex items-center justify-between shrink-0 shadow-lg relative z-20 transition-all duration-500">
-              <div className="flex items-center gap-2 md:gap-4 overflow-hidden">
-                <SidebarTrigger />
-                <div className="flex flex-col min-w-0">
-                  <h1 className="text-base md:text-xl font-black text-slate-900 tracking-tight uppercase italic truncate">Dashboard</h1>
-                  <p className="hidden md:block text-[10px] text-pink-700 font-bold uppercase tracking-widest">Bem-vindo de volta!</p>
+    <AuthGuard>
+      <SubscriptionGuard>
+        <div className="flex h-screen w-full bg-gray-50 overflow-hidden">
+          {showOnboarding && (
+            <OnboardingModal onComplete={() => setShowOnboarding(false)} />
+          )}
+          <DashboardSidebar>
+            <div className="flex-1 flex flex-col min-h-0 bg-[#F8FAFC]">
+              {/* Modern Header - Professional & Clean */}
+              <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 px-8 flex items-center justify-between shrink-0 relative z-20">
+                <div className="flex items-center gap-6 flex-1">
+                  <button 
+                    onClick={() => setCommandOpen(true)}
+                    className="hidden md:flex items-center gap-3 px-4 py-2 bg-slate-100 rounded-2xl w-full max-w-md border border-slate-200 hover:bg-slate-200 transition-all group"
+                  >
+                    <Search className="size-4 text-slate-400 group-hover:text-blue-500" />
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest text-left flex-1">
+                      Pesquisa Inteligente (⌘+K)
+                    </span>
+                    <kbd className="hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border border-slate-300 bg-white px-1.5 font-mono text-[10px] font-black text-slate-500">
+                      <span className="text-xs">⌘</span>K
+                    </kbd>
+                  </button>
+                  <SidebarTrigger className="md:hidden" />
                 </div>
-              </div>
 
-              {/* Trial Banner - Clickable Link to Billing */}
-              <Link
-                href="/dashboard/billing"
-                className="hidden lg:flex items-center gap-2 px-6 py-2 rounded-full bg-white/40 backdrop-blur-md border border-white/60 text-pink-900 font-black text-sm transition-all hover:bg-white/60 hover:scale-105 active:scale-95 cursor-pointer italic shadow-sm group"
-              >
-                <Clock className="size-4 animate-pulse text-pink-600 group-hover:rotate-12 transition-transform" />
-                <span>{getTrialLabel()}</span>
-              </Link>
+                <div className="flex items-center gap-4">
+                  {/* Trial Info - Professional Badge */}
+                  <Link
+                    href="/dashboard/billing"
+                    className="hidden lg:flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 font-bold text-[10px] uppercase tracking-widest hover:bg-amber-100 transition-all"
+                  >
+                    <Clock className="size-3 animate-pulse" />
+                    <span>{getTrialLabel()}</span>
+                  </Link>
 
-              <div className="flex items-center gap-2 md:gap-4">
-                <ThemeToggle />
-                <NotificationBell />
-                <UserAvatarMenu variant="transparent" />
-              </div>
-            </header>
+                  <div className="h-8 w-px bg-slate-200 mx-2 hidden md:block" />
 
-            {/* Content Area */}
-            <div className="flex-1 overflow-y-auto w-full">
-              <div className="max-w-[1400px] mx-auto p-4 md:p-8 xl:p-10">
-                {children}
+                  <div className="flex items-center gap-3">
+                    <ThemeToggle />
+                    <NotificationBell />
+                    <UserAvatarMenu />
+                  </div>
+                </div>
+              </header>
+
+              {/* Standardized Content Area */}
+              <div className="flex-1 overflow-y-auto w-full min-w-0">
+                <main className="max-w-[1600px] mx-auto px-6 md:px-10 py-8 lg:py-12">
+                  {children}
+                </main>
               </div>
             </div>
-          </div>
-        </DashboardSidebar>
-      </div>
-    </SubscriptionGuard>
+          </DashboardSidebar>
+          <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
+        </div>
+      </SubscriptionGuard>
+    </AuthGuard>
   )
 }
+

@@ -37,7 +37,17 @@ import {
   TableRow 
 } from "@/components/ui/table"
 
+import { FeatureGuard } from "@/components/dashboard/FeatureGuard"
+
 export default function ImpressorasPage() {
+  return (
+    <FeatureGuard feature="pro_features" planRequired="pro">
+      <ImpressorasContent />
+    </FeatureGuard>
+  )
+}
+
+function ImpressorasContent() {
   const { business } = useBusiness()
   const [printers, setPrinters] = useState<any[]>([])
   const [printQueue, setPrintQueue] = useState<any[]>([])

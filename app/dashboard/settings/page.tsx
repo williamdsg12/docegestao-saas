@@ -13,16 +13,9 @@ import {
     Home,
     Moon,
     Sun,
-    Monitor
+    Monitor,
+    ShieldCheck
 } from "lucide-react"
-import {
-    Breadcrumb,
-    BreadcrumbItem,
-    BreadcrumbLink,
-    BreadcrumbList,
-    BreadcrumbPage,
-    BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -36,8 +29,8 @@ import {
 } from "@/components/ui/select"
 import { useTheme } from "next-themes"
 import { toast } from "sonner"
-import Link from "next/link"
 import { cn } from "@/lib/utils"
+import { PageHeader } from "@/components/dashboard/PageHeader"
 
 export default function SettingsPage() {
     const { settings, loading, updateSettings } = useUserSettings()
@@ -74,165 +67,136 @@ export default function SettingsPage() {
     }
 
     if (loading && !settings) {
-        return <div className="p-8 animate-pulse text-slate-400 font-bold uppercase tracking-widest text-xs italic">Carregando configurações...</div>
+        return <div className="h-screen flex items-center justify-center font-black italic uppercase text-rose-500 animate-pulse tracking-widest text-xl">Sincronizando sistema...</div>
     }
 
     return (
-        <div className="space-y-10 pb-20">
-            {/* Breadcrumb */}
-            <Breadcrumb>
-                <BreadcrumbList>
-                    <BreadcrumbItem>
-                        <BreadcrumbLink asChild>
-                            <Link href="/dashboard" className="flex items-center gap-2">
-                                <Home className="size-4" />
-                                <span>Home</span>
-                            </Link>
-                        </BreadcrumbLink>
-                    </BreadcrumbItem>
-                    <BreadcrumbSeparator />
-                    <BreadcrumbItem>
-                        <BreadcrumbPage className="font-bold text-slate-900">Configurações</BreadcrumbPage>
-                    </BreadcrumbItem>
-                </BreadcrumbList>
-            </Breadcrumb>
+        <div className="space-y-10 pb-24 max-w-6xl mx-auto">
+            <PageHeader 
+                title="Ajustes do" 
+                highlight="Sistema" 
+                subtitle="Personalize sua experiência global e defina padrões de localização e interface"
+                actions={(
+                    <Button 
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="h-11 px-8 rounded-xl bg-slate-900 text-white font-black uppercase text-[10px] shadow-lg shadow-slate-900/10 transition-all hover:scale-105 active:scale-95 gap-2"
+                    >
+                        <Save size={16} /> {saving ? "Salvando..." : "Salvar Globais"}
+                    </Button>
+                )}
+            />
 
-            {/* Page Header */}
-            <div className="flex flex-col gap-4 text-center lg:text-left">
-                <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">
-                    CONFIGURAÇÕES <span className="text-primary tracking-tighter">DO SISTEMA</span>
-                </h1>
-                <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] sm:text-xs flex items-center justify-center lg:justify-start gap-2 italic">
-                    <Settings className="size-3 text-primary shrink-0" />
-                    Personalize sua experiência na plataforma e defina padrões globais.
-                </p>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                 {/* Visual Preference */}
-                <Card className="border-none shadow-xl shadow-slate-200/50 rounded-[32px] overflow-hidden bg-white/70 backdrop-blur-xl">
-                    <CardHeader className="p-8 pb-4">
-                        <CardTitle className="text-lg font-black uppercase italic tracking-tight flex items-center gap-3">
-                            <Monitor className="size-5 text-indigo-500" />
-                            Aparência e Tema
-                        </CardTitle>
-                        <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Escolha como você quer ver o sistema</CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-8 pt-4 space-y-6">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <button 
-                                onClick={() => setTheme("light")}
-                                className={cn(
-                                    "p-6 rounded-2xl border-2 transition-all flex flex-col items-center gap-3",
-                                    theme === "light" ? "border-primary bg-primary/5 text-primary" : "border-slate-50 bg-slate-50 text-slate-400 font-bold"
-                                )}
-                            >
-                                <Sun className="size-6" />
-                                <span className="text-[10px] font-black uppercase tracking-widest">Modo Claro</span>
-                            </button>
-                            <button 
-                                onClick={() => setTheme("dark")}
-                                className={cn(
-                                    "p-6 rounded-2xl border-2 transition-all flex flex-col items-center gap-3",
-                                    theme === "dark" ? "border-primary bg-primary/5 text-primary" : "border-slate-50 bg-slate-50 text-slate-400 font-bold"
-                                )}
-                            >
-                                <Moon className="size-6" />
-                                <span className="text-[10px] font-black uppercase tracking-widest">Modo Escuro</span>
-                            </button>
+                <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="bg-white rounded-[48px] border border-slate-100 shadow-sm p-10 space-y-8">
+                    <div className="flex items-center gap-4 border-b border-slate-50 pb-6">
+                        <div className="size-12 rounded-2xl bg-indigo-50 text-indigo-500 flex items-center justify-center shadow-inner"><Monitor size={24} /></div>
+                        <div>
+                            <h3 className="text-xl font-black uppercase italic tracking-tighter text-slate-900">Aparência</h3>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-300">Tema e Modo de Visualização</p>
                         </div>
-                    </CardContent>
-                </Card>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <button 
+                            onClick={() => setTheme("light")}
+                            className={cn(
+                                "p-8 rounded-[32px] border-2 transition-all flex flex-col items-center gap-4 group relative overflow-hidden",
+                                theme === "light" ? "border-rose-500 bg-rose-50/20 text-rose-500" : "border-slate-50 bg-slate-50 text-slate-300 hover:border-slate-100 hover:bg-white"
+                            )}
+                        >
+                            <Sun className={cn("size-8", theme === "light" && "animate-spin-slow")} />
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] italic">MODO CLARO</span>
+                        </button>
+                        <button 
+                            onClick={() => setTheme("dark")}
+                            className={cn(
+                                "p-8 rounded-[32px] border-2 transition-all flex flex-col items-center gap-4 group relative overflow-hidden",
+                                theme === "dark" ? "border-rose-500 bg-rose-50/20 text-rose-500" : "border-slate-50 bg-slate-50 text-slate-300 hover:border-slate-100 hover:bg-white"
+                            )}
+                        >
+                            <Moon className={cn("size-8", theme === "dark" && "animate-pulse")} />
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] italic">MODO ESCURO</span>
+                        </button>
+                    </div>
+                </motion.div>
 
                 {/* Localization */}
-                <Card className="border-none shadow-xl shadow-slate-200/50 rounded-[32px] overflow-hidden bg-white/70 backdrop-blur-xl">
-                    <CardHeader className="p-8 pb-4">
-                        <CardTitle className="text-lg font-black uppercase italic tracking-tight flex items-center gap-3">
-                            <Globe className="size-5 text-blue-500" />
-                            Localização e Padrões
-                        </CardTitle>
-                        <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Defina idioma e formato de valores</CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-8 pt-4 space-y-6">
-                        <div className="space-y-4">
+                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="bg-white rounded-[48px] border border-slate-100 shadow-sm p-10 space-y-8">
+                    <div className="flex items-center gap-4 border-b border-slate-50 pb-6">
+                        <div className="size-12 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center shadow-inner"><Globe size={24} /></div>
+                        <div>
+                            <h3 className="text-xl font-black uppercase italic tracking-tighter text-slate-900">Localização</h3>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-300">Idioma e Padrões Monetários</p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-6">
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 italic ml-2">Idioma Padrão</Label>
+                            <Select value={formData.language} onValueChange={(v) => setFormData({...formData, language: v})}>
+                                <SelectTrigger className="h-14 rounded-2xl border-slate-100 bg-slate-50 font-bold px-6 shadow-sm">
+                                    <SelectValue placeholder="Selecione" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-2xl border-slate-100 italic font-medium shadow-2xl">
+                                    <SelectItem value="pt-BR">Português (Brasil) 🇧🇷</SelectItem>
+                                    <SelectItem value="en">English (US) 🇺🇸</SelectItem>
+                                    <SelectItem value="es">Español 🇪🇸</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Idioma do Sistema</Label>
-                                <Select value={formData.language} onValueChange={(v) => setFormData({...formData, language: v})}>
-                                    <SelectTrigger className="h-12 rounded-xl border-slate-100 bg-slate-50/50">
-                                        <SelectValue placeholder="Selecione o idioma" />
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 italic ml-2">Moeda</Label>
+                                <Select value={formData.currency} onValueChange={(v) => setFormData({...formData, currency: v})}>
+                                    <SelectTrigger className="h-14 rounded-2xl border-slate-100 bg-slate-50 font-bold px-6 shadow-sm">
+                                        <SelectValue placeholder="Moeda" />
                                     </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="pt-BR">Português (Brasil)</SelectItem>
-                                        <SelectItem value="en">English</SelectItem>
-                                        <SelectItem value="es">Español</SelectItem>
+                                    <SelectContent className="rounded-2xl italic font-medium shadow-2xl">
+                                        <SelectItem value="BRL">Real (R$)</SelectItem>
+                                        <SelectItem value="USD">Dollar ($)</SelectItem>
+                                        <SelectItem value="EUR">Euro (€)</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Moeda</Label>
-                                    <Select value={formData.currency} onValueChange={(v) => setFormData({...formData, currency: v})}>
-                                        <SelectTrigger className="h-12 rounded-xl border-slate-100 bg-slate-50/50 font-bold">
-                                            <SelectValue placeholder="Moeda" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="BRL">Real (R$)</SelectItem>
-                                            <SelectItem value="USD">Dollar ($)</SelectItem>
-                                            <SelectItem value="EUR">Euro (€)</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">Fuso Horário</Label>
-                                    <Select value={formData.timezone} onValueChange={(v) => setFormData({...formData, timezone: v})}>
-                                        <SelectTrigger className="h-12 rounded-xl border-slate-100 bg-slate-50/50 font-bold shadow-sm">
-                                            <SelectValue placeholder="Fuso" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="America/Sao_Paulo">Brasília (UTC-3)</SelectItem>
-                                            <SelectItem value="UTC">UTC (Padrão)</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                            <div className="space-y-2">
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 italic ml-2">Fuso</Label>
+                                <Select value={formData.timezone} onValueChange={(v) => setFormData({...formData, timezone: v})}>
+                                    <SelectTrigger className="h-14 rounded-2xl border-slate-100 bg-slate-50 font-bold px-6 shadow-sm">
+                                        <SelectValue placeholder="Fuso" />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-2xl italic font-medium shadow-2xl">
+                                        <SelectItem value="America/Sao_Paulo">Brasília (BR)</SelectItem>
+                                        <SelectItem value="UTC">UTC (Standard)</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
                         </div>
-                    </CardContent>
-                </Card>
+                    </div>
+                </motion.div>
 
                 {/* Communication */}
-                <Card className="border-none shadow-xl shadow-slate-200/50 rounded-[32px] overflow-hidden bg-white/70 backdrop-blur-xl md:col-span-2">
-                    <CardHeader className="p-8 pb-4">
-                        <CardTitle className="text-lg font-black uppercase italic tracking-tight flex items-center gap-3">
-                            <Smartphone className="size-5 text-emerald-500" />
-                            Comunicação e WhatsApp
-                        </CardTitle>
-                        <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Configurações de integração direta</CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-8 pt-4 space-y-6">
-                        <div className="space-y-2">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">WhatsApp Padrão para Pedidos</Label>
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="lg:col-span-2 bg-slate-900 rounded-[56px] p-12 text-white relative overflow-hidden group shadow-2xl shadow-slate-900/40">
+                    <div className="absolute top-0 right-0 p-16 opacity-5 rotate-12 group-hover:rotate-0 transition-transform duration-1000"><Smartphone size={200} /></div>
+                    <div className="relative z-10 flex flex-col md:flex-row items-center gap-12">
+                        <div className="flex-1 space-y-6 text-center md:text-left">
+                            <h3 className="text-3xl font-black uppercase italic tracking-tighter">Conectividade <span className="text-rose-500">Global</span></h3>
+                            <p className="text-slate-400 font-bold italic uppercase tracking-widest text-[10px] max-w-sm">Defina o número mestre para notificações de pedidos via WhatsApp Engine 2.0.</p>
                             <Input 
                                 value={formData.whatsapp_default}
                                 onChange={(e) => setFormData({...formData, whatsapp_default: e.target.value})}
                                 placeholder="(00) 00000-0000"
-                                className="h-14 rounded-2xl border-slate-100 bg-slate-50/50 font-bold"
+                                className="h-16 rounded-[28px] border-white/10 bg-white/5 text-white font-black text-xl px-10 placeholder:text-slate-700 focus:ring-rose-500"
                             />
-                            <p className="text-[9px] text-slate-300 font-bold uppercase tracking-tight ml-4 italic">* Este número será usado por padrão no seu cardápio digital.</p>
                         </div>
-
-                        <div className="pt-6">
-                            <Button 
-                                onClick={handleSave}
-                                disabled={saving}
-                                className="w-full h-16 rounded-3xl bg-[#0F172A] hover:bg-slate-900 text-white font-black uppercase italic tracking-[0.2em] shadow-xl transition-all group"
-                            >
-                                <Save className="size-5 mr-3 group-hover:scale-110 transition-transform" />
-                                {saving ? "Salvando..." : "Salvar Configurações Globais"}
-                            </Button>
+                        <div className="size-48 bg-white/5 rounded-[48px] border border-white/5 flex flex-col items-center justify-center p-8 backdrop-blur-sm">
+                            <ShieldCheck size={64} className="text-rose-500 mb-4 animate-bounce" />
+                            <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500 text-center italic">API SECURE SYNC</p>
                         </div>
-                    </CardContent>
-                </Card>
+                    </div>
+                </motion.div>
             </div>
         </div>
     )

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter, DM_Sans, DM_Serif_Display } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import Script from 'next/script'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
@@ -25,7 +26,7 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   openGraph: {
     type: 'website',
-    url: 'http://localhost:3000',
+    url: 'https://docegestao.com.br',
     title: 'DoceGestão - Gestão Inteligente para Confeiteiras',
     description: 'Seu ateliê mais profissional com a ajuda do DoceGestão. Controle sua produção, insumos e pagamentos em um só lugar.',
     siteName: 'DoceGestão App',
@@ -57,6 +58,7 @@ export const viewport: Viewport = {
 }
 
 import { Providers } from "@/components/providers"
+import { AffiliateTracker } from "@/components/dashboard/AffiliateTracker"
 
 export default function RootLayout({
   children,
@@ -93,7 +95,6 @@ export default function RootLayout({
           }}
         />
         {/* End Meta Pixel Code */}
-        <script type="module" src="https://ajax.googleapis.com/ajax/libs/@googlemaps/extended-component-library/0.6.11/index.min.js" async />
       </head>
       <body className={`${inter.variable} ${dmSans.variable} ${dmSerif.variable} font-sans antialiased`}>
         {/* Google Tag Manager (noscript) */}
@@ -119,11 +120,32 @@ export default function RootLayout({
         {/* End Meta Pixel (noscript) */}
 
         <Providers>
+          <AffiliateTracker />
           <PageTransition>
             {children}
           </PageTransition>
         </Providers>
         <Analytics />
+        
+        {/* Mercado Pago SDK v2 */}
+        <Script src="https://sdk.mercadopago.com/js/v2" strategy="beforeInteractive" />
+        
+        {/* Registro do Service Worker para PWA */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js').then(function(registration) {
+                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                  }, function(err) {
+                    console.log('ServiceWorker registration failed: ', err);
+                  });
+                });
+              }
+            `,
+          }}
+        />
       </body>
     </html>
   )

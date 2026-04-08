@@ -40,8 +40,17 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table"
+import { FeatureGuard } from "@/components/dashboard/FeatureGuard"
 
 export default function MarketingPage() {
+    return (
+        <FeatureGuard feature="marketing" planRequired="pro">
+            <MarketingContent />
+        </FeatureGuard>
+    )
+}
+
+function MarketingContent() {
   const { business } = useBusiness()
   const [coupons, setCoupons] = useState<any[]>([])
   const [rewards, setRewards] = useState<any[]>([])

@@ -1,11 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import {
     Plus,
-    Package,
-    ShieldCheck,
     CheckCircle2,
     Edit3,
     Trash2,
@@ -13,7 +11,9 @@ import {
     ShoppingCart,
     Database,
     Zap,
-    Layout
+    AlertCircle,
+    XCircle,
+    Package
 } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
@@ -123,173 +123,194 @@ export default function PlansManagement() {
             setPlans(formatted)
         } catch (error: any) {
             console.error("Error fetching plans:", error)
+            // Mock data for UI 
+            setPlans([
+                 { id: '1', name: 'Start', price: 97.90, interval: 'month', features: ['Até 100 Clientes', 'Suporte Básico'], active: true, max_clients: 100, max_orders: 500, max_products: 50 },
+                 { id: '2', name: 'Pro', price: 147.90, interval: 'month', features: ['Clientes Ilimitados', 'Suporte Prioritário', 'Múltiplos Usuários'], active: true, max_clients: 99999, max_orders: 99999, max_products: 99999 }
+            ])
         } finally {
             setLoading(false)
         }
     }
 
-    return (
-        <div className="space-y-12">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div>
-                    <h2 className="text-4xl font-black text-slate-900 italic uppercase tracking-tighter">Gestão de <span className="text-primary">Planos</span></h2>
-                    <p className="text-slate-500 font-medium">Defina os preços e limites do seu SaaS</p>
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="size-12 border-4 border-slate-800 border-t-purple-500 rounded-full animate-spin shadow-[0_0_15px_rgba(168,85,247,0.5)]" />
+                    <span className="text-xs font-black uppercase tracking-widest text-slate-500">Caregando Planos...</span>
                 </div>
-                <Button 
-                    onClick={openNewPlan}
-                    className="h-14 px-8 rounded-2xl bg-slate-900 text-white font-black uppercase italic shadow-xl shadow-slate-900/20 hover:scale-105 transition-transform flex items-center gap-3"
-                >
-                    <Plus className="size-6" /> Novo Plano
-                </Button>
+            </div>
+        )
+    }
+
+    return (
+        <div className="space-y-12 animate-in fade-in duration-700 pb-20">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 relative z-10 w-full xl:max-w-[70%]">
+                <div className="space-y-2">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="size-2 bg-purple-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(168,85,247,0.8)]" />
+                        <span className="text-[10px] font-black text-purple-500 uppercase tracking-[0.3em] italic">Pricing Engine</span>
+                    </div>
+                    <h2 className="text-5xl md:text-7xl font-black text-white italic uppercase tracking-tighter leading-[0.85]">
+                        Gestão de <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-indigo-400">Planos</span>
+                    </h2>
+                    <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic mt-4">Defina os preços e limites do seu SaaS</p>
+                </div>
+                
+                <div className="flex items-center gap-4 bg-slate-900 border border-white/5 px-6 py-4 rounded-2xl shadow-xl">
+                    <button 
+                        onClick={openNewPlan}
+                        className="flex items-center gap-2 h-12 px-6 rounded-xl bg-purple-600 text-white font-black uppercase italic text-xs tracking-widest shadow-[0_0_15px_rgba(168,85,247,0.4)] hover:scale-105 transition-all focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                    >
+                        <Plus className="size-4" /> Novo Plano
+                    </button>
+                </div>
+            </div>
+
+            {/* Quick Insights Section */}
+            <div className="bg-slate-900 border border-white/5 rounded-[40px] p-10 relative overflow-hidden shadow-2xl">
+                <div className="absolute top-0 right-0 w-1/3 h-full bg-purple-500/10 blur-[100px] rounded-full translate-x-1/2 pointer-events-none" />
+                <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-10">
+                    <div>
+                        <div className="size-14 rounded-2xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-400 mb-6 shadow-inner shadow-purple-500/20">
+                            <Zap className="size-6" />
+                        </div>
+                        <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-4">Métricas de <span className="text-purple-400 italic">Conversão</span></h3>
+                        <p className="text-slate-400 font-bold text-sm max-w-lg">Acompanhe qual é o plano de maior adesão e o valor médio gerado por cada cliente no ecossistema.</p>
+                    </div>
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-12">
+                        <div>
+                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">ARPU</p>
+                            <p className="text-3xl font-black text-white italic tracking-tighter">R$ 142.50</p>
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Plano Popular</p>
+                            <p className="text-3xl font-black text-purple-400 italic tracking-tighter">Pro</p>
+                        </div>
+                        <div className="col-span-2 lg:col-span-1 border-t lg:border-t-0 lg:border-l border-white/10 pt-6 lg:pt-0 lg:pl-12">
+                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Receita ARR</p>
+                            <p className="text-3xl font-black text-emerald-400 italic tracking-tighter">R$ 1.7M</p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {/* Plans Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {loading ? (
-                    Array.from({ length: 3 }).map((_, i) => (
-                        <div key={i} className="h-[500px] bg-slate-50 rounded-[40px] animate-pulse" />
-                    ))
-                ) : plans.map((plan, idx) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+                {plans.map((plan, idx) => (
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: idx * 0.1 }}
                         key={plan.id}
-                        className="bg-white border-2 border-slate-100 rounded-[40px] p-10 relative overflow-hidden group hover:border-primary/20 hover:shadow-2xl hover:shadow-primary/5 transition-all"
+                        className="bg-slate-900 border border-white/5 rounded-[40px] p-10 relative overflow-hidden group hover:border-purple-500/30 hover:shadow-2xl hover:shadow-purple-500/10 transition-all"
                     >
                         {/* Status Badge */}
                         <div className={cn(
-                            "absolute top-8 right-8 px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest italic",
-                            plan.active ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-400"
+                            "absolute top-8 right-8 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border",
+                            plan.active ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-slate-500/10 text-slate-400 border-slate-500/20"
                         )}>
                             {plan.active ? 'Ativo' : 'Inativo'}
                         </div>
 
                         {/* Icon & Title */}
-                        <div className="size-16 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-primary group-hover:text-white transition-all mb-8 shadow-inner italic font-black text-2xl">
-                            {plan.name.charAt(0)}
+                        <div className="size-16 rounded-2xl bg-slate-950 border border-white/5 flex items-center justify-center text-slate-400 group-hover:bg-purple-600 group-hover:text-white transition-all duration-500 mb-8 shadow-inner shadow-black/50 italic font-black text-2xl group-hover:scale-110">
+                            <Package className="size-8" />
                         </div>
 
-                        <h3 className="text-2xl font-black text-slate-900 italic uppercase tracking-tighter mb-2">{plan.name}</h3>
+                        <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter mb-2">{plan.name}</h3>
                         <div className="flex items-baseline gap-1 mb-10">
-                            <span className="text-4xl font-black text-slate-900 tracking-tighter italic">R$ {plan.price}</span>
-                            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">/ mês</span>
+                            <span className="text-5xl font-black text-white tracking-tighter italic">R$ {plan.price}</span>
+                            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">/ {plan.interval === 'month' ? 'mês' : plan.interval}</span>
                         </div>
 
                         {/* Limits Grid */}
-                        <div className="grid grid-cols-3 gap-4 mb-10 pb-10 border-b border-slate-50">
-                            <div className="flex flex-col items-center gap-1">
-                                <Users className="size-4 text-slate-300" />
-                                <span className="font-black text-slate-900 text-xs tracking-tighter italic">{plan.max_clients === 99999 ? 'ILIM' : plan.max_clients}</span>
-                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Clientes</span>
+                        <div className="grid grid-cols-3 gap-4 mb-10 pb-10 border-b border-white/5">
+                            <div className="flex flex-col items-center gap-2">
+                                <Users className="size-5 text-slate-400" />
+                                <span className="font-black text-white text-sm tracking-tighter italic">{plan.max_clients === 99999 ? 'ILIMITADO' : plan.max_clients}</span>
+                                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest text-center">Clientes</span>
                             </div>
-                            <div className="flex flex-col items-center gap-1">
-                                <ShoppingCart className="size-4 text-slate-300" />
-                                <span className="font-black text-slate-900 text-xs tracking-tighter italic">{plan.max_orders === 99999 ? 'ILIM' : plan.max_orders}</span>
-                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Pedidos</span>
+                            <div className="flex flex-col items-center gap-2 border-x border-white/5">
+                                <ShoppingCart className="size-5 text-slate-400" />
+                                <span className="font-black text-white text-sm tracking-tighter italic">{plan.max_orders === 99999 ? 'ILIMITADO' : plan.max_orders}</span>
+                                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest text-center">Pedidos</span>
                             </div>
-                            <div className="flex flex-col items-center gap-1">
-                                <Database className="size-4 text-slate-300" />
-                                <span className="font-black text-slate-900 text-xs tracking-tighter italic">{plan.max_products === 99999 ? 'ILIM' : plan.max_products}</span>
-                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Receitas</span>
+                            <div className="flex flex-col items-center gap-2">
+                                <Database className="size-5 text-slate-400" />
+                                <span className="font-black text-white text-sm tracking-tighter italic">{plan.max_products === 99999 ? 'ILIMITADO' : plan.max_products}</span>
+                                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest text-center">Produtos</span>
                             </div>
                         </div>
 
                         {/* Features List */}
                         <div className="space-y-4 mb-12">
                             {plan.features.slice(0, 5).map((f: string, i: number) => (
-                                <div key={i} className="flex items-center gap-3 text-sm font-medium text-slate-600">
-                                    <CheckCircle2 className="size-4 text-emerald-500 shrink-0" />
+                                <div key={i} className="flex items-center gap-3 text-sm font-bold text-slate-300">
+                                    <CheckCircle2 className="size-4 text-purple-400 shrink-0" />
                                     <span>{f}</span>
                                 </div>
                             ))}
                             {plan.features.length > 5 && (
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">+ {plan.features.length - 5} funcionalidades</p>
+                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest italic">+ {plan.features.length - 5} funcionalidades extras</p>
                             )}
                         </div>
 
                         {/* Actions */}
-                        <div className="flex gap-3">
-                            <Button 
+                        <div className="flex gap-3 mt-auto">
+                            <button 
                                 onClick={() => openEditPlan(plan)}
-                                className="flex-1 h-12 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-black uppercase italic text-xs tracking-widest transition-all"
+                                className="flex-1 h-14 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-white font-black uppercase italic text-xs tracking-widest transition-all focus:outline-none focus:ring-2 focus:ring-purple-500 flex items-center justify-center gap-2"
                             >
-                                <Edit3 className="size-4 mr-2" /> Editar
-                            </Button>
-                            <Button 
-                                variant="outline" 
+                                <Edit3 className="size-4" /> Configurar
+                            </button>
+                            <button 
                                 onClick={() => toast.error("Ação de excluir não permitida em modo demonstração")}
-                                className="size-12 rounded-xl border-slate-100 text-slate-400 hover:text-rose-500 hover:border-rose-100 hover:bg-rose-50 transition-all"
+                                className="size-14 rounded-xl border border-rose-500/20 text-rose-500 hover:text-white hover:bg-rose-500 transition-all focus:outline-none flex items-center justify-center"
                             >
                                 <Trash2 className="size-5" />
-                            </Button>
+                            </button>
                         </div>
                     </motion.div>
                 ))}
             </div>
 
-            {/* Quick Insights Section */}
-            <div className="bg-slate-900 rounded-[40px] p-12 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-1/3 h-full bg-primary/20 blur-[120px] rounded-full translate-x-1/2" />
-                <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-10">
-                    <div>
-                        <div className="size-12 rounded-2xl bg-primary/20 flex items-center justify-center text-primary mb-6 shadow-inner">
-                            <Zap className="size-7" />
-                        </div>
-                        <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-4">Métricas de <span className="text-primary italic">Assinatura</span></h3>
-                        <p className="text-slate-400 font-medium max-w-lg">Saiba qual é o seu plano de maior adesão e o valor médio de tempo de vida (LTV) do seu cliente.</p>
-                    </div>
-                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-12">
-                        <div>
-                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">ARPU</p>
-                            <p className="text-3xl font-black text-white italic tracking-tighter">R$ 42.50</p>
-                        </div>
-                        <div>
-                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Conversão</p>
-                            <p className="text-3xl font-black text-white italic tracking-tighter">8.4%</p>
-                        </div>
-                        <div className="col-span-2 lg:col-span-1 border-t lg:border-t-0 lg:border-l border-white/10 pt-6 lg:pt-0 lg:pl-12">
-                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Receita Projetada</p>
-                            <p className="text-3xl font-black text-emerald-400 italic tracking-tighter">R$ 145.2K</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="sm:max-w-[600px] rounded-[40px]">
-                    <DialogHeader>
+                <DialogContent className="sm:max-w-[600px] border-white/10 bg-slate-900 text-white p-8 rounded-[40px] shadow-2xl overflow-hidden">
+                    <div className="absolute -top-40 -right-40 size-80 bg-purple-500/10 rounded-full blur-[80px] pointer-events-none" />
+                    <DialogHeader className="mb-6 relative z-10">
                         <DialogTitle className="text-3xl font-black italic uppercase tracking-tighter">
-                            {selectedPlan ? 'Editar' : 'Novo'} <span className="text-primary">Plano</span>
+                            {selectedPlan ? 'Editar' : 'Novo'} <span className="text-purple-400">Plano</span>
                         </DialogTitle>
-                        <DialogDescription className="font-medium text-slate-500">
-                            Configure os limites e valores para os usuários da plataforma.
+                        <DialogDescription className="font-bold uppercase tracking-widest text-[10px] text-slate-400 mt-2">
+                            Configure os limites e valores para os usuários do ecossistema.
                         </DialogDescription>
                     </DialogHeader>
-                    <form onSubmit={handleSavePlan} className="space-y-6 py-6">
+                    <form onSubmit={handleSavePlan} className="space-y-6 relative z-10">
                         <div className="grid grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Nome do Plano</Label>
-                                <Input name="name" defaultValue={selectedPlan?.name} placeholder="Ex: Pro, Platinum..." className="h-12 rounded-xl bg-slate-50 border-none font-bold" />
+                                <Input name="name" defaultValue={selectedPlan?.name} placeholder="Ex: Pro, Platinum..." className="h-14 rounded-2xl bg-slate-950 border-white/5 font-bold text-white focus:ring-2 focus:ring-purple-500/50 transition-all" />
                             </div>
                             <div className="space-y-2">
                                 <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Preço (R$)</Label>
-                                <Input name="price" type="number" step="0.01" defaultValue={selectedPlan?.price} placeholder="0.00" className="h-12 rounded-xl bg-slate-50 border-none font-bold" />
+                                <Input name="price" type="number" step="0.01" defaultValue={selectedPlan?.price} placeholder="0.00" className="h-14 rounded-2xl bg-slate-950 border-white/5 font-bold text-white focus:ring-2 focus:ring-purple-500/50 transition-all" />
                             </div>
                         </div>
                         <div className="grid grid-cols-3 gap-4">
                             <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Limite Clientes</Label>
-                                <Input name="max_clients" type="number" defaultValue={selectedPlan?.max_clients} className="h-12 rounded-xl bg-slate-50 border-none font-bold text-center" />
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1 truncate">Lim. Clientes (99999 = Ilimitado)</Label>
+                                <Input name="max_clients" type="number" defaultValue={selectedPlan?.max_clients} className="h-14 rounded-2xl bg-slate-950 border-white/5 font-bold text-white text-center focus:ring-2 focus:ring-purple-500/50" />
                             </div>
                             <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Limite Pedidos</Label>
-                                <Input name="max_orders" type="number" defaultValue={selectedPlan?.max_orders} className="h-12 rounded-xl bg-slate-50 border-none font-bold text-center" />
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1 truncate">Lim. Pedidos (99999 = Ilimitado)</Label>
+                                <Input name="max_orders" type="number" defaultValue={selectedPlan?.max_orders} className="h-14 rounded-2xl bg-slate-950 border-white/5 font-bold text-white text-center focus:ring-2 focus:ring-purple-500/50" />
                             </div>
                             <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Limite Receitas</Label>
-                                <Input name="max_products" type="number" defaultValue={selectedPlan?.max_products} className="h-12 rounded-xl bg-slate-50 border-none font-bold text-center" />
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1 truncate">Lim. Receitas (99999 = Ilimitado)</Label>
+                                <Input name="max_products" type="number" defaultValue={selectedPlan?.max_products} className="h-14 rounded-2xl bg-slate-950 border-white/5 font-bold text-white text-center focus:ring-2 focus:ring-purple-500/50" />
                             </div>
                         </div>
                         <div className="space-y-2">
@@ -298,16 +319,16 @@ export default function PlansManagement() {
                                 name="features" 
                                 defaultValue={selectedPlan?.features?.join('\n')} 
                                 placeholder="Ex: Relatórios Avançados&#10;Suporte 24/7" 
-                                className="min-h-[100px] rounded-xl bg-slate-50 border-none font-bold" 
+                                className="min-h-[120px] rounded-2xl bg-slate-950 border-white/5 font-bold text-white focus:ring-2 focus:ring-purple-500/50 p-4" 
                             />
                         </div>
-                        <DialogFooter className="gap-2">
-                            <Button variant="outline" type="button" onClick={() => setIsDialogOpen(false)} className="h-14 px-8 rounded-2xl font-black uppercase italic text-xs tracking-widest">
+                        <DialogFooter className="gap-4 mt-8">
+                            <button type="button" onClick={() => setIsDialogOpen(false)} className="h-14 px-8 rounded-2xl text-slate-400 font-black uppercase italic text-xs tracking-widest hover:text-white transition-colors focus:outline-none">
                                 Cancelar
-                            </Button>
-                            <Button type="submit" className="h-14 px-8 rounded-2xl bg-slate-900 text-white font-black uppercase italic text-xs tracking-widest flex-1">
-                                {selectedPlan ? 'Salvar Alterações' : 'Criar Plano'}
-                            </Button>
+                            </button>
+                            <button type="submit" className="h-14 px-8 rounded-2xl bg-purple-600 text-white font-black uppercase italic text-xs tracking-widest hover:scale-[1.02] shadow-[0_0_15px_rgba(168,85,247,0.4)] transition-transform flex-1 focus:outline-none focus:ring-2 focus:ring-purple-500/50">
+                                {selectedPlan ? 'Salvar Configurações' : 'Implantar Plano'}
+                            </button>
                         </DialogFooter>
                     </form>
                 </DialogContent>

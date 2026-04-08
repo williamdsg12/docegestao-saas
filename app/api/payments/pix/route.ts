@@ -1,66 +1,100 @@
 import { NextResponse } from 'next/server';
-import { payment } from '@/lib/mercadopago';
-import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { getPaymentClient } from '@/lib/mercadopago';
+import { supabaseAdmin } from '@/lib/supabase-admin';
+import { createTunaPixPayment } from '@/lib/payments/tuna';
 
 export async function POST(req: Request) {
     try {
         const body = await req.json();
-        const { pedidoId, companyId, total, customerEmail, customerName } = body;
+        const { order_id, tenant_id, amount, customer_email, customer_name, customer_cpf } = body;
 
-        if (!pedidoId || !companyId || !total) {
+        if (!order_id || !tenant_id || !amount) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
-        // 1. Create Payment in Mercado Pago
-        // In a real marketplace scenario, we would use the company's access token or application fee (split)
-        // For now, we use the platform token and simulate the 'iFood' style with metadata
-        
+        // 1. Check for Active Payment Provider
+        // First check Tuna
+        const { data: tunaAccount } = await supabaseAdmin
+            .from('tuna_accounts')
+            .select('*')
+            .eq('tenant_id', tenant_id)
+            .eq('connected', true)
+            .eq('pix_enabled', true)
+            .single();
+
+        if (tunaAccount) {
+            // Process via Tuna
+            try {
+                const tunaResult = await createTunaPixPayment(tenant_id, {
+                    amount: parseFloat(amount),
+                    orderId: order_id,
+                    customer: {
+                        name: customer_name || 'Cliente',
+                        email: customer_email || 'cliente@docegestao.com.br',
+                        document: customer_cpf || '000.000.000-00' // Tuna requires document
+                    }
+                });
+
+                // Save to DB
+                await supabaseAdmin
+                    .from('payments')
+                    .insert({
+                        order_id,
+                        tenant_id,
+                        amount,
+                        status: 'pending',
+                        payment_method: 'pix',
+                        provider: 'tuna',
+                        qr_code: tunaResult.qr_code,
+                        qr_code_base64: tunaResult.qr_code_base64,
+                        external_id: tunaResult.external_id
+                    });
+
+                return NextResponse.json(tunaResult);
+            } catch (tunaError: any) {
+                console.error('Tuna PIX Error:', tunaError);
+                // Fallback or error
+                return NextResponse.json({ error: tunaError.message }, { status: 500 });
+            }
+        }
+
+        // 2. Default to Mercado Pago
         const paymentData = {
             body: {
-                transaction_amount: parseFloat(total),
-                description: `Pedido #${pedidoId.slice(0, 8)} - DoceGestão`,
+                transaction_amount: parseFloat(amount),
+                description: `Pedido #${order_id.slice(0, 8)}`,
                 payment_method_id: 'pix',
                 payer: {
-                    email: customerEmail || 'cliente@docegestao.com.br',
-                    first_name: customerName?.split(' ')[0] || 'Cliente',
-                    last_name: customerName?.split(' ').slice(1).join(' ') || 'SaaS',
+                    email: customer_email || 'cliente@docegestao.com.br',
+                    first_name: customer_name?.split(' ')[0] || 'Cliente',
                 },
-                external_reference: pedidoId,
-                metadata: {
-                    pedido_id: pedidoId,
-                    company_id: companyId
-                },
-                // ℹ️ Para Split real (Mercado Pago Marketplace):
-                // application_fee: (total * 0.10).toFixed(2), // Exemplo 10%
+                external_reference: order_id
             }
         };
 
-        const result = await payment.create(paymentData);
+        const paymentClient = getPaymentClient();
+        const result: any = await paymentClient.create(paymentData);
+        const pixData = result?.point_of_interaction?.transaction_data;
 
-        if (!result.point_of_interaction?.transaction_data) {
-            throw new Error('Failed to generate PIX point of interaction');
+        if (!pixData) {
+            console.error('Mercado Pago PIX Error: No transaction data', result);
+            return NextResponse.json({ error: 'Erro ao gerar PIX com Mercado Pago' }, { status: 500 });
         }
 
-        const pixData = result.point_of_interaction.transaction_data;
-
-        // 2. Save Payment Info in our Database
-        const { error: dbError } = await supabaseAdmin
-            .from('pagamentos')
+        await supabaseAdmin
+            .from('payments')
             .insert({
-                pedido_id: pedidoId,
-                company_id: companyId,
-                gateway: 'mercadopago',
-                valor: total,
-                status: 'pendente',
+                order_id,
+                tenant_id,
+                amount,
+                status: 'pending',
+                payment_method: 'pix',
+                provider: 'mercadopago',
                 qr_code: pixData.qr_code,
                 qr_code_base64: pixData.qr_code_base64,
-                payment_id: result.id?.toString(),
-                external_reference: pedidoId
+                external_id: result.id?.toString(),
+                ticket_url: pixData.ticket_url
             });
-
-        if (dbError) {
-            console.error('Database error saving payment:', dbError);
-        }
 
         return NextResponse.json({
             id: result.id,
@@ -70,10 +104,7 @@ export async function POST(req: Request) {
         });
 
     } catch (error: any) {
-        console.error('PIX Generation Error:', error);
-        return NextResponse.json({ 
-            error: error.message || 'Internal Server Error',
-            details: error.cause || null
-        }, { status: 500 });
+        console.error('PIX Route Error:', error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

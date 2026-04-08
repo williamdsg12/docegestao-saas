@@ -36,7 +36,17 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { toast } from "sonner"
 
+import { FeatureGuard } from "@/components/dashboard/FeatureGuard"
+
 export default function HistoricoPage() {
+  return (
+    <FeatureGuard feature="delivery-painel" planRequired="pro">
+      <HistoricoContent />
+    </FeatureGuard>
+  )
+}
+
+function HistoricoContent() {
   const { business } = useBusiness()
   const [orders, setOrders] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -55,7 +65,7 @@ export default function HistoricoPage() {
       setLoading(true)
       let query = supabase
         .from('pedidos')
-        .select('*, clientes(nome, telefone), itens_pedido(count)')
+        .select('*, customers(name, phone), order_items(count)')
         .eq('company_id', business!.id)
         .order('created_at', { ascending: false })
 
@@ -79,7 +89,7 @@ export default function HistoricoPage() {
   }
 
   const filteredOrders = orders.filter(o => 
-    (o.clientes?.nome || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (o.customers?.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
     o.id.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
@@ -211,12 +221,12 @@ export default function HistoricoPage() {
                     <TableCell className="py-10">
                       <div className="flex items-center gap-6">
                         <div className="size-14 rounded-[20px] bg-slate-900 flex items-center justify-center font-black text-pink-500 uppercase text-lg italic tracking-widest border border-slate-800">
-                          {(order.clientes?.nome || "U").charAt(0)}
+                          {(order.customers?.name || "U").charAt(0)}
                         </div>
                         <div className="space-y-1 border-l border-slate-100 pl-6">
-                          <p className="font-black text-slate-900 uppercase italic tracking-tight text-lg">{order.clientes?.nome || "Cliente Desconhecido"}</p>
+                          <p className="font-black text-slate-900 uppercase italic tracking-tight text-lg">{order.customers?.name || "Cliente Desconhecido"}</p>
                           <p className="text-[10px] font-black text-slate-400 flex items-center gap-2 tracking-widest">
-                             <Phone className="size-3 text-emerald-500" /> {order.clientes?.telefone || "N/A"}
+                             <Phone className="size-3 text-emerald-500" /> {order.customers?.phone || "N/A"}
                           </p>
                         </div>
                       </div>

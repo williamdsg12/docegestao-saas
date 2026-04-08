@@ -206,7 +206,10 @@ export function OnboardingModal({ onComplete }: { onComplete: () => void }) {
         .maybeSingle()
 
       const companyId = companyData?.id
-      if (companyId) {
+      const tenantId = companyId // In the new architecture, they are the same UUID
+
+      if (tenantId) {
+        // 3. Update 'companies' (Legacy Sink)
         await supabase.from("companies").update({
           name: storeName,
           instagram: instagram,
@@ -223,7 +226,30 @@ export function OnboardingModal({ onComplete }: { onComplete: () => void }) {
           accept_card: acceptCard,
           accept_cash: acceptCash,
           min_order_value: parseFloat(minOrderValue.replace(",", "."))
-        }).eq("id", companyId)
+        }).eq("id", tenantId)
+
+        // 4. Update 'tenants' (New Standard)
+        await supabase.from("tenants").update({
+          nome: storeName
+        }).eq("id", tenantId)
+
+        // 5. Update 'digital_menu_settings' (Branding Sink)
+        await supabase.from("digital_menu_settings").upsert({
+          company_id: tenantId,
+          store_name: storeName,
+          instagram: instagram,
+          whatsapp: businessPhone || personalWhatsapp,
+          primary_color: "#FF2F81"
+        })
+
+        // 6. Update 'delivery_settings' (Logistics Sink)
+        await supabase.from("delivery_settings").upsert({
+          tenant_id: tenantId,
+          base_fee: 0,
+          fee_per_km: 0,
+          max_km: parseFloat(deliveryRadius),
+          whatsapp_number: businessPhone || personalWhatsapp
+        })
 
         // Setup Menu if requested
         if (menuType === "model" && selectedCategories.length > 0) {
@@ -231,13 +257,13 @@ export function OnboardingModal({ onComplete }: { onComplete: () => void }) {
           for (const cat of categoriesToCreate) {
             const { data: newCat, error: catErr } = await supabase
               .from("menu_categories")
-              .insert({ name: cat.name, company_id: companyId })
+              .insert({ name: cat.name, company_id: tenantId })
               .select().single()
 
             if (newCat && !catErr) {
               const products = cat.items.map(p_name => ({
                 name: p_name,
-                company_id: companyId,
+                company_id: tenantId,
                 category_id: newCat.id,
                 price: 15.00,
                 active: true
@@ -247,6 +273,7 @@ export function OnboardingModal({ onComplete }: { onComplete: () => void }) {
           }
         }
       }
+
 
       setIsFinished(true)
       setTimeout(() => onComplete(), 7000)

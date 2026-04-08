@@ -4,11 +4,26 @@ import { createContext, useContext, useEffect, useState } from "react"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/hooks/useAuth"
 
+const slugify = (text: string) => {
+    return text
+        .toString()
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, '-')           // Replace spaces with -
+        .replace(/[^\w\-]+/g, '')       // Remove all non-word chars
+        .replace(/\-\-+/g, '-')         // Replace multiple - with single -
+        .replace(/^-+/, '')             // Trim - from start of text
+        .replace(/-+$/, '');            // Trim - from end of text
+}
+
 interface Company {
     id: string
     nome: string
     owner_id: string
     logo_url?: string
+    primary_color?: string
+    secondary_color?: string
+    domain?: string
     instagram?: string
     website?: string
     description?: string
@@ -33,8 +48,11 @@ interface Company {
     opening_hours?: any
     production_time?: string
     menu_slug?: string
+    slug?: string
     status?: string
     phone?: string
+    cnpj?: string
+    whatsapp?: string
 }
 
 interface Profile {
@@ -43,7 +61,8 @@ interface Profile {
     business_name: string
     email: string
     plan: string
-    company_id: string
+    tenant_id: string
+    company_id?: string // For legacy support
     whatsapp?: string
     is_admin: boolean
 }
@@ -79,7 +98,7 @@ export const BusinessProvider = ({ children }: { children: React.ReactNode }) =>
         try {
             setLoadingBusiness(true)
             
-            // 1. Fetch Profile to get company_id
+            // 1. Fetch Profile
             const { data: profileData, error: profileError } = await supabase
                 .from('profiles')
                 .select('*')
@@ -91,17 +110,58 @@ export const BusinessProvider = ({ children }: { children: React.ReactNode }) =>
             if (profileData) {
                 setProfile(profileData as Profile)
                 
-                if (profileData.company_id) {
-                    // 2. Fetch Company details from 'empresas' (Standardized)
-                    const { data: companyData, error: companyError } = await supabase
-                        .from('empresas')
-                        .select('*')
-                        .eq('id', profileData.company_id)
-                        .maybeSingle()
+                const tenantId = profileData.tenant_id || profileData.company_id
+                
+                if (tenantId) {
+                    // Fetch all possible data sources in parallel for robustness
+                    const [resTenant, resEmpresa, resCompany, resDelivery, resMenu] = await Promise.all([
+                        supabase.from('tenants').select('*').eq('id', tenantId).maybeSingle(),
+                        supabase.from('empresas').select('*').eq('id', tenantId).maybeSingle(),
+                        supabase.from('companies').select('*').eq('id', tenantId).maybeSingle(),
+                        supabase.from('delivery_settings').select('*').eq('tenant_id', tenantId).maybeSingle(),
+                        supabase.from('digital_menu_settings').select('*').eq('company_id', tenantId).maybeSingle()
+                    ])
 
-                    if (companyError) throw companyError
-                    setBusiness(companyData as Company)
+                    // 3. Robust Data Merging (Cascading from most recent/specific to legacy)
+                    const combinedData: Company = {
+                        id: tenantId,
+                        // Name: Priority to 'tenants' (newest), then companies/empresas, then profile metadata
+                        nome: resTenant.data?.nome || resEmpresa.data?.nome || resCompany.data?.name || profileData?.business_name || "",
+                        
+                        // Contact: WhatsApp is primary for this business model
+                        whatsapp: resMenu.data?.whatsapp || profileData?.whatsapp || resEmpresa.data?.telefone || resCompany.data?.phone || "",
+                        telefone: resEmpresa.data?.telefone || resCompany.data?.phone || profileData?.phone || "",
+                        
+                        // Address: Merge single string field 'endereco' and component fields 'address_street'
+                        endereco: resEmpresa.data?.endereco || 
+                                 (resCompany.data?.address_street 
+                                    ? `${resCompany.data.address_street}, ${resCompany.data.address_number || ""}` 
+                                    : ""),
+                        
+                        // Logistics (Always prioritize dedicated 'delivery_settings' table)
+                        delivery_fee: resDelivery.data?.base_fee ?? resEmpresa.data?.delivery_fee ?? resCompany.data?.delivery_fee ?? 0,
+                        delivery_radius: resDelivery.data?.max_km ?? resEmpresa.data?.delivery_radius ?? resCompany.data?.delivery_radius ?? 0,
+                        min_order_value: resEmpresa.data?.min_order_value ?? resCompany.data?.min_order_value ?? 0,
+                        
+                        // Visual Identity (Config JSON or Menu Settings)
+                        config: {
+                            ...(resEmpresa.data?.config || {}),
+                            primary_color: resMenu.data?.primary_color || resEmpresa.data?.config?.primary_color || resCompany.data?.primary_color,
+                            instagram: resMenu.data?.instagram || profileData?.instagram || resCompany.data?.instagram,
+                            rate_per_km: resDelivery.data?.fee_per_km ?? resEmpresa.data?.config?.rate_per_km ?? 0,
+                            operating_hours: resEmpresa.data?.config?.operating_hours || resCompany.data?.opening_hours
+                        },
+                        
+                        logo_url: resMenu.data?.menu_logo || resEmpresa.data?.logo_url || resCompany.data?.logo_url,
+                        
+                        // Legacy Metadata needed by some pages
+                        owner_id: resTenant.data?.owner_id || resCompany.data?.owner_id || user.id,
+                        slug: resTenant.data?.slug || resCompany.data?.menu_slug || slugify(resTenant.data?.nome || resEmpresa.data?.nome || resCompany.data?.name || profileData?.business_name || "convidado")
+                    } as any
+
+                    setBusiness(combinedData)
                 }
+
             }
         } catch (error) {
             console.error("Error fetching business context:", error)
@@ -109,6 +169,7 @@ export const BusinessProvider = ({ children }: { children: React.ReactNode }) =>
             setLoadingBusiness(false)
         }
     }
+
 
     useEffect(() => {
         fetchBusinessData()

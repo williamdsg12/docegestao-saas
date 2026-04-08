@@ -5,516 +5,299 @@ import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/hooks/useAuth"
 import { useBusiness } from "@/hooks/useBusiness"
 import { toast } from "sonner"
+import { 
+  Plus, 
+  TrendingUp, 
+  TrendingDown, 
+  Wallet, 
+  ArrowUpRight, 
+  ArrowDownRight, 
+  Download,
+  Activity,
+  Receipt,
+  Search,
+  PieChart as PieIcon,
+  Filter,
+  Calendar
+} from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import {
-    Plus,
-    TrendingUp,
-    TrendingDown,
-    DollarSign,
-    ArrowUpRight,
-    ArrowDownRight,
-    Calendar,
-    Filter,
-    Download,
-    Wallet,
-    PieChart,
-    Activity,
-    ArrowRight,
-    Copy,
-} from "lucide-react"
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import { motion } from "framer-motion"
+import { Label } from "@/components/ui/label"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as PieChartComponent, Pie, Cell } from "recharts"
-
-const data = [
-    { name: "Jan", receita: 4000, custos: 2400 },
-    { name: "Fev", receita: 3000, custos: 1398 },
-    { name: "Mar", receita: 7000, custos: 4800 },
-]
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
+import { FeatureGuard } from "@/components/dashboard/FeatureGuard"
+import { PageHeader } from "@/components/dashboard/PageHeader"
+import { PageFilters } from "@/components/dashboard/PageFilters"
+import { PageSearch } from "@/components/dashboard/PageSearch"
+import { EmptyStateV2 } from "@/components/dashboard/EmptyStateV2"
 
 interface Transaction {
-    id: string
-    description: string
-    amount: number
-    transaction_date: string
-    type: "entrada" | "saida"
-    category: string
+  id: string
+  description: string
+  amount: number
+  transaction_date: string
+  type: "entrada" | "saida"
+  category: string
 }
 
-// Removendo mock
-
 export default function FinanceiroPage() {
-    const { user } = useAuth()
-    const { profile } = useBusiness()
-    const [transactions, setTransactions] = useState<Transaction[]>([])
-    const [loading, setLoading] = useState(true)
-    const [monthFilter, setMonthFilter] = useState("")
+  return (
+    <FeatureGuard feature="financeiro" planRequired="pro">
+      <div className="space-y-8 pb-20">
+        <FinanceiroContent />
+      </div>
+    </FeatureGuard>
+  )
+}
 
-    useEffect(() => {
-        if (profile?.company_id) {
-            fetchData()
-        }
-    }, [profile])
+function FinanceiroContent() {
+  const { user } = useAuth()
+  const { profile } = useBusiness()
+  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState("")
+  const [filterType, setFilterType] = useState<string>("todos")
+  const [monthFilter, setMonthFilter] = useState(new Date().toISOString().split('T')[0].slice(0, 7))
+  const [newTxOpen, setNewTxOpen] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
 
-    const filteredTransactions = transactions.filter(t => {
-        if (!monthFilter) return true
-        return t.transaction_date.startsWith(monthFilter)
-    })
+  const [txForm, setTxForm] = useState({
+    description: "",
+    amount: "",
+    type: "saida" as "entrada" | "saida",
+    category: "Geral",
+    transaction_date: new Date().toISOString().split('T')[0]
+  })
 
-    const rec = filteredTransactions.filter((t: any) => t.type === 'entrada').reduce((acc: number, t: any) => acc + t.amount, 0) || 0
-    const cus = filteredTransactions.filter((t: any) => t.type === 'saida').reduce((acc: number, t: any) => acc + t.amount, 0) || 0
-
-    const totals = {
-        receita: rec,
-        custos: cus,
-        saldo: rec - cus
+  useEffect(() => {
+    if (profile?.company_id || profile?.tenant_id) {
+      fetchFinanceData()
     }
+  }, [profile])
 
-    async function fetchData() {
-        if (!profile?.company_id) return
-        try {
-            setLoading(true)
-            const { data, error } = await supabase
-                .from('transactions')
-                .select('*')
-                .eq('company_id', profile.company_id)
-                .order('transaction_date', { ascending: false })
+  async function fetchFinanceData() {
+    const tenantId = profile?.tenant_id || profile?.company_id
+    if (!tenantId) return
+    try {
+      setLoading(true)
+      const { data, error } = await supabase.from('transactions').select('*').eq('company_id', tenantId).order('transaction_date', { ascending: false })
+      if (error) throw error
+      setTransactions(data || [])
+    } finally { setLoading(false) }
+  }
 
-            if (error) throw error
-            if (error) throw error
-            setTransactions(data || [])
-        } catch (error: any) {
-            console.error("Error fetching finance data:", error.message || error)
-            toast.error("Erro ao carregar dados financeiros")
-        } finally {
-            setLoading(false)
-        }
+  async function handleSaveTransaction() {
+    if (!txForm.description || !txForm.amount) return toast.error("Preencha os campos")
+    setIsSaving(true)
+    try {
+      const tenantId = profile?.tenant_id || profile?.company_id
+      const { data, error } = await supabase.from('transactions').insert({
+        user_id: user?.id,
+        company_id: tenantId,
+        tenant_id: tenantId,
+        ...txForm,
+        amount: parseFloat(txForm.amount)
+      }).select().single()
+
+      if (error) throw error
+      toast.success("Lançamento realizado!")
+      fetchFinanceData()
+      setNewTxOpen(false)
+      setTxForm({ description: "", amount: "", type: "saida", category: "Geral", transaction_date: new Date().toISOString().split('T')[0] })
+    } catch (e) { toast.error("Erro ao salvar") } finally { setIsSaving(false) }
+  }
+
+  const filtered = transactions.filter(t => {
+    const matchSearch = t.description.toLowerCase().includes(search.toLowerCase())
+    const matchType = filterType === "todos" || t.type === filterType
+    const matchMonth = !monthFilter || t.transaction_date.startsWith(monthFilter)
+    return matchSearch && matchType && matchMonth
+  })
+
+  const totals = {
+    receita: filtered.filter(t => t.type === 'entrada').reduce((acc, t) => acc + t.amount, 0),
+    custos: filtered.filter(t => t.type === 'saida').reduce((acc, t) => acc + t.amount, 0),
+  }
+  totals['saldo'] = totals.receita - totals.custos
+
+  const filterOptions = [
+    { key: "todos", label: "Tudo", count: transactions.length },
+    { key: "entrada", label: "Entradas", count: transactions.filter(t => t.type === 'entrada').length },
+    { key: "saida", label: "Saídas", count: transactions.filter(t => t.type === 'saida').length },
+  ]
+
+  const chartData = filtered.reduce((acc: any[], curr) => {
+    const date = new Date(curr.transaction_date)
+    const day = date.getDate().toString().padStart(2, '0')
+    let existing = acc.find(a => a.name === day)
+    if (!existing) {
+      existing = { name: day, receita: 0, custos: 0 }
+      acc.push(existing)
     }
+    if (curr.type === 'entrada') existing.receita += curr.amount
+    else existing.custos += curr.amount
+    return acc
+  }, []).sort((a, b) => parseInt(a.name) - parseInt(b.name))
 
-    const stats = [
-        { label: "Saldo Atual", value: `R$ ${totals.saldo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: Wallet, color: "text-primary", bg: "bg-rose-50", iconBg: "bg-primary", trend: "+0%" },
-        { label: "Receita (Total)", value: `R$ ${totals.receita.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: TrendingUp, color: "text-green-600", bg: "bg-green-50", iconBg: "bg-green-500", trend: "+0%" },
-        { label: "Custos (CMV)", value: `R$ ${totals.custos.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: TrendingDown, color: "text-red-600", bg: "bg-red-50", iconBg: "bg-red-500", trend: "-0%" },
-        { label: "Lucro Líquido", value: `R$ ${(totals.receita - totals.custos).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: Activity, color: "text-blue-600", bg: "bg-blue-50", iconBg: "bg-blue-500", trend: "+0%" },
-    ]
+  return (
+    <>
+      <PageHeader 
+        title="Gestão" 
+        highlight="Financeira" 
+        subtitle="Fluxo de caixa, centro de custos e saúde financeira do seu negócio"
+        actions={(
+          <div className="flex gap-3">
+             <Button variant="outline" className="h-11 px-4 rounded-xl border-slate-100 text-[10px] font-black uppercase text-slate-400 hover:text-rose-500 transition-all">
+                <Download size={16} className="mr-2" /> PDF
+             </Button>
+             <Button onClick={() => { setTxForm(prev => ({ ...prev, type: "entrada" })); setNewTxOpen(true) }} className="h-11 px-6 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase text-[10px] shadow-lg">
+                <Plus size={16} className="mr-2" /> Entrada
+             </Button>
+             <Button onClick={() => { setTxForm(prev => ({ ...prev, type: "saida" })); setNewTxOpen(true) }} className="h-11 px-6 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-black uppercase text-[10px] shadow-lg">
+                <Plus size={16} className="mr-2" /> Saída
+             </Button>
+          </div>
+        )}
+      />
 
-    const chartData = transactions.reduce((acc: any[], curr) => {
-        const date = new Date(curr.transaction_date)
-        const month = date.toLocaleString('default', { month: 'short' })
-        let existing = acc.find(a => a.name === month)
-        if (!existing) {
-            existing = { name: month, receita: 0, custos: 0 }
-            acc.push(existing)
-        }
-        if (curr.type === 'entrada') existing.receita += curr.amount
-        else existing.custos += curr.amount
-        return acc
-    }, []).reverse()
-
-    const [newTxOpen, setNewTxOpen] = useState(false)
-    const [isSaving, setIsSaving] = useState(false)
-    const [txForm, setTxForm] = useState({
-        description: "",
-        amount: "",
-        type: "saida" as "entrada" | "saida",
-        category: "Geral",
-        transaction_date: new Date().toISOString().split('T')[0]
-    })
-
-    async function handleSaveTransaction() {
-        if (!txForm.description || !txForm.amount) {
-            toast.error("Preencha os campos obrigatórios")
-            return
-        }
-
-        setIsSaving(true)
-        try {
-            const { data, error } = await supabase
-                .from('transactions')
-                .insert({
-                    user_id: user?.id,
-                    company_id: profile?.company_id,
-                    description: txForm.description,
-                    amount: parseFloat(txForm.amount),
-                    type: txForm.type,
-                    category: txForm.category,
-                    transaction_date: txForm.transaction_date
-                })
-                .select()
-                .single()
-
-            if (error) throw error
-
-            setTransactions(prev => [data, ...prev].sort((a, b) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime()))
-
-            setNewTxOpen(false)
-            setTxForm({
-                description: "",
-                amount: "",
-                type: "saida",
-                category: "Geral",
-                transaction_date: new Date().toISOString().split('T')[0]
-            })
-            toast.success("Transação salva!")
-        } catch (error: any) {
-            console.error("Error saving transaction:", error.message || error)
-            toast.error("Erro ao salvar transação")
-        } finally {
-            setIsSaving(false)
-        }
-    }
-
-    return (
-        <div className="space-y-12 pb-24">
-            {/* Header Section */}
-            <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between"
-            >
-                <div>
-                    <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-slate-900 mb-2 uppercase italic leading-none">
-                        Gestão <span className="text-primary tracking-tighter">Financeira</span>
-                    </h1>
-                    <p className="text-slate-500 font-medium text-sm md:text-base">Controle cada centavo da sua produção e maximize seus lucros.</p>
-                </div>
-                <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full lg:w-auto">
-                    <Button variant="outline" className="h-14 px-8 rounded-3xl border-white bg-white/40 backdrop-blur-md text-slate-600 hover:text-primary font-black uppercase tracking-widest text-[10px] shadow-lg border transition-all w-full sm:w-auto">
-                        <Download className="mr-2 size-4" />
-                        Relatórios (PDF)
-                    </Button>
-                    <Input 
-                        type="month"
-                        className="h-14 w-full sm:w-40 rounded-3xl border-white/60 bg-white/40 backdrop-blur-md text-slate-900 font-bold px-5 shadow-lg"
-                        value={monthFilter}
-                        onChange={e => setMonthFilter(e.target.value)}
-                    />
-
-                    <Dialog open={newTxOpen} onOpenChange={setNewTxOpen}>
-                        <DialogTrigger asChild>
-                            <div className="grid grid-cols-1 sm:flex gap-2 w-full sm:w-auto">
-                                <Button 
-                                    onClick={() => setTxForm(prev => ({ ...prev, type: "entrada" }))}
-                                    className="h-14 px-8 rounded-[20px] bg-green-500 hover:bg-green-600 text-white font-black uppercase tracking-widest text-[10px] shadow-xl shadow-green-500/30 transition-all hover:scale-105 active:scale-95 w-full"
-                                >
-                                    <TrendingUp className="mr-2 size-4" />
-                                    Nova Entrada
-                                </Button>
-                                <Button 
-                                    onClick={() => setTxForm(prev => ({ ...prev, type: "saida" }))}
-                                    className="h-14 px-8 rounded-[20px] bg-rose-500 hover:bg-rose-600 text-white font-black uppercase tracking-widest text-[10px] shadow-xl shadow-rose-500/30 transition-all hover:scale-105 active:scale-95 w-full"
-                                >
-                                    <TrendingDown className="mr-2 size-4" />
-                                    Nova Despesa
-                                </Button>
-                            </div>
-                        </DialogTrigger>
-                        <DialogContent className="w-[95vw] sm:max-w-2xl border-white/60 bg-white/90 backdrop-blur-2xl p-6 sm:p-10 rounded-[32px] sm:rounded-[40px] shadow-2xl overflow-hidden text-slate-900 max-h-[90vh] overflow-y-auto">
-                            <div className="absolute -top-24 -right-24 size-48 bg-primary/10 rounded-full blur-3xl" />
-                            <DialogHeader className="mb-8 relative z-10">
-                                <DialogTitle className="text-3xl font-black tracking-tighter uppercase italic">
-                                    Novo <span className="text-primary italic">Lançamento</span>
-                                </DialogTitle>
-                                <p className="text-slate-500 text-sm font-medium">Registre entradas ou saídas de caixa com precisão.</p>
-                            </DialogHeader>
-
-                            <div className="grid gap-8 relative z-10">
-                                <div className="space-y-2">
-                                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Descrição</Label>
-                                    <Input
-                                        placeholder="Ex: Compra de insumos, Venda de bolo..."
-                                        className="h-14 border-rose-100 bg-rose-50/30 rounded-2xl px-5 text-sm font-bold focus:ring-4 focus:ring-primary/10 transition-all font-primary text-slate-900"
-                                        value={txForm.description}
-                                        onChange={e => setTxForm({ ...txForm, description: e.target.value })}
-                                    />
-                                </div>
-
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                                    <div className="space-y-2">
-                                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Valor</Label>
-                                        <div className="relative">
-                                            <span className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">R$</span>
-                                            <Input
-                                                type="number"
-                                                className="h-14 border-rose-100 bg-rose-50/30 rounded-2xl pl-12 focus:ring-primary/10 font-bold text-slate-900"
-                                                value={txForm.amount}
-                                                onChange={e => setTxForm({ ...txForm, amount: e.target.value })}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Tipo</Label>
-                                        <select
-                                            className="w-full h-14 border-rose-100 bg-rose-50/30 rounded-2xl px-5 text-sm font-bold outline-none focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer text-slate-900"
-                                            value={txForm.type}
-                                            onChange={e => setTxForm({ ...txForm, type: e.target.value as any })}
-                                        >
-                                            <option value="saida">Saída (Despesa)</option>
-                                            <option value="entrada">Entrada (Receita)</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                                    <div className="space-y-2">
-                                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Categoria</Label>
-                                        <Input
-                                            placeholder="Ex: Ingredientes"
-                                            className="h-14 border-rose-100 bg-rose-50/30 rounded-2xl px-5 focus:ring-primary/10 font-bold text-slate-900 font-primary"
-                                            value={txForm.category}
-                                            onChange={e => setTxForm({ ...txForm, category: e.target.value })}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Data</Label>
-                                        <Input
-                                            type="date"
-                                            className="h-14 border-rose-100 bg-rose-50/30 rounded-2xl px-5 focus:ring-primary/10 font-bold text-slate-900"
-                                            value={txForm.transaction_date}
-                                            onChange={e => setTxForm({ ...txForm, transaction_date: e.target.value })}
-                                        />
-                                    </div>
-                                </div>
-
-                                <Button
-                                    className="h-14 mt-4 rounded-2xl bg-gradient-to-r from-primary to-rose-500 hover:from-primary/90 hover:to-rose-600 font-black text-lg shadow-xl shadow-primary/20 text-white uppercase tracking-widest transition-all hover:scale-[1.02] active:scale-95"
-                                    onClick={handleSaveTransaction}
-                                    disabled={isSaving}
-                                >
-                                    {isSaving ? "PROCESSANDO..." : "CONFIRMAR LANÇAMENTO ✨"}
-                                </Button>
-                            </div>
-                        </DialogContent>
-                    </Dialog>
-                </div>
-            </motion.div>
-
-            {/* Financial Stats Grid */}
-            <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-                {stats.map((stat, i) => (
-                    <motion.div
-                        key={stat.label}
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.1, type: "spring", stiffness: 100 }}
-                    >
-                        <div className="group relative h-full overflow-hidden rounded-[32px] border border-white/60 bg-white/40 backdrop-blur-xl p-6 md:p-8 hover:shadow-2xl hover:shadow-primary/10 transition-all duration-500 hover:-translate-y-2">
-                            <div className="absolute -top-12 -right-12 size-40 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors" />
-
-                            <div className="flex items-center justify-between mb-6 relative z-10">
-                                <div className={cn("flex size-14 items-center justify-center rounded-2xl text-white shadow-xl transform group-hover:rotate-6 transition-transform duration-500", stat.iconBg)}>
-                                    <stat.icon className="size-7" />
-                                </div>
-                                <Badge className="bg-white/50 text-[10px] font-black border-none px-3 py-1 text-slate-500 uppercase">{stat.trend}</Badge>
-                            </div>
-
-                            <div className="relative z-10">
-                                <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
-                                <h3 className="text-3xl font-black text-slate-900 tracking-tighter">{stat.value}</h3>
-                            </div>
-                        </div>
-                    </motion.div>
-                ))}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {[
+          { label: "Saldo do Mês", value: totals.saldo, icon: Wallet, color: totals.saldo >= 0 ? "text-emerald-500" : "text-rose-500", bg: "bg-slate-50" },
+          { label: "Total Entradas", value: totals.receita, icon: TrendingUp, color: "text-emerald-500", bg: "bg-emerald-50/30" },
+          { label: "Total Saídas", value: totals.custos, icon: TrendingDown, color: "text-rose-500", bg: "bg-rose-50/30" },
+        ].map((kpi, idx) => (
+          <motion.div key={idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.1 }} className={cn("p-6 rounded-[32px] border border-slate-100 shadow-sm flex items-center gap-5", kpi.bg)}>
+            <div className={cn("size-12 rounded-2xl flex items-center justify-center bg-white shadow-sm", kpi.color)}>
+              <kpi.icon size={24} />
             </div>
-
-            <div className="grid gap-10 lg:grid-cols-3">
-                {/* Main Cash Flow Chart */}
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.98 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.4 }}
-                    className="lg:col-span-2 rounded-[32px] sm:rounded-[40px] border border-white/50 bg-white/30 backdrop-blur-xl p-6 sm:p-10 shadow-[0_8px_30px_rgba(0,0,0,0.02)] relative overflow-hidden"
-                >
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
-                        <div>
-                            <h3 className="text-2xl font-black text-slate-900 tracking-tighter uppercase italic">
-                                Histórico de <span className="text-primary underline decoration-primary/20 underline-offset-8">Caixa</span>
-                            </h3>
-                            <p className="text-sm text-slate-500 mt-2 font-medium">Comparativo mensal de faturamento versus custos.</p>
-                        </div>
-                        <div className="flex items-center gap-6 bg-white/50 p-2 rounded-2xl border border-rose-50 shadow-sm">
-                            <div className="flex items-center gap-2 px-3 text-[10px] font-black uppercase text-primary">
-                                <div className="size-2 rounded-full bg-primary" />
-                                Receita
-                            </div>
-                            <div className="flex items-center gap-2 px-3 text-[10px] font-black uppercase text-rose-300">
-                                <div className="size-2 rounded-full bg-rose-300" />
-                                Custos
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="h-[400px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={chartData.length > 0 ? chartData : [{ name: 'S/ dados', receita: 0, custos: 0 }]}>
-                                <defs>
-                                    <linearGradient id="colorRec" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#F472B6" stopOpacity={0.4} />
-                                        <stop offset="95%" stopColor="#F472B6" stopOpacity={0} />
-                                    </linearGradient>
-                                    <linearGradient id="colorCus" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#FBCFE8" stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor="#FBCFE8" stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="6 6" stroke="#F5E6D3" vertical={false} />
-                                <XAxis
-                                    dataKey="name"
-                                    axisLine={false}
-                                    tickLine={false}
-                                    tick={{ fill: "#94a3b8", fontSize: 11, fontWeight: 800 }}
-                                    dy={15}
-                                />
-                                <YAxis
-                                    axisLine={false}
-                                    tickLine={false}
-                                    tick={{ fill: "#94a3b8", fontSize: 11, fontWeight: 800 }}
-                                    dx={-10}
-                                />
-                                <Tooltip
-                                    cursor={{ stroke: '#F472B6', strokeWidth: 2 }}
-                                    content={({ active, payload }) => {
-                                        if (active && payload && payload.length) {
-                                            const d = payload[0].payload;
-                                            return (
-                                                <div className="bg-white/80 backdrop-blur-xl border border-rose-100 p-6 rounded-[24px] shadow-2xl">
-                                                    <p className="text-xs font-black text-primary uppercase tracking-widest mb-3 border-b border-rose-50 pb-2">{d.name}</p>
-                                                    <div className="space-y-2">
-                                                        <div className="flex justify-between gap-12 items-center">
-                                                            <span className="text-xs font-bold text-slate-500 uppercase">Receita:</span>
-                                                            <span className="text-base font-black text-slate-900 italic">R$ {d.receita.toLocaleString()}</span>
-                                                        </div>
-                                                        <div className="flex justify-between gap-12 items-center">
-                                                            <span className="text-xs font-bold text-slate-400 uppercase">Custos:</span>
-                                                            <span className="text-sm font-black text-slate-400">R$ {d.custos.toLocaleString()}</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        }
-                                        return null;
-                                    }}
-                                />
-                                <Area type="monotone" dataKey="receita" stroke="#F472B6" strokeWidth={5} fillOpacity={1} fill="url(#colorRec)" activeDot={{ r: 8, fill: '#F472B6', stroke: '#fff', strokeWidth: 4 }} />
-                                <Area type="monotone" dataKey="custos" stroke="#FBCFE8" strokeWidth={3} fillOpacity={1} fill="url(#colorCus)" strokeDasharray="5 5" />
-                            </AreaChart>
-                        </ResponsiveContainer>
-                    </div>
-                </motion.div>
-
-                {/* Categories & Transactions Column */}
-                <div className="space-y-10">
-                    <div className="rounded-[40px] border border-white/50 bg-white/40 backdrop-blur-xl p-8 flex flex-col gap-8 shadow-lg shadow-rose-200/5">
-                        <h3 className="text-xl font-black italic text-slate-900 uppercase flex items-center gap-2 leading-none">
-                            <PieChart className="size-5 text-primary" />
-                            Distribuição <span className="text-primary tracking-tighter">Despesas</span>
-                        </h3>
-                        <div className="relative h-[220px] w-full flex items-center justify-center">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChartComponent>
-                                    <Pie
-                                        data={[
-                                            { name: 'Insumos', value: 65, color: '#F472B6' },
-                                            { name: 'Freelancers', value: 20, color: '#FBCFE8' },
-                                            { name: 'Outros', value: 15, color: '#F5E6D3' },
-                                        ]}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={65}
-                                        outerRadius={85}
-                                        paddingAngle={10}
-                                        dataKey="value"
-                                        stroke="none"
-                                    >
-                                        {[
-                                            { color: '#F472B6' },
-                                            { color: '#FBCFE8' },
-                                            { color: '#F5E6D3' },
-                                        ].map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.color} />
-                                        ))}
-                                    </Pie>
-                                </PieChartComponent>
-                            </ResponsiveContainer>
-                            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                <span className="text-2xl font-black text-slate-800 tracking-tight">100%</span>
-                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Total</span>
-                            </div>
-                        </div>
-                        <div className="space-y-4">
-                            {[
-                                { name: 'Insumos / Produção', value: '65%', color: 'bg-[#F472B6]' },
-                                { name: 'Freelancers / Entregas', value: '20%', color: 'bg-[#FBCFE8]' },
-                                { name: 'Manutenção / Outros', value: '15%', color: 'bg-[#F5E6D3]' },
-                            ].map((cat) => (
-                                <div key={cat.name} className="flex items-center justify-between p-3 rounded-2xl bg-white/50 border border-white/40 shadow-sm transition-all hover:translate-x-1">
-                                    <div className="flex items-center gap-3">
-                                        <div className={cn("size-3 rounded-full shadow-sm", cat.color)} />
-                                        <span className="text-[10px] font-black uppercase text-slate-600 tracking-tighter">{cat.name}</span>
-                                    </div>
-                                    <span className="text-sm font-black text-slate-900">{cat.value}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="lg:col-span-3 rounded-[40px] border border-white/50 bg-white/40 backdrop-blur-xl p-10 flex flex-col gap-10 shadow-lg relative overflow-hidden">
-                    <div className="absolute top-0 right-0 size-64 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-[80px]" />
-
-                    <div className="flex items-center justify-between relative z-10">
-                        <h3 className="text-2xl font-black italic text-slate-900 uppercase">Fluxo de <span className="text-primary italic">Lançamentos</span></h3>
-                        <div className="flex bg-white/50 p-1.5 rounded-2xl border border-rose-50 shadow-sm">
-                            <Button variant="ghost" className="h-9 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest text-primary bg-white shadow-sm transition-all">Recente</Button>
-                            <Button variant="ghost" className="h-9 px-6 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400">Ver Todas</Button>
-                        </div>
-                    </div>
-
-                    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 relative z-10">
-                        {filteredTransactions.slice(0, 6).map((tx, i) => (
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: i * 0.05 }}
-                                key={tx.id}
-                                className="group flex items-center justify-between p-5 rounded-3xl bg-white/50 border border-white hover:border-primary/20 hover:shadow-xl hover:shadow-primary/5 transition-all cursor-pointer"
-                            >
-                                <div className="flex items-center gap-5">
-                                    <div className={cn(
-                                        "flex size-14 items-center justify-center rounded-[20px] transform group-hover:rotate-6 transition-transform duration-500 shadow-lg",
-                                        tx.type === "entrada" ? "bg-green-500 text-white" : "bg-rose-500 text-white"
-                                    )}>
-                                        {tx.type === "entrada" ? <ArrowUpRight className="size-7" /> : <ArrowDownRight className="size-7" />}
-                                    </div>
-                                    <div>
-                                        <h4 className="text-base font-black text-slate-900 leading-none mb-2 uppercase italic transition-colors group-hover:text-primary">{tx.description}</h4>
-                                        <div className="flex items-center gap-2">
-                                            <Badge className="bg-slate-100 text-[9px] font-black text-slate-400 uppercase tracking-tighter border-none px-2 py-0.5">{tx.category}</Badge>
-                                            <span className="text-[10px] text-slate-300 font-bold">•</span>
-                                            <span className="text-[10px] text-slate-400 font-bold uppercase">{new Date(tx.transaction_date).toLocaleDateString('pt-BR')}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="text-right pl-4">
-                                    <p className={cn("text-xl font-black tracking-tighter", tx.type === "entrada" ? "text-green-600" : "text-rose-600")}>
-                                        {tx.type === "entrada" ? "+" : "-"} R$ {tx.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                    </p>
-                                </div>
-                            </motion.div>
-                        ))}
-                    </div>
-                </div>
+            <div>
+              <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest block mb-1 italic">{kpi.label}</span>
+              <span className={cn("text-2xl font-black italic tracking-tight", kpi.color)}>R$ {kpi.value.toFixed(2)}</span>
             </div>
+          </motion.div>
+        ))}
+      </div>
+
+      <div className="bg-white rounded-[32px] border border-slate-100 p-8 shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+           <div>
+              <h3 className="text-xl font-black text-slate-900 uppercase italic">Histórico de <span className="text-rose-500">Caixa</span></h3>
+              <p className="text-[10px] font-bold text-slate-400 uppercase italic tracking-widest mt-1">Comparativo diário de faturamento vs custos</p>
+           </div>
+           <Input type="month" className="h-10 w-44 rounded-xl border-slate-100 text-sm font-bold" value={monthFilter} onChange={e => setMonthFilter(e.target.value)} />
         </div>
-    )
+
+        <div className="h-[300px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={chartData}>
+              <defs>
+                <linearGradient id="colorRec" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.1} />
+                  <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="colorCus" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.1} />
+                  <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: "#94a3b8", fontSize: 10, fontWeight: 700 }} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fill: "#94a3b8", fontSize: 10, fontWeight: 700 }} />
+              <Tooltip 
+                contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 40px rgba(0,0,0,0.1)' }}
+                itemStyle={{ fontSize: '12px', fontWeight: 900, textTransform: 'uppercase' }}
+              />
+              <Area type="monotone" dataKey="receita" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorRec)" />
+              <Area type="monotone" dataKey="custos" stroke="#f43f5e" strokeWidth={3} fillOpacity={1} fill="url(#colorCus)" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <PageFilters options={filterOptions} activeKey={filterType} onSelect={setFilterType} />
+            <PageSearch value={search} onChange={setSearch} placeholder="Buscar por descrição ou categoria..." className="md:max-w-xs" />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <AnimatePresence mode="popLayout">
+            {filtered.map((tx, i) => (
+              <motion.div
+                key={tx.id}
+                layout
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.05 }}
+                className="group flex items-center justify-between p-5 rounded-[24px] bg-white border border-slate-100 hover:shadow-xl transition-all"
+              >
+                <div className="flex items-center gap-4">
+                  <div className={cn(
+                    "size-11 rounded-[14px] flex items-center justify-center text-white shadow-lg",
+                    tx.type === "entrada" ? "bg-emerald-500" : "bg-rose-500"
+                  )}>
+                    {tx.type === "entrada" ? <ArrowUpRight size={20} /> : <ArrowDownRight size={20} />}
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="text-[11px] font-black text-slate-800 uppercase italic truncate max-w-[120px]">{tx.description}</h4>
+                    <div className="flex items-center gap-1 mt-1">
+                        <Badge className="bg-slate-50 text-slate-400 border-none font-black text-[8px] uppercase px-1.5 py-0">{tx.category}</Badge>
+                        <span className="text-[9px] font-bold text-slate-300 uppercase">{new Date(tx.transaction_date).toLocaleDateString('pt-BR')}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className={cn("text-lg font-black italic tracking-tighter", tx.type === "entrada" ? "text-emerald-600" : "text-rose-600")}>
+                    {tx.type === "entrada" ? "+" : "-"} R$ {tx.amount.toFixed(2)}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+
+          {filtered.length === 0 && !loading && (
+            <EmptyStateV2 
+              icon={Receipt}
+              title="Sem movimentações"
+              subtitle="Registre suas entradas e gastos para ter um controle financeiro completo"
+              action={<Button onClick={() => setNewTxOpen(true)} className="h-10 px-6 rounded-xl bg-slate-900 text-white font-black uppercase text-[10px]">Novo Lançamento</Button>}
+            />
+          )}
+        </div>
+      </div>
+
+      <Dialog open={newTxOpen} onOpenChange={setNewTxOpen}>
+        <DialogContent className="sm:max-w-lg rounded-[32px] p-8">
+            <DialogHeader className="mb-6"><DialogTitle className="text-2xl font-black uppercase italic">Novo Lançamento</DialogTitle></DialogHeader>
+            <div className="space-y-4 font-bold">
+                <div className="space-y-2">
+                    <Label className="text-[10px] uppercase text-slate-400">Descrição</Label>
+                    <Input className="h-12 rounded-xl" placeholder="Ex: Venda Bolo de Pote" value={txForm.description} onChange={e => setTxForm({ ...txForm, description: e.target.value })} />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label className="text-[10px] uppercase text-slate-400">Valor (R$)</Label>
+                        <Input type="number" className="h-12 rounded-xl" placeholder="0,00" value={txForm.amount} onChange={e => setTxForm({ ...txForm, amount: e.target.value })} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label className="text-[10px] uppercase text-slate-400">Tipo</Label>
+                        <select className="w-full h-12 rounded-xl border-slate-100 bg-slate-50 px-4 text-sm font-bold" value={txForm.type} onChange={e => setTxForm({ ...txForm, type: e.target.value as any })}>
+                            <option value="saida">Saída (Despesa)</option>
+                            <option value="entrada">Entrada (Receita)</option>
+                        </select>
+                    </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2"><Label className="text-[10px] uppercase text-slate-400">Categoria</Label><Input className="h-12 rounded-xl" placeholder="Geral" value={txForm.category} onChange={e => setTxForm({ ...txForm, category: e.target.value })} /></div>
+                    <div className="space-y-2"><Label className="text-[10px] uppercase text-slate-400">Data</Label><Input type="date" className="h-12 rounded-xl" value={txForm.transaction_date} onChange={e => setTxForm({ ...txForm, transaction_date: e.target.value })} /></div>
+                </div>
+                <Button onClick={handleSaveTransaction} disabled={isSaving} className="w-full h-14 rounded-2xl bg-rose-500 font-black uppercase text-white shadow-lg mt-4">{isSaving ? "Gravando..." : "Confirmar Lançamento"}</Button>
+            </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  )
 }

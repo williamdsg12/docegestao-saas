@@ -14,6 +14,7 @@ import {
   ChevronRight,
   ChevronLeft,
   Flame,
+  Clock,
   SearchX,
   MessageCircle,
 } from "lucide-react"
@@ -24,14 +25,16 @@ import {
 import { ptBR } from "date-fns/locale"
 import { cn } from "@/lib/utils"
 
-type OrderStatus = "orcamento" | "confirmado" | "producao" | "finalizado" | "entregue"
+type OrderStatus = "novo" | "em_preparo" | "pronto" | "saiu_entrega" | "entregue" | "orcamento" | "confirmado"
 
-const statusConfig: Record<OrderStatus, { label: string, color: string, icon: any, bg: string, iconBg: string, border: string }> = {
+const statusConfig: Record<string, { label: string, color: string, icon: any, bg: string, iconBg: string, border: string }> = {
+  novo: { label: "Novo", color: "text-amber-500", icon: Clock, bg: "bg-amber-50", iconBg: "bg-amber-400", border: "border-amber-200" },
+  em_preparo: { label: "Em Preparo", color: "text-blue-600", icon: Flame, bg: "bg-blue-50", iconBg: "bg-blue-400", border: "border-blue-200" },
+  pronto: { label: "Pronto", color: "text-purple-600", icon: CheckCircle2, bg: "bg-purple-50", iconBg: "bg-purple-400", border: "border-purple-200" },
+  saiu_entrega: { label: "Saiu p/ Entrega", color: "text-orange-600", icon: Truck, bg: "bg-orange-50", iconBg: "bg-orange-400", border: "border-orange-200" },
+  entregue: { label: "Entregue", color: "text-green-600", icon: CheckCircle2, bg: "bg-green-50", iconBg: "bg-green-400", border: "border-green-200" },
   orcamento: { label: "Orçamento", color: "text-slate-500", icon: FileText, bg: "bg-slate-100", iconBg: "bg-slate-400", border: "border-slate-200" },
   confirmado: { label: "Confirmado", color: "text-blue-600", icon: CheckCircle2, bg: "bg-blue-50", iconBg: "bg-blue-400", border: "border-blue-200" },
-  producao: { label: "Produção", color: "text-amber-600", icon: Flame, bg: "bg-amber-50", iconBg: "bg-amber-400", border: "border-amber-200" },
-  finalizado: { label: "Finalizado", color: "text-primary", icon: CheckCircle2, bg: "bg-rose-50", iconBg: "bg-primary/80", border: "border-rose-200" },
-  entregue: { label: "Entregue", color: "text-green-600", icon: Truck, bg: "bg-green-50", iconBg: "bg-green-400", border: "border-green-200" },
 }
 
 const mockedOrders = [
@@ -50,7 +53,7 @@ const mockedOrders = [
     product_name: "Kit Festa 50 Pessoas (Classic)",
     total_value: 520.00,
     deposit_value: 520.00,
-    status: "producao" as OrderStatus,
+    status: "em_preparo" as OrderStatus,
     delivery_date: new Date(Date.now() + 86400000).toISOString(),
   },
   {
@@ -68,7 +71,7 @@ const mockedOrders = [
     product_name: "Torta Holandesa Grande",
     total_value: 145.00,
     deposit_value: 145.00,
-    status: "finalizado" as OrderStatus,
+    status: "pronto" as OrderStatus,
     delivery_date: new Date(Date.now()).toISOString(),
   },
   {
@@ -115,7 +118,7 @@ export default function CapturePedidosPage() {
       {/* Filter Bar */}
       <div className="flex flex-col gap-6">
         <div className="flex flex-wrap gap-3 pb-2 overflow-x-auto scrollbar-hide">
-          {["total", "orcamento", "confirmado", "producao", "finalizado", "entregue"].map((key, i) => {
+          {["total", "orcamento", "confirmado", "em_preparo", "pronto", "entregue"].map((key, i) => {
             const isActive = (key === "total" && filterStatus === "todos") || filterStatus === key
             const config = (key as any) !== "total" ? (statusConfig as any)[key] : { label: "Todos", icon: Search }
 

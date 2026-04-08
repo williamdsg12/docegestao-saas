@@ -10,33 +10,94 @@ import {
   Clock, 
   Phone, 
   ShoppingBag,
+  Package,
   ExternalLink,
   ChevronRight,
   Truck,
   Flame,
   Utensils,
-  PartyPopper
+  PartyPopper,
+  X,
+  Heart,
+  Star
 } from "lucide-react"
 import { motion } from "framer-motion"
 import { cn } from "@/lib/utils"
 
+import { useSearchParams } from "next/navigation"
+import { supabase } from "@/lib/supabase"
+import { AnimatePresence } from "framer-motion"
+
 export default function OrderConfirmedPage() {
   const router = useRouter()
-  const [status, setStatus] = useState("recebido") // recebido, confirmado, em_preparo, pronto, saiu_entrega, entregue
+  const searchParams = useSearchParams()
+  const orderId = searchParams.get("orderId")
+  const [status, setStatus] = useState("pending") 
+  const [showCelebration, setShowCelebration] = useState(false)
+  const [storeName, setStoreName] = useState("Doce Gestão")
 
-  // Simulate status progression for demo
   useEffect(() => {
-    const timer = setTimeout(() => setStatus("confirmado"), 3000)
-    return () => clearTimeout(timer)
-  }, [])
+    if (!orderId) return
+
+    // 1. Fetch initial status and store name
+    const fetchInitialData = async () => {
+      const { data, error } = await supabase
+        .from("orders")
+        .select(`
+          status,
+          tenants (
+            name
+          )
+        `)
+        .eq("id", orderId)
+        .single()
+      
+      if (data && !error) {
+        setStatus(data.status)
+        if ((data as any).tenants?.name) {
+          setStoreName((data as any).tenants.name)
+        }
+      }
+    }
+
+    fetchInitialData()
+
+    // 2. Subscribe to real-time changes
+    const channel = supabase
+      .channel(`order-tracking-${orderId}`)
+      .on(
+        "postgres_changes",
+        { 
+          event: "UPDATE", 
+          schema: "public", 
+          table: "orders",
+          filter: `id=eq.${orderId}`
+        },
+        (payload) => {
+          console.log("Status update received:", payload.new.status)
+          setStatus(payload.new.status)
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [orderId])
+
+  useEffect(() => {
+    if (status === 'delivered') {
+      setShowCelebration(true)
+    }
+  }, [status])
 
   const steps = [
-    { id: "recebido", label: "Pedido Recebido", icon: ShoppingBag },
-    { id: "confirmado", label: "Confirmado", icon: CheckCircle2 },
-    { id: "em_preparo", label: "Na Cozinha", icon: Flame },
-    { id: "pronto", label: "Pedido Pronto", icon: Utensils },
-    { id: "saiu_entrega", label: "Saiu para Entrega", icon: Truck },
-    { id: "entregue", label: "Entregue", icon: CheckCircle2 },
+    { id: "pending", label: "Pedido Recebido", icon: ShoppingBag },
+    { id: "accepted", label: "Confirmado", icon: CheckCircle2 },
+    { id: "preparing", label: "Na Cozinha", icon: Utensils },
+    { id: "ready", label: "Pedido Pronto", icon: Package },
+    { id: "out_for_delivery", label: "Saiu para Entrega", icon: Truck },
+    { id: "delivered", label: "Entregue", icon: PartyPopper },
   ]
 
   const currentStepIdx = steps.findIndex(s => s.id === status)
@@ -50,13 +111,32 @@ export default function OrderConfirmedPage() {
       >
         {/* Success Header */}
         <div className="text-center space-y-4">
-          <div className="size-24 bg-emerald-500 rounded-[32px] flex items-center justify-center mx-auto shadow-2xl shadow-emerald-200 animate-bounce">
-            <CheckCircle2 className="size-12 text-white" />
+          <div className={cn(
+            "size-24 rounded-[32px] flex items-center justify-center mx-auto shadow-2xl animate-bounce",
+            status === 'pending' ? "bg-amber-400 shadow-amber-100" : 
+            status === 'cancelled' ? "bg-rose-500 shadow-rose-100" : 
+            "bg-emerald-500 shadow-emerald-100"
+          )}>
+            {status === 'pending' ? <Clock className="size-12 text-white" /> : 
+             status === 'cancelled' ? <X className="size-12 text-white" /> :
+             <CheckCircle2 className="size-12 text-white" />}
           </div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic italic leading-none">
-            Pedido <span className="text-pink-500">Confirmado!</span>
+          <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">
+            {status === 'pending' ? (
+              <>Pedido <span className="text-pink-500">Recebido!</span></>
+            ) : status === 'cancelled' ? (
+              <>Pedido <span className="text-rose-500">Cancelado</span></>
+            ) : (
+              <>Pedido <span className="text-pink-500">Confirmado!</span></>
+            )}
           </h1>
-          <p className="text-slate-500 font-medium italic uppercase text-xs tracking-[0.3em]">Obrigado pela preferência!</p>
+          <p className="text-slate-500 font-medium italic uppercase text-xs tracking-[0.3em]">
+            {status === 'pending' 
+              ? "Aguardando confirmação da loja..." 
+              : status === 'cancelled'
+              ? "Este pedido foi cancelado."
+              : "Obrigado pela preferência!"}
+          </p>
         </div>
 
         <Card className="rounded-[48px] border-none shadow-2xl shadow-slate-200/50 bg-white overflow-hidden p-10">
@@ -125,6 +205,85 @@ export default function OrderConfirmedPage() {
           Voltar para Home
         </Button>
       </motion.div>
+
+      {/* Celebration Overlay */}
+      <AnimatePresence>
+        {showCelebration && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-white/90 backdrop-blur-md"
+          >
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+              {[...Array(30)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ 
+                    top: "50%", 
+                    left: "50%", 
+                    opacity: 1,
+                    scale: 0 
+                  }}
+                  animate={{ 
+                    top: `${Math.random() * 100}%`, 
+                    left: `${Math.random() * 100}%`,
+                    opacity: 0,
+                    scale: Math.random() * 2 + 1,
+                    rotate: Math.random() * 360
+                  }}
+                  transition={{ 
+                    duration: 3, 
+                    ease: "easeOut",
+                    delay: Math.random() * 0.5
+                  }}
+                  className="absolute"
+                >
+                  {i % 3 === 0 ? <Heart className="text-pink-500 fill-pink-500 size-6" /> : 
+                   i % 3 === 1 ? <Star className="text-amber-400 fill-amber-400 size-6" /> : 
+                   <div className="size-4 bg-pink-400 rounded-full" />}
+                </motion.div>
+              ))}
+            </div>
+
+            <motion.div 
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", bounce: 0.5 }}
+              className="max-w-md w-full text-center space-y-8 bg-white p-12 rounded-[56px] shadow-2xl border border-slate-50 relative z-10"
+            >
+              <div className="size-32 bg-emerald-500 rounded-[48px] flex items-center justify-center mx-auto shadow-2xl shadow-emerald-200 animate-bounce">
+                <PartyPopper className="size-16 text-white" />
+              </div>
+              
+              <div className="space-y-3">
+                <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">
+                   Entrega <span className="text-pink-500">Concluída!</span>
+                </h2>
+                <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest leading-loose italic">
+                  Esperamos que você ame cada detalhe.<br />Obrigado por escolher a {storeName}!
+                </p>
+              </div>
+
+              <div className="pt-4 space-y-3">
+                <Button 
+                   onClick={() => router.push("/")}
+                   className="w-full h-16 rounded-2xl bg-slate-950 hover:bg-slate-900 text-white font-black uppercase text-xs tracking-widest shadow-xl transition-all active:scale-95"
+                >
+                  Finalizar e Sair
+                </Button>
+                <Button 
+                   onClick={() => setShowCelebration(false)}
+                   variant="ghost"
+                   className="w-full text-slate-400 font-black uppercase text-[9px] tracking-widest"
+                >
+                  Ver Detalhes do Pedido
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

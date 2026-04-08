@@ -28,7 +28,8 @@ export function usePlanLimits() {
   const [loading, setLoading] = useState(true)
 
   const checkLimits = async () => {
-    if (!profile?.company_id) {
+    const tenantId = profile?.tenant_id || profile?.company_id
+    if (!tenantId) {
         setLoading(false)
         return
     }
@@ -39,7 +40,7 @@ export function usePlanLimits() {
       const { data: sub } = await supabase
         .from('subscriptions')
         .select('*, plans(*)')
-        .eq('company_id', profile.company_id)
+        .eq('tenant_id', tenantId)
         .in('status', ['active', 'trial'])
         .order('created_at', { ascending: false })
         .limit(1)
@@ -47,9 +48,9 @@ export function usePlanLimits() {
 
       // 2. Fetch Current Usage
       const [ordersCount, productsCount, clientsCount] = await Promise.all([
-        supabase.from('orders').select('id', { count: 'exact' }).eq('company_id', profile.company_id),
-        supabase.from('products').select('id', { count: 'exact' }).eq('company_id', profile.company_id),
-        supabase.from('clients').select('id', { count: 'exact' }).eq('company_id', profile.company_id)
+        supabase.from('orders').select('id', { count: 'exact' }).eq('tenant_id', tenantId),
+        supabase.from('products').select('id', { count: 'exact' }).eq('tenant_id', tenantId),
+        supabase.from('customers').select('id', { count: 'exact' }).eq('tenant_id', tenantId)
       ])
 
       const planData = sub?.plans
@@ -71,7 +72,7 @@ export function usePlanLimits() {
   }
 
   useEffect(() => {
-    if (profile?.company_id) {
+    if (profile?.tenant_id || profile?.company_id) {
         checkLimits()
     }
   }, [profile])

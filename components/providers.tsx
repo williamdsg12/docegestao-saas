@@ -1,22 +1,25 @@
 "use client"
 
 import { ThemeProvider as NextThemesProvider } from "next-themes"
-import { AuthProvider, useAuth } from "@/hooks/useAuth"
+import { AuthProvider } from "@/hooks/useAuth"
 import { BusinessProvider, useBusiness } from "@/hooks/useBusiness"
 import { Toaster } from "@/components/ui/sonner"
 import { useEffect } from "react"
 
 function ColorProvider({ children }: { children: React.ReactNode }) {
     const { business } = useBusiness()
-    const color = business?.config?.primary_color || '#ec4899'
+    
+    // Default brand colors if not defined
+    const primary = business?.primary_color || '#ec4899'
+    const secondary = business?.secondary_color || '#1e293b'
 
     useEffect(() => {
         if (typeof document !== 'undefined') {
-            document.documentElement.style.setProperty('--primary', color)
-            // Also update ring and other related variables if needed
-            document.documentElement.style.setProperty('--ring', color)
+            document.documentElement.style.setProperty('--primary', primary)
+            document.documentElement.style.setProperty('--secondary', secondary)
+            document.documentElement.style.setProperty('--ring', primary)
         }
-    }, [color])
+    }, [primary, secondary])
 
     return <> {children} </>
 }

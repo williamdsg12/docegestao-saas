@@ -73,14 +73,10 @@ export function ProfileHeader() {
 
   // Helper to get the correct base URL for menu links
   const getMenuBaseUrl = () => {
-    const prodDomain = 'https://docesgestao.netlify.app'
-    if (typeof window === 'undefined') return process.env.NEXT_PUBLIC_APP_URL || prodDomain
-    if (window.location.hostname !== 'localhost' && !window.location.hostname.includes('127.0.0.1')) {
+    if (typeof window !== 'undefined') {
       return window.location.origin
     }
-    const envUrl = process.env.NEXT_PUBLIC_APP_URL
-    if (envUrl && !envUrl.includes('localhost')) return envUrl
-    return prodDomain
+    return process.env.NEXT_PUBLIC_APP_URL || ""
   }
 
   const menuSlug = user?.user_metadata?.menu_slug || user?.user_metadata?.slug || ""

@@ -18,7 +18,8 @@ import {
   AlertCircle,
   Eye,
   Printer,
-  Calendar
+  Calendar,
+  CreditCard
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
@@ -42,13 +43,21 @@ import {
 } from "@/components/ui/dialog"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
+import { 
+  initSound, 
+  startAlert, 
+  stopAlert, 
+  requestNotificationPermission, 
+  sendBrowserNotification, 
+  vibrateDevice 
+} from "@/lib/notifications"
+import { criarEntregaSeNaoExistir } from "@/lib/services/delivery"
 
 interface OrderItem {
   id: string
   product_name: string
   quantity: number
   price: number
-  options: any[]
 }
 
 interface Order {
@@ -58,23 +67,24 @@ interface Order {
   customer_address: string
   customer_cep: string
   delivery_fee: number
-  subtotal: number
   total: number
   payment_method: string
   payment_status: string
   status: string
   notes: string
   created_at: string
-  menu_order_items?: OrderItem[]
+  order_items?: OrderItem[]
 }
 
 const statusConfig: Record<string, { label: string, color: string, icon: any }> = {
-  pending: { label: "Pendente", color: "bg-amber-50 text-amber-600 border-amber-100", icon: Clock },
-  preparing: { label: "Preparando", color: "bg-blue-50 text-blue-600 border-blue-100", icon: AlertCircle },
-  ready: { label: "Pronto", color: "bg-indigo-50 text-indigo-600 border-indigo-100", icon: CheckCircle2 },
-  delivering: { label: "Em Entrega", color: "bg-pink-50 text-primary border-pink-100", icon: Truck },
-  delivered: { label: "Entregue", color: "bg-emerald-50 text-emerald-600 border-emerald-100", icon: CheckCircle2 },
-  canceled: { label: "Cancelado", color: "bg-slate-100 text-slate-400 border-slate-200", icon: XCircle },
+  novo: { label: "Novo", color: "bg-amber-50 text-amber-600 border-amber-100", icon: Clock },
+  waiting_payment: { label: "Aguardando Pagamento", color: "bg-rose-50 text-rose-600 border-rose-100", icon: CreditCard },
+  paid: { label: "Pago", color: "bg-emerald-50 text-emerald-600 border-emerald-100", icon: CheckCircle2 },
+  em_preparo: { label: "Em Preparo", color: "bg-blue-50 text-blue-600 border-blue-100", icon: AlertCircle },
+  pronto: { label: "Pronto", color: "bg-purple-50 text-purple-600 border-purple-100", icon: CheckCircle2 },
+  saiu_entrega: { label: "Saiu p/ Entrega", color: "bg-pink-50 text-primary border-pink-100", icon: Truck },
+  entregue: { label: "Entregue", color: "bg-emerald-50 text-emerald-600 border-emerald-100", icon: CheckCircle2 },
+  cancelado: { label: "Cancelado", color: "bg-slate-100 text-slate-400 border-slate-200", icon: XCircle },
 }
 
 export default function OnlineOrdersPage() {
@@ -85,6 +95,15 @@ export default function OnlineOrdersPage() {
   const [search, setSearch] = useState("")
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [isDetailsOpen, setIsDetailsOpen] = useState(false)
+  const [isAlertEnabled, setIsAlertEnabled] = useState(false)
+  const [isFlashing, setIsFlashing] = useState(false)
+
+  // Register Service Worker
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW registration failed:', err))
+    }
+  }, [])
 
   useEffect(() => {
     if (profile?.company_id) {
@@ -101,34 +120,36 @@ export default function OnlineOrdersPage() {
     try {
       setLoading(true)
       const { data, error } = await supabase
-        .from('pedidos')
-        .select('*, itens_pedido(*)') // Using standardized table for items too if it exists
+        .from('orders')
+        .select(`
+          *,
+          customers!customer_id(nome, telefone),
+          addresses(rua, numero, bairro, cidade, cep),
+          order_items(*)
+        `)
         .eq('company_id', profile.company_id)
         .order('created_at', { ascending: false })
 
       if (error) throw error
       
-      // Map 'pedidos' fields to the 'Order' interface used in this page
       const mappedOrders = data?.map((o: any) => ({
         id: o.id,
-        customer_name: o.cliente_nome || 'Cliente',
-        customer_phone: o.cliente_telefone || '',
-        customer_address: o.endereco_entrega || '',
-        customer_cep: o.cep || '',
-        delivery_fee: o.taxa_entrega || 0,
-        subtotal: (o.valor_total || 0) - (o.taxa_entrega || 0),
-        total: o.valor_total || 0,
+        customer_name: o.customers?.nome || 'Cliente',
+        customer_phone: o.customers?.telefone || '',
+        customer_address: o.addresses ? `${o.addresses.rua}, ${o.addresses.numero} - ${o.addresses.bairro}` : 'Retirada',
+        customer_cep: o.addresses?.cep || '',
+        delivery_fee: o.delivery_fee || 0,
+        total: o.total || 0,
         payment_method: o.payment_method || 'Não inf.',
-        payment_status: o.payment_status || 'pending',
-        status: o.status || 'pending',
-        notes: o.observacoes || '',
+        payment_status: o.payment_status || 'waiting_payment',
+        status: o.status || 'novo',
+        notes: o.notes || '',
         created_at: o.created_at,
-        menu_order_items: (o.itens_pedido || []).map((i: any) => ({
+        order_items: (o.order_items || []).map((i: any) => ({
           id: i.id,
           product_name: i.product_name || 'Produto',
           quantity: i.quantidade || 0,
-          price: i.preco || 0,
-          options: []
+          price: i.preco || 0
         }))
       })) || []
 
@@ -144,24 +165,35 @@ export default function OnlineOrdersPage() {
   function subscribeToOrders() {
     if (!profile?.company_id) return { unsubscribe: () => {} }
     return supabase
-      .channel('pedidos_realtime')
+      .channel('orders_realtime')
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
-        table: 'pedidos',
+        table: 'orders',
         filter: `company_id=eq.${profile.company_id}`
       }, (payload: any) => {
         if (payload.eventType === 'INSERT') {
-          // Play notification sound
-          const audio = new Audio('/notification.mp3')
-          audio.play().catch(() => {})
+          const newOrder = payload.new
           
-          fetchOrders() // Refresh all to get joined items
-          toast.success("Novo pedido recebido! 🎂", {
-            description: `Novo pedido no painel`,
+          if (isAlertEnabled) {
+            startAlert()
+            sendBrowserNotification(newOrder)
+            vibrateDevice()
+            setIsFlashing(true)
+
+            // Stop alert after 15 seconds
+            setTimeout(() => {
+              stopAlert()
+              setIsFlashing(false)
+            }, 15000)
+          }
+
+          fetchOrders() 
+          toast.success("Novo pedido recebido! 🚀", {
+            description: `Acompanhe no painel`,
             duration: 10000,
           })
-        } else if (payload.eventType === 'UPDATE' || payload.eventType === 'DELETE') {
+        } else {
           fetchOrders()
         }
       })
@@ -170,20 +202,34 @@ export default function OnlineOrdersPage() {
 
   async function updateOrderStatus(orderId: string, newStatus: string) {
     try {
-      const { error } = await supabase
-        .from('pedidos')
+      console.log(`[DEBUG] Atualizando pedido online ${orderId} para status: ${newStatus}`);
+      
+      const { error: updateError } = await supabase
+        .from('orders')
         .update({ status: newStatus })
         .eq('id', orderId)
       
-      if (error) throw error
+      // CRIAR ENTREGA AUTOMATICAMENTE SE O STATUS FOR 'pronto'
+      if (newStatus === "pronto") {
+        await criarEntregaSeNaoExistir(supabase, {
+          id: orderId,
+          empresa_id: profile?.company_id
+        });
+        
+        toast.info("Entrega criada automaticamente!");
+      }
+
       toast.success("Status atualizado!")
       if (selectedOrder?.id === orderId) {
         setSelectedOrder(prev => prev ? { ...prev, status: newStatus } : null)
       }
-    } catch (error) {
-      toast.error("Erro ao atualizar status")
+      fetchOrders()
+    } catch (error: any) {
+      console.error("[ERRO] Erro ao atualizar status online:", error.message || error);
+      toast.error("Erro ao atualizar status");
     }
   }
+
 
   const filteredOrders = orders.filter((o: Order) => 
     o.customer_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -199,7 +245,27 @@ export default function OnlineOrdersPage() {
           </h1>
           <p className="text-slate-500 font-medium">Acompanhe em tempo real os pedidos vindos do seu cardápio digital.</p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-4">
+           {/* Enable Alerts Button */}
+           <Button 
+             variant={isAlertEnabled ? "outline" : "default"}
+             className={cn(
+               "h-12 rounded-xl font-bold transition-all gap-2",
+               !isAlertEnabled && "bg-rose-500 hover:bg-rose-600 text-white animate-bounce",
+               isAlertEnabled && "bg-emerald-50 text-emerald-600 border-emerald-100"
+             )}
+             onClick={async () => {
+               initSound()
+               const granted = await requestNotificationPermission()
+               setIsAlertEnabled(true)
+               if (granted) toast.success("Alertas e notificações ativados!")
+               else toast.info("Som ativado! (Notificações bloqueadas)")
+             }}
+           >
+             {isAlertEnabled ? <CheckCircle2 className="size-5" /> : <CreditCard className="size-5" />}
+             {isAlertEnabled ? "Alertas Ativados" : "Ativar Alertas iFood"}
+           </Button>
+
            <div className="relative group max-w-sm">
             <Search className="absolute left-4 top-1/2 size-4 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" />
             <Input 
@@ -215,12 +281,49 @@ export default function OnlineOrdersPage() {
         </div>
       </div>
 
+      <style jsx global>{`
+        @keyframes iFoodPulse {
+          0% { background-color: #e11d48; }
+          50% { background-color: #f43f5e; }
+          100% { background-color: #e11d48; }
+        }
+        .animate-ifood-flash {
+          animation: iFoodPulse 0.5s infinite;
+        }
+      `}</style>
+
+      {/* Flashing Alert Banner */}
+      <AnimatePresence>
+        {isFlashing && (
+          <motion.div 
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="w-full text-white p-4 text-center font-black uppercase italic tracking-widest animate-ifood-flash rounded-2xl shadow-xl shadow-rose-200 flex items-center justify-center gap-4 border-4 border-white"
+          >
+            <AlertCircle className="size-8" />
+            <span className="text-xl">VOCÊ TEM NOVO PEDIDO!</span>
+            <AlertCircle className="size-8" />
+            <Button 
+               variant="secondary" 
+               className="ml-4 rounded-full bg-white text-rose-600 hover:bg-slate-100 font-black h-8 px-6"
+               onClick={() => {
+                 stopAlert()
+                 setIsFlashing(false)
+               }}
+            >
+              ESTOU VENDO
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Stats Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
         {[
-          { label: "Pendentes", value: orders.filter((o: Order) => o.status === 'pending').length, color: "text-amber-500", bg: "bg-amber-50" },
-          { label: "Em Preparo", value: orders.filter((o: Order) => o.status === 'preparing').length, color: "text-blue-500", bg: "bg-blue-50" },
-          { label: "Saiu p/ Entrega", value: orders.filter((o: Order) => o.status === 'delivering').length, color: "text-primary", bg: "bg-pink-50" },
+          { label: "Pendentes", value: orders.filter((o: Order) => o.status === 'novo').length, color: "text-amber-500", bg: "bg-amber-50" },
+          { label: "Em Preparo", value: orders.filter((o: Order) => o.status === 'em_preparo').length, color: "text-blue-500", bg: "bg-blue-50" },
+          { label: "Saiu p/ Entrega", value: orders.filter((o: Order) => o.status === 'saiu_entrega').length, color: "text-primary", bg: "bg-pink-50" },
           { label: "Total Hoje", value: `R$ ${orders.reduce((acc: number, o: Order) => acc + o.total, 0).toFixed(2)}`, color: "text-emerald-500", bg: "bg-emerald-50" },
         ].map((stat, i) => (
           <div key={i} className={cn("p-6 rounded-[32px] border border-slate-200 shadow-sm transition-all hover:scale-105", stat.bg)}>
@@ -333,26 +436,17 @@ export default function OnlineOrdersPage() {
                       <ShoppingCart className="size-4" /> Itens do Pedido
                     </h3>
                     <div className="space-y-3">
-                      {selectedOrder.menu_order_items?.map((item: OrderItem, idx: number) => (
+                      {selectedOrder.order_items?.map((item: OrderItem, idx: number) => (
                         <div key={idx} className="p-4 bg-white rounded-2xl border border-slate-200 shadow-sm">
                           <div className="flex justify-between mb-2">
                             <span className="font-black text-slate-900 uppercase italic text-sm">{item.quantity}x {item.product_name}</span>
                             <span className="font-black text-primary italic">R$ {(item.price * item.quantity).toFixed(2)}</span>
                           </div>
-                          {item.options && (
-                            <div className="flex flex-wrap gap-1">
-                              {/* Option rendering here if structured */}
-                            </div>
-                          )}
                         </div>
                       ))}
                     </div>
                     {/* Totals */}
                     <div className="p-6 bg-white rounded-3xl border border-slate-200 shadow-sm space-y-3">
-                      <div className="flex justify-between text-xs font-bold text-slate-500 uppercase">
-                        <span>Subtotal</span>
-                        <span>R$ {selectedOrder.subtotal.toFixed(2)}</span>
-                      </div>
                       <div className="flex justify-between text-xs font-bold text-slate-500 uppercase">
                         <span>Taxa de Entrega</span>
                         <span>R$ {selectedOrder.delivery_fee.toFixed(2)}</span>
@@ -419,33 +513,33 @@ export default function OnlineOrdersPage() {
               {/* Modal Footer: Action Buttons */}
               <div className="p-8 bg-white border-t border-slate-200">
                 <div className="flex flex-wrap gap-3">
-                  {selectedOrder.status === 'pending' && (
+                  {selectedOrder.status === 'novo' && (
                     <Button 
-                      onClick={() => updateOrderStatus(selectedOrder.id, 'preparing')}
+                      onClick={() => updateOrderStatus(selectedOrder.id, 'em_preparo')}
                       className="flex-1 h-14 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black uppercase italic tracking-widest text-xs"
                     >
                       Aceitar & Preparar
                     </Button>
                   )}
-                  {selectedOrder.status === 'preparing' && (
+                  {selectedOrder.status === 'em_preparo' && (
                     <Button 
-                      onClick={() => updateOrderStatus(selectedOrder.id, 'ready')}
-                      className="flex-1 h-14 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black uppercase italic tracking-widest text-xs"
+                      onClick={() => updateOrderStatus(selectedOrder.id, 'pronto')}
+                      className="flex-1 h-14 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white font-black uppercase italic tracking-widest text-xs"
                     >
-                      Marcar como Pronto
+                      Pedido Pronto
                     </Button>
                   )}
-                  {selectedOrder.status === 'ready' && (
+                  {selectedOrder.status === 'pronto' && (
                     <Button 
-                      onClick={() => updateOrderStatus(selectedOrder.id, 'delivering')}
+                      onClick={() => updateOrderStatus(selectedOrder.id, 'saiu_entrega')}
                       className="flex-1 h-14 rounded-2xl bg-pink-600 hover:bg-pink-700 text-white font-black uppercase italic tracking-widest text-xs"
                     >
                       Sair para Entrega
                     </Button>
                   )}
-                   {selectedOrder.status === 'delivering' && (
+                   {selectedOrder.status === 'saiu_entrega' && (
                     <Button 
-                    onClick={() => updateOrderStatus(selectedOrder.id, 'delivered')}
+                    onClick={() => updateOrderStatus(selectedOrder.id, 'entregue')}
                     className="flex-1 h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase italic tracking-widest text-xs"
                     >
                       Finalizar Entrega
@@ -453,7 +547,7 @@ export default function OnlineOrdersPage() {
                   )}
                   <Button 
                     variant="outline" 
-                    onClick={() => updateOrderStatus(selectedOrder.id, 'canceled')}
+                    onClick={() => updateOrderStatus(selectedOrder.id, 'cancelado')}
                     className="h-14 px-8 rounded-2xl border-slate-200 text-slate-400 font-bold hover:bg-rose-50 hover:text-rose-500"
                   >
                     Cancelar

@@ -55,7 +55,7 @@ export default function LogsManagement() {
             const formatted: SystemLog[] = data.map((l: any) => ({
                 id: l.id,
                 user_name: l.profiles?.owner_name || 'Sistema',
-                company_name: l.companies?.name || 'Vários',
+                company_name: l.empresas?.name || 'Vários',
                 action: l.action,
                 entity: l.entity,
                 description: l.description,

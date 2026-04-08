@@ -29,7 +29,7 @@ import { useUserSettings } from "@/hooks/useUserSettings"
 import { cn } from "@/lib/utils"
 
 export function UserAvatarMenu({ variant = "default" }: { variant?: "default" | "transparent" }) {
-    const { user, logout, isAdmin } = useAuth()
+    const { user, logout, isAdmin, role: userRole } = useAuth()
     const router = useRouter()
     const { theme, setTheme } = useTheme()
     const { updateSettings } = useUserSettings()
@@ -47,7 +47,7 @@ export function UserAvatarMenu({ variant = "default" }: { variant?: "default" | 
     const fullName = user.user_metadata?.full_name || user.user_metadata?.name || "Usuário"
     const email = user.email || ""
     const avatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture
-    const role = isAdmin ? "Administrador" : "Confeiteira"
+    const roleDisplay = isAdmin ? "Dono Supremo" : (userRole === 'admin' ? "Administrador" : "Confeiteira")
 
     const getInitials = (name: string | null) => {
         if (!name) return "U"
@@ -110,7 +110,7 @@ export function UserAvatarMenu({ variant = "default" }: { variant?: "default" | 
                             "text-[10px] font-black uppercase tracking-widest mt-0.5",
                             variant === "default" ? "text-slate-400" : "text-pink-700"
                         )}>
-                            {role}
+                            {roleDisplay}
                         </span>
                     </div>
                 </div>

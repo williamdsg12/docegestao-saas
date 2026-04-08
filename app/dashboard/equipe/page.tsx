@@ -53,7 +53,26 @@ interface TeamMember {
   created_at: string
 }
 
+const RoleBadge = ({ role }: { role: string }) => {
+  switch(role) {
+    case 'admin': return <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100 border-none flex gap-1 items-center"><Shield className="size-3" /> Admin</Badge>
+    case 'cozinha': return <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none flex gap-1 items-center"><ChefHat className="size-3" /> Cozinha</Badge>
+    case 'entregador': return <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-none flex gap-1 items-center"><Truck className="size-3" /> Entregador</Badge>
+    default: return <Badge variant="outline">{role}</Badge>
+  }
+}
+
+import { FeatureGuard } from "@/components/dashboard/FeatureGuard"
+
 export default function TeamPage() {
+  return (
+    <FeatureGuard feature="equipe" planRequired="pro">
+      <TeamContent />
+    </FeatureGuard>
+  )
+}
+
+function TeamContent() {
   const { business } = useBusiness()
   const [members, setMembers] = useState<TeamMember[]>([])
   const [loading, setLoading] = useState(true)
@@ -74,12 +93,14 @@ export default function TeamPage() {
   }, [business?.id])
 
   async function fetchMembers() {
+    if (!business?.id) return
+
     try {
       setLoading(true)
       const { data, error } = await supabase
         .from('company_team')
         .select('*')
-        .eq('company_id', business!.id)
+        .eq('company_id', business.id)
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -93,6 +114,11 @@ export default function TeamPage() {
   }
 
   async function handleAddMember() {
+    if (!business?.id) {
+      toast.error("Erro: Empresa não identificada. Recarregue a página.")
+      return
+    }
+
     try {
       if (!newMember.name || !newMember.email) {
         toast.error("Nome e E-mail são obrigatórios")
@@ -102,7 +128,7 @@ export default function TeamPage() {
       const { data, error } = await supabase
         .from('company_team')
         .insert({
-          company_id: business!.id,
+          company_id: business.id,
           name: newMember.name,
           email: newMember.email,
           phone: newMember.phone,
@@ -148,26 +174,15 @@ export default function TeamPage() {
     m.email.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  const getRoleBadge = (role: string) => {
-    switch(role) {
-      case 'admin': return <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100 border-none flex gap-1 items-center"><Shield className="size-3" /> Admin</Badge>
-      case 'cozinha': return <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 border-none flex gap-1 items-center"><ChefHat className="size-3" /> Cozinha</Badge>
-      case 'entregador': return <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-none flex gap-1 items-center"><Truck className="size-3" /> Entregador</Badge>
-      default: return <Badge variant="outline">{role}</Badge>
-    }
-  }
 
   return (
-    <div className="p-6 md:p-10 space-y-8 bg-slate-50 min-h-screen">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="text-center md:text-left">
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center justify-center md:justify-start gap-3">
-            <div className="p-2 bg-pink-500 rounded-xl text-white shrink-0">
-              <Users className="size-6" />
-            </div>
-            Gestão de Equipe
+    <div className="dashboard-grid pb-24">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-slate-900 mb-2 uppercase italic leading-none">
+            Gestão de <span className="text-pink-500">Equipe</span>
           </h1>
-          <p className="text-slate-500 font-medium text-sm md:text-base">Gerencie os acessos do seu estabelecimento</p>
+          <p className="text-slate-500 font-medium text-sm md:text-base">Gerencie os acessos e funções do seu estabelecimento.</p>
         </div>
 
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -312,7 +327,7 @@ export default function TeamPage() {
                     </TableCell>
                     <TableCell className="text-center py-6">
                       <div className="inline-flex justify-center w-full">
-                        {getRoleBadge(member.role)}
+                        <RoleBadge role={member.role} />
                       </div>
                     </TableCell>
                     <TableCell className="text-center py-6">
@@ -344,26 +359,26 @@ export default function TeamPage() {
       </div>
 
       {/* Dicas de Gestão */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-         <div className="p-6 bg-white rounded-3xl border border-slate-100 shadow-sm space-y-3">
-            <div className="p-2 bg-purple-50 rounded-xl text-purple-600 w-fit">
+      <div className="kpi-grid">
+         <div className="kpi-card group border-none !h-auto py-8">
+            <div className="p-2 bg-purple-50 rounded-xl text-purple-600 w-fit mb-4">
               <Shield className="size-5" />
             </div>
-            <h4 className="font-black text-slate-900 uppercase italic tracking-tighter">Administradores</h4>
+            <h4 className="font-black text-slate-900 uppercase italic tracking-tighter text-lg">Administradores</h4>
             <p className="text-xs text-slate-500 font-medium leading-relaxed">Têm acesso total às configurações, financeiro e relatórios do sistema.</p>
          </div>
-         <div className="p-6 bg-white rounded-3xl border border-slate-100 shadow-sm space-y-3">
-            <div className="p-2 bg-amber-50 rounded-xl text-amber-600 w-fit">
+         <div className="kpi-card group border-none !h-auto py-8">
+            <div className="p-2 bg-amber-50 rounded-xl text-amber-600 w-fit mb-4">
               <ChefHat className="size-5" />
             </div>
-            <h4 className="font-black text-slate-900 uppercase italic tracking-tighter">Cozinha</h4>
+            <h4 className="font-black text-slate-900 uppercase italic tracking-tighter text-lg">Cozinha</h4>
             <p className="text-xs text-slate-500 font-medium leading-relaxed">Focam na produção dos pedidos. Têm acesso apenas ao Painel da Cozinha.</p>
          </div>
-         <div className="p-6 bg-white rounded-3xl border border-slate-100 shadow-sm space-y-3">
-            <div className="p-2 bg-blue-50 rounded-xl text-blue-600 w-fit">
+         <div className="kpi-card group border-none !h-auto py-8">
+            <div className="p-2 bg-blue-50 rounded-xl text-blue-600 w-fit mb-4">
               <Truck className="size-5" />
             </div>
-            <h4 className="font-black text-slate-900 uppercase italic tracking-tighter">Entregadores</h4>
+            <h4 className="font-black text-slate-900 uppercase italic tracking-tighter text-lg">Entregadores</h4>
             <p className="text-xs text-slate-500 font-medium leading-relaxed">Gerenciam o status de entrega e localização dos pedidos prontos.</p>
          </div>
       </div>

@@ -149,17 +149,20 @@ export async function POST(req: Request) {
                 .eq('id', plan.id)
         }
 
-        const session = await stripe.checkout.sessions.create({
-            billing_address_collection: 'required',
-            line_items: [
-                {
-                    price: priceId,
-                    quantity: 1,
-                },
-            ],
-            mode: 'subscription',
-            success_url: `${req.headers.get('origin')}/dashboard/billing?success=true`,
-            cancel_url: `${req.headers.get('origin')}/dashboard/billing?canceled=true`,
+            const { ensureHttps } = await import('@/lib/stripe-helpers')
+            const origin = req.headers.get('origin')
+            
+            const session = await stripe.checkout.sessions.create({
+                billing_address_collection: 'required',
+                line_items: [
+                    {
+                        price: priceId,
+                        quantity: 1,
+                    },
+                ],
+                mode: 'subscription',
+                success_url: ensureHttps(`${origin}/dashboard/billing?success=true`),
+                cancel_url: ensureHttps(`${origin}/dashboard/billing?canceled=true`),
             metadata: {
                 userId: user.id,
                 planId: plan.id,

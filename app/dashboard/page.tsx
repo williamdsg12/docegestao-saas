@@ -1,21 +1,32 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
-
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { supabase } from "@/lib/supabase"
+import { useAuth } from "@/hooks/useAuth"
+import { useBusiness } from "@/hooks/useBusiness"
+import { format } from "date-fns"
+import { ptBR } from "date-fns/locale"
 import {
   DollarSign,
   TrendingUp,
   ShoppingBag,
   Users,
-  ClipboardList,
   ArrowRight,
-  Calendar,
-  Wallet,
   Package,
+  Calculator,
+  Calendar,
+  Sparkles,
+  TrendingDown,
+  Clock,
+  ChevronRight,
+  Target
 } from "lucide-react"
-import { DashboardSkeleton } from "@/components/dashboard/DashboardSkeleton"
+import { motion, AnimatePresence } from "framer-motion"
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Card } from "@/components/ui/card"
 import {
   ResponsiveContainer,
   AreaChart,
@@ -23,423 +34,200 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
+  Tooltip
 } from "recharts"
-import { useTheme } from "next-themes"
-import { motion } from "framer-motion"
-import { cn } from "@/lib/utils"
-import { useEffect, useState } from "react"
-import { supabase } from "@/lib/supabase"
-import { useAuth } from "@/hooks/useAuth"
-import { useBusiness } from "@/hooks/useBusiness"
-import { format, subDays } from "date-fns"
-import { ptBR } from "date-fns/locale"
+import { PageHeader } from "@/components/dashboard/PageHeader"
 
 export default function DashboardPage() {
   const { user } = useAuth()
-  const { profile, loadingBusiness } = useBusiness()
+  const { profile } = useBusiness()
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState({
-    receitas: 0,
-    clientes: 0,
-    orcamentos: 0,
-    pedidos: 0
+    lucroHoje: 0,
+    pedidosAtivos: 0,
+    margemBaixa: 0,
+    estoqueCritico: 0
   })
   const [recentOrders, setRecentOrders] = useState<any[]>([])
-  const [chartData, setChartData] = useState<any[]>([])
-  const { resolvedTheme } = useTheme()
-  const isDark = resolvedTheme === 'dark'
-
-  const topProducts = [
-    { name: "Bolo de Cenoura", sales: 120 },
-    { name: "Brigadeiro Gourmet", sales: 450 },
-    { name: "Brownie de Nutella", sales: 300 },
-    { name: "Torta de Limão", sales: 180 },
-    { name: "Cupcake Rosa", sales: 250 },
-  ]
-
-  const orderStatus = [
-    { name: "Pendente", value: 40, color: "#f59e0b" },
-    { name: "Em Produção", value: 30, color: "#3b82f6" },
-    { name: "Concluído", value: 20, color: "#10b981" },
-    { name: "Cancelado", value: 10, color: "#ef4444" },
-  ]
+  const [alerts, setAlerts] = useState<any[]>([])
 
   useEffect(() => {
-    async function fetchDashboardData() {
-      if (!profile?.company_id) {
-        setLoading(false)
-        return
-      }
-
-      try {
-        setLoading(true)
-
-        // 1. Refresh & Fetch KPIs from cached table
-        await supabase.rpc('refresh_dashboard_stats', { p_company_id: profile.company_id })
-
-        const [statsRes, ordersRes, transactionsRes] = await Promise.all([
-          supabase.from('dashboard_stats')
-            .select('metric_name, metric_value')
-            .eq('company_id', profile.company_id)
-            .eq('reference_date', format(new Date(), 'yyyy-MM-dd')),
-          supabase.from('pedidos')
-            .select('valor_total, created_at')
-            .eq('company_id', profile.company_id),
-          supabase.from('transactions')
-            .select('amount, created_at, type')
-            .eq('company_id', profile.company_id)
-        ])
-
-        const statsData = statsRes.data || []
-        const getMetric = (name: string) => statsData.find(s => s.metric_name === name)?.metric_value || 0
-
-        setStats({
-          receitas: getMetric('revenue_month'),
-          clientes: getMetric('total_clients'),
-          orcamentos: 0,
-          pedidos: getMetric('orders_month')
-        })
-
-        // 2. Fetch Recent Orders
-        const { data: upcomingOrders } = await supabase
-          .from('pedidos')
-          .select('*, clientes(nome)')
-          .eq('company_id', profile.company_id)
-          .gte('delivery_date', new Date().toISOString())
-          .order('delivery_date', { ascending: true })
-          .limit(5)
-
-        setRecentOrders(upcomingOrders || [])
-
-        // 3. Prepare Chart Data (Last 7 Days - will simulate 30 later if needed)
-        const last7Days = Array.from({ length: 7 }, (_, i) => {
-          const date = subDays(new Date(), 6 - i)
-          return {
-            name: format(date, 'eee', { locale: ptBR }),
-            dateStr: format(date, 'yyyy-MM-dd'),
-            vendas: 0,
-            gastos: 0
-          }
-        })
-
-        ordersRes.data?.forEach(order => {
-          const orderDate = format(new Date(order.created_at), 'yyyy-MM-dd')
-          const day = last7Days.find(d => d.dateStr === orderDate)
-          if (day) day.vendas += (order.valor_total || 0)
-        })
-
-        transactionsRes.data?.forEach(t => {
-          const tDate = format(new Date(t.created_at), 'yyyy-MM-dd')
-          const day = last7Days.find(d => d.dateStr === tDate)
-          if (day && t.type === 'expense') day.gastos += (t.amount || 0)
-        })
-
-        setChartData(last7Days)
-
-      } catch (error) {
-        console.error("Error fetching dashboard data:", error)
-      } finally {
-        setLoading(false)
-      }
+    if (profile?.tenant_id || profile?.company_id) {
+      fetchDashboardData()
     }
-
-    if (profile) fetchDashboardData()
   }, [profile])
 
-  const kpis = [
-    {
-      title: "Faturamento",
-      value: `R$ ${stats.receitas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
-      link: "/dashboard/financeiro",
-      icon: DollarSign,
-      trend: "+12.5%",
-      trendColor: "text-emerald-500",
-      description: "Este mês",
-      bg: "bg-emerald-500",
-      lightBg: "bg-emerald-50"
-    },
-    {
-      title: "Pedidos",
-      value: stats.pedidos.toString(),
-      link: "/dashboard/pedidos",
-      icon: ShoppingBag,
-      trend: "+8%",
-      trendColor: "text-rose-500",
-      description: "Últimos 7 dias",
-      bg: "bg-rose-500",
-      lightBg: "bg-rose-50"
-    },
-    {
-      title: "Clientes",
-      value: stats.clientes.toString(),
-      link: "/dashboard/clientes",
-      icon: Users,
-      trend: "+15%",
-      trendColor: "text-indigo-500",
-      description: "Base ativa",
-      bg: "bg-indigo-500",
-      lightBg: "bg-indigo-50"
-    },
-    {
-      title: "Orçamentos",
-      value: stats.orcamentos.toString(),
-      link: "/dashboard/orcamentos",
-      icon: ClipboardList,
-      trend: "-2%",
-      trendColor: "text-amber-500",
-      description: "Conversão: 65%",
-      bg: "bg-amber-500",
-    },
-  ]
+  async function fetchDashboardData() {
+    const tenantId = profile?.tenant_id || profile?.company_id
+    if (!tenantId) return
+    try {
+      setLoading(true)
+      const [ordersRes, ingredientsRes, transactionsRes] = await Promise.all([
+        supabase.from('pedidos').select('*, clientes(nome)').eq('company_id', tenantId).order('created_at', { ascending: false }).limit(5),
+        supabase.from('ingredients').select('*').eq('tenant_id', tenantId),
+        supabase.from('transactions').select('*').eq('company_id', tenantId).gte('transaction_date', new Date().toISOString().split('T')[0])
+      ])
 
-  if (loadingBusiness || loading) {
-    return <DashboardSkeleton />
+      const todayTransactions = transactionsRes.data || []
+      const revenue = todayTransactions.filter(t => t.type === 'entrada').reduce((acc, t) => acc + t.amount, 0)
+      const expenses = todayTransactions.filter(t => t.type === 'saida').reduce((acc, t) => acc + t.amount, 0)
+
+      setStats({
+        lucroHoje: revenue - expenses,
+        pedidosAtivos: ordersRes.data?.filter(o => o.status !== 'entregue' && o.status !== 'cancelado').length || 0,
+        margemBaixa: 2, // Mock or calculated from recipes if fetched
+        estoqueCritico: ingredientsRes.data?.filter(i => i.current_quantity < i.min_stock).length || 0
+      })
+
+      setRecentOrders(ordersRes.data || [])
+
+      // Generate localized alerts
+      const newAlerts = []
+      if ((ingredientsRes.data?.filter(i => i.current_quantity < i.min_stock).length || 0) > 0) {
+        newAlerts.push({
+          title: "Estoque Crítico",
+          desc: "Alguns insumos precisam de reposição imediata",
+          icon: Package,
+          color: "text-rose-500",
+          bg: "bg-rose-50"
+        })
+      }
+      setAlerts(newAlerts)
+
+    } finally { setLoading(false) }
   }
 
   return (
-    <div className="space-y-6 md:space-y-8 p-4 md:p-0">
-      {/* KPI Section */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-        {kpis.map((kpi, i) => (
-          <motion.div
-            key={kpi.title}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
-            whileHover={{ y: -5 }}
-            className="group"
-          >
-            <Card className="border-none shadow-[var(--shadow-card)] rounded-[24px] md:rounded-[32px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border)] transition-all duration-300">
-              <CardContent className="p-5 md:p-8 relative">
-                <div className="flex justify-between items-start mb-4 md:mb-6">
-                  <div className={cn("size-10 md:size-14 rounded-xl md:rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform group-hover:scale-110", kpi.bg)}>
-                    <kpi.icon className="size-5 md:size-7" />
-                  </div>
-                  <div className={cn("px-2.5 py-0.5 md:px-3 md:py-1 rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-widest bg-white/10 backdrop-blur-md shadow-sm", kpi.trendColor)}>
-                    {kpi.trend}
-                  </div>
-                </div>
+    <div className="space-y-10 pb-20">
+      <PageHeader 
+        title="Painel de" 
+        highlight="Controle" 
+        subtitle={`Bem-vinda de volta, ${user?.user_metadata?.first_name || 'Chef'}! Veja o que está acontecendo hoje.`}
+        actions={(
+          <div className="flex gap-3">
+             <Button className="h-11 px-6 rounded-xl bg-slate-900 text-white font-black uppercase text-[10px] shadow-lg">
+                <Calendar size={16} className="mr-2" /> Agenda de Hoje
+             </Button>
+          </div>
+        )}
+      />
 
-                <div className="space-y-1">
-                  <p className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest italic">{kpi.title}</p>
-                  <h3 className="text-2xl md:text-3xl font-black text-[var(--text-primary)] tracking-tighter italic uppercase">{kpi.value}</h3>
-                  <div className="flex items-center justify-between pt-3 md:pt-4">
-                    <span className="text-[9px] md:text-[10px] font-bold text-[var(--text-secondary)]">{kpi.description}</span>
-                    <Link href={kpi.link} className="size-7 md:size-8 rounded-full bg-[var(--text-primary)] text-[var(--bg-card)] flex items-center justify-center hover:bg-[var(--primary)] transition-colors">
-                      <ArrowRight className="size-3.5 md:size-4" />
-                    </Link>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+      {/* KPI Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {[
+          { label: "Resultado Hoje", value: stats.lucroHoje, icon: DollarSign, color: stats.lucroHoje >= 0 ? "text-emerald-500" : "text-rose-500", trend: "+15%" },
+          { label: "Pedidos Ativos", value: stats.pedidosAtivos, icon: ShoppingBag, color: "text-blue-500", trend: "Em fila" },
+          { label: "Alertas de Margem", value: stats.margemBaixa, icon: TrendingDown, color: "text-amber-500", trend: "Atenção" },
+          { label: "Estoque Crítico", value: stats.estoqueCritico, icon: Package, color: "text-rose-500", trend: "Repor" },
+        ].map((kpi, idx) => (
+          <motion.div key={idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.1 }} className="bg-white rounded-[32px] border border-slate-100 p-6 shadow-sm flex flex-col justify-between">
+            <div className="flex justify-between items-start mb-4">
+              <div className={cn("size-10 rounded-xl flex items-center justify-center bg-slate-50", kpi.color)}>
+                <kpi.icon size={20} />
+              </div>
+              <Badge className="bg-slate-50 text-slate-400 border-none font-black text-[8px] uppercase px-2 py-0.5">{kpi.trend}</Badge>
+            </div>
+            <div>
+              <p className="text-[9px] font-black uppercase text-slate-400 tracking-widest block mb-1 italic">{kpi.label}</p>
+              <h3 className="text-2xl font-black italic tracking-tight text-slate-900">
+                {typeof kpi.value === 'number' && kpi.label.includes('Hoje') ? `R$ ${kpi.value.toFixed(2)}` : kpi.value}
+              </h3>
+            </div>
           </motion.div>
         ))}
       </div>
 
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Sales Chart */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.3 }}
-          className="lg:col-span-2 w-full"
-        >
-          <Card className="border-none shadow-[var(--shadow-card)] rounded-[32px] md:rounded-[40px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border)] w-full">
-            <CardHeader className="p-5 md:p-8 pb-1 md:pb-2">
-              <div className="flex items-center gap-3 md:gap-4">
-                <div className="size-10 md:size-12 rounded-xl md:rounded-2xl bg-[var(--primary)] flex items-center justify-center text-white shadow-lg shadow-primary/20">
-                  <TrendingUp className="size-5 md:size-6" />
-                </div>
-                <div>
-                  <h3 className="text-lg md:text-xl font-black text-[var(--text-primary)] tracking-tighter uppercase italic leading-tight">Vendas 30 Dias</h3>
-                  <p className="text-[9px] md:text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest italic">Análise de faturamento</p>
-                </div>
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        {/* Main Chart */}
+        <Card className="xl:col-span-2 rounded-[40px] border-slate-100 shadow-sm p-8 bg-white space-y-8">
+           <div className="flex items-center justify-between">
+              <div>
+                 <h3 className="text-xl font-black text-slate-900 uppercase italic">Fluxo de <span className="text-rose-500">Produção</span></h3>
+                 <p className="text-[10px] font-bold text-slate-400 uppercase italic tracking-widest mt-1">Estimativa de demanda semanal</p>
               </div>
-            </CardHeader>
-            <CardContent className="p-4 sm:p-10 pt-4">
-              <div className="h-[250px] md:h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={chartData}>
+              <div className="flex gap-2">
+                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 text-[9px] font-black uppercase text-slate-500"><div className="size-1.5 rounded-full bg-rose-500" /> Pedidos</div>
+                 <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 text-[9px] font-black uppercase text-slate-500"><div className="size-1.5 rounded-full bg-blue-400" /> Orçamentos</div>
+              </div>
+           </div>
+           <div className="h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={[
+                    { name: "Seg", p: 40, o: 24 },
+                    { name: "Ter", p: 30, o: 13 },
+                    { name: "Qua", p: 70, o: 48 },
+                    { name: "Qui", p: 45, o: 33 },
+                    { name: "Sex", p: 90, o: 60 },
+                    { name: "Sáb", p: 120, o: 80 },
+                    { name: "Dom", p: 85, o: 50 },
+                  ]}>
                     <defs>
-                      <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
-                      </linearGradient>
+                      <linearGradient id="colorP" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#F472B6" stopOpacity={0.1}/><stop offset="95%" stopColor="#F472B6" stopOpacity={0}/></linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? "#334155" : "#e2e8f0"} />
-                    <XAxis
-                      dataKey="name"
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 9, fontWeight: 800 }}
-                      dy={10}
-                    />
-                    <YAxis
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fill: isDark ? '#94a3b8' : '#64748b', fontSize: 9, fontWeight: 800 }}
-                    />
-                    <Tooltip
-                      contentStyle={{ 
-                        borderRadius: '20px', 
-                        border: '1px solid var(--border)', 
-                        boxShadow: 'var(--shadow-card)',
-                        padding: '12px',
-                        background: 'var(--bg-card)',
-                        color: 'var(--text-primary)',
-                        fontSize: '10px'
-                      }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="vendas"
-                      stroke="var(--primary)"
-                      strokeWidth={3}
-                      fillOpacity={1}
-                      fill="url(#colorSales)"
-                    />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: "#94a3b8", fontSize: 10, fontWeight: 700 }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fill: "#94a3b8", fontSize: 10, fontWeight: 700 }} />
+                    <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 40px rgba(0,0,0,0.1)' }} />
+                    <Area type="monotone" dataKey="p" stroke="#F472B6" strokeWidth={4} fillOpacity={1} fill="url(#colorP)" />
+                    <Area type="monotone" dataKey="o" stroke="#60A5FA" strokeWidth={2} fill="transparent" strokeDasharray="5 5" />
                   </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Order Status */}
-        <motion.div
-           initial={{ opacity: 0, scale: 0.95 }}
-           animate={{ opacity: 1, scale: 1 }}
-           transition={{ delay: 0.4 }}
-        >
-          <Card className="border-none shadow-[var(--shadow-card)] rounded-[32px] md:rounded-[40px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border)] h-full">
-            <CardHeader className="p-6 md:p-8 pb-1 text-center">
-              <h3 className="text-lg md:text-xl font-black text-[var(--text-primary)] tracking-tighter uppercase italic">Status de Pedidos</h3>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center justify-center p-6 min-h-[250px] md:h-[350px]">
-              <div className="size-full max-h-[200px] md:max-h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={orderStatus}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={50}
-                      outerRadius={70}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {orderStatus.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      contentStyle={{ borderRadius: '16px', border: 'none', background: 'var(--bg-card)', color: 'var(--text-primary)', fontSize: '10px' }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="grid grid-cols-2 gap-3 md:gap-4 mt-2 md:mt-4 w-full px-2 md:px-4">
-                {orderStatus.map((s) => (
-                  <div key={s.name} className="flex items-center gap-1.5 md:gap-2">
-                    <div className="size-2 md:size-3 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
-                    <span className="text-[9px] md:text-[10px] font-bold text-[var(--text-secondary)] uppercase truncate">{s.name}</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Top Product Bar Chart */}
-        <motion.div
-           initial={{ opacity: 0, y: 20 }}
-           animate={{ opacity: 1, y: 0 }}
-           transition={{ delay: 0.5 }}
-           className="lg:col-span-3"
-        >
-          <Card className="border-none shadow-[var(--shadow-card)] rounded-[32px] md:rounded-[40px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border)]">
-            <CardHeader className="p-6 md:p-8 pb-2 md:pb-4">
-              <h3 className="text-lg md:text-xl font-black text-[var(--text-primary)] tracking-tighter uppercase italic">Produtos Mais Vendidos</h3>
-            </CardHeader>
-            <CardContent className="p-4 md:p-8 pt-0">
-              <div className="h-[200px] md:h-[250px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={topProducts}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={isDark ? "#334155" : "#e2e8f0"} />
-                    <XAxis dataKey="name" hide />
-                    <YAxis hide />
-                    <Tooltip contentStyle={{ borderRadius: '20px', border: 'none', background: 'var(--bg-card)', color: 'var(--text-primary)', fontSize: '10px' }} />
-                    <Bar dataKey="sales" fill="var(--primary)" radius={[8, 8, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </div>
-
-      {/* Tables Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pb-10">
-        {/* Recent Orders */}
-        <Card className="border-none shadow-[var(--shadow-card)] rounded-[32px] md:rounded-[40px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border)]">
-          <CardHeader className="p-5 md:p-8 flex-col sm:flex-row items-start sm:items-center justify-between border-b border-[var(--border)] gap-4">
-            <div className="flex items-center gap-3 md:gap-4">
-              <div className="size-10 md:size-12 rounded-xl md:rounded-2xl bg-rose-500 flex items-center justify-center text-white shadow-lg shrink-0">
-                <Calendar className="size-5 md:size-6" />
-              </div>
-              <h3 className="text-lg md:text-xl font-black text-[var(--text-primary)] tracking-tighter uppercase italic">Próximos Pedidos</h3>
-            </div>
-            <Link href="/dashboard/pedidos" className="text-[10px] font-black uppercase text-[var(--primary)] tracking-widest hover:underline italic">Ver todos</Link>
-          </CardHeader>
-          <CardContent className="p-4 md:p-6">
-            {recentOrders.length > 0 ? (
-              <div className="space-y-3 md:space-y-4">
-                {recentOrders.map((order, i) => (
-                  <div key={order.id} className="p-3 md:p-4 rounded-2xl md:rounded-3xl bg-[var(--bg-app)] border border-[var(--border)] flex items-center justify-between group">
-                    <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
-                       <div className="size-10 md:size-12 rounded-xl md:rounded-2xl bg-[var(--bg-card)] flex items-center justify-center text-rose-500 shadow-sm border border-[var(--border)] shrink-0">
-                          <Package className="size-5 md:size-6" />
-                       </div>
-                       <div className="overflow-hidden">
-                         <p className="text-xs md:text-sm font-black text-[var(--text-primary)] tracking-tighter italic uppercase truncate">{order.product_name}</p>
-                         <p className="text-[9px] md:text-[10px] font-bold text-[var(--text-secondary)] uppercase truncate">{order.clientes?.name || 'Cliente'}</p>
-                       </div>
-                    </div>
-                    <div className="text-right shrink-0">
-                       <p className="text-xs md:text-sm font-black text-[var(--text-primary)] italic">{format(new Date(order.delivery_date), 'dd MMM', { locale: ptBR })}</p>
-                       <Badge className="bg-[var(--primary)]/10 text-[var(--primary)] border-none text-[8px] md:text-[9px] font-black uppercase">{order.status}</Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="h-[150px] md:h-[200px] flex items-center justify-center text-[var(--text-secondary)] uppercase font-black italic text-[10px] md:text-xs">Sem pedidos próximos</div>
-            )}
-          </CardContent>
+              </ResponsiveContainer>
+           </div>
         </Card>
 
-        {/* Finances Placeholder */}
-        <Card className="border-none shadow-[var(--shadow-card)] rounded-[32px] md:rounded-[40px] overflow-hidden bg-[var(--bg-card)] border border-[var(--border)]">
-          <CardHeader className="p-5 md:p-8 flex-col sm:flex-row items-start sm:items-center justify-between border-b border-[var(--border)] gap-4">
-            <div className="flex items-center gap-3 md:gap-4">
-              <div className="size-10 md:size-12 rounded-xl md:rounded-2xl bg-indigo-500 flex items-center justify-center text-white shadow-lg shrink-0">
-                <Wallet className="size-5 md:size-6" />
+        {/* Alerts & Orders Sidebar */}
+        <div className="space-y-8">
+           {/* Alerts Column */}
+           <div className="space-y-4">
+              <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest italic ml-4">Inteligência de Negócio</h4>
+              <AnimatePresence>
+                {alerts.map((alert, i) => (
+                  <motion.div key={i} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className={cn("p-5 rounded-3xl border border-transparent shadow-sm flex gap-4 items-center group cursor-pointer hover:shadow-xl transition-all", alert.bg)}>
+                    <div className={cn("size-10 rounded-2xl flex items-center justify-center bg-white shadow-sm", alert.color)}>
+                      <alert.icon size={20} />
+                    </div>
+                    <div>
+                      <h5 className="text-[11px] font-black uppercase text-slate-900 italic leading-none mb-1">{alert.title}</h5>
+                      <p className="text-[10px] font-bold text-slate-500 leading-tight">{alert.desc}</p>
+                    </div>
+                    <ChevronRight size={16} className="ml-auto text-slate-300 group-hover:text-slate-900 transition-colors" />
+                  </motion.div>
+                ))}
+                {alerts.length === 0 && (
+                  <div className="p-8 rounded-[32px] bg-emerald-50/30 border border-emerald-100 border-dashed flex flex-col items-center text-center">
+                    <Sparkles className="text-emerald-500 mb-3" size={24} />
+                    <p className="text-[10px] font-black uppercase text-emerald-600 italic tracking-widest">Tudo Sob Controle</p>
+                    <p className="text-[9px] font-medium text-emerald-500/80 mt-1 uppercase">Nenhum alerta crítico no momento</p>
+                  </div>
+                )}
+              </AnimatePresence>
+           </div>
+
+           {/* Recent Orders List */}
+           <Card className="rounded-[32px] border-slate-100 shadow-sm p-6 bg-white space-y-6">
+              <div className="flex items-center justify-between">
+                <h4 className="text-[11px] font-black uppercase text-slate-900 italic tracking-widest">Últimos Pedidos</h4>
+                <Link href="/dashboard/pedidos" className="text-[9px] font-black uppercase text-rose-500 hover:underline">Ver Todos</Link>
               </div>
-              <h3 className="text-lg md:text-xl font-black text-[var(--text-primary)] tracking-tighter uppercase italic">Contas & Receitas</h3>
-            </div>
-            <Link href="/dashboard/financeiro" className="text-[10px] font-black uppercase text-indigo-500 tracking-widest hover:underline italic">Explorar</Link>
-          </CardHeader>
-          <CardContent className="p-6 md:p-10 flex flex-col items-center justify-center text-[var(--text-secondary)] bg-[radial-gradient(circle_at_top_right,rgba(124,58,237,0.05),transparent)] min-h-[120px] md:min-h-[150px]">
-            <p className="text-[10px] md:text-xs font-black uppercase tracking-widest italic">Tudo em dia por aqui!</p>
-          </CardContent>
-        </Card>
+              <div className="space-y-4">
+                {recentOrders.map((order) => (
+                  <div key={order.id} className="flex items-center justify-between group cursor-pointer">
+                    <div className="flex items-center gap-3">
+                       <div className="size-9 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-slate-900 transition-colors">
+                          <ShoppingBag size={16} />
+                       </div>
+                       <div>
+                          <p className="text-[10px] font-black text-slate-900 uppercase italic truncate max-w-[100px]">{order.clientes?.nome || 'Cliente'}</p>
+                          <p className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">{format(new Date(order.created_at), 'dd MMM HH:mm', { locale: ptBR })}</p>
+                       </div>
+                    </div>
+                    <Badge variant="outline" className="text-[8px] font-black uppercase px-2 py-0.5 border-slate-100 text-slate-400 italic">R$ {order.total?.toFixed(2)}</Badge>
+                  </div>
+                ))}
+                {recentOrders.length === 0 && <p className="text-[9px] text-center text-slate-300 uppercase py-4">Nenhum pedido recente</p>}
+              </div>
+           </Card>
+        </div>
       </div>
     </div>
   )

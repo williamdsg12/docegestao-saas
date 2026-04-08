@@ -48,25 +48,29 @@ export default function AdminOrdersManagement() {
         setLoading(true)
         try {
             const response = await fetch('/api/admin/orders')
-            if (!response.ok) throw new Error('API Error')
+            if (!response.ok) {
+                const errorData = await response.json()
+                console.error("Orders API Failure:", errorData)
+                toast.error(`Erro ao carregar pedidos: ${errorData.details || errorData.error || 'Erro desconhecido'}`)
+                throw new Error(errorData.error || 'API Error')
+            }
             const data = await response.json()
 
             const formatted: AdminOrder[] = data.map((o: any) => ({
                 id: o.id,
-                product_name: o.product_name || 'N/A',
-                total_value: o.total_value || 0,
-                deposit_value: o.deposit_value || 0,
+                product_name: o.nome_pedido || o.product_name || 'Pedido sem Nome',
+                total_value: o.valor_total || o.total_value || 0,
+                deposit_value: o.valor_entrada || o.deposit_value || 0,
                 status: o.status || 'orcamento',
-                delivery_date: o.delivery_date,
+                delivery_date: o.data_entrega || o.delivery_date,
                 created_at: o.created_at,
-                company_name: o.companies?.name || 'N/A',
-                client_name: o.clients?.name || 'Venda Direta'
+                company_name: o.empresas?.name || 'N/A',
+                client_name: o.profiles?.owner_name || 'Venda Direta'
             }))
 
             setOrders(formatted)
         } catch (error: any) {
             console.error("error fetching orders:", error)
-            toast.error("Erro ao carregar banco de pedidos")
         } finally {
             setLoading(false)
         }

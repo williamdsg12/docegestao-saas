@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { useAuth } from "@/hooks/useAuth"
+import { supabase } from "@/lib/supabase"
 import {
     ArrowRight,
     Mail,
@@ -64,9 +65,31 @@ export default function RegisterPage() {
 
         setIsLoading(true)
         try {
+            // Check for affiliate referral
+            let affiliateId = null
+            const storedAffiliate = localStorage.getItem('affiliate_ref')
+            if (storedAffiliate) {
+              try {
+                const { code, expiry } = JSON.parse(storedAffiliate)
+                if (new Date().getTime() < expiry) {
+                  // Lookup affiliate ID by code
+                  const { data: affData } = await supabase
+                    .from('affiliates')
+                    .select('id')
+                    .eq('code', code)
+                    .single()
+                  
+                  if (affData) affiliateId = affData.id
+                }
+              } catch (e) {
+                console.error("Error parsing affiliate ref", e)
+              }
+            }
+
             const { error } = await signUp(email, password, {
                 full_name: name,
-                store_name: storeName
+                store_name: storeName,
+                referral_id: affiliateId // metadata will be synced to profile
             })
 
             if (error) {

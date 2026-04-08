@@ -1,55 +1,68 @@
-import { createClient } from '@supabase/supabase-js'
-import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabaseAdmin'
-import { getServerUser } from '@/lib/supabaseAuth'
+import { supabaseAdmin } from '@/lib/supabase-admin'
+import { getServerUser, isSuperAdmin } from '@/lib/supabaseAuth'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
     try {
         const user = await getServerUser()
-        if (!user) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
-
-        const { data: profile } = await supabaseAdmin
-            .from('profiles')
-            .select('role')
-            .eq('id', user.id)
-            .single()
-
-        if (profile?.role !== 'admin') {
+        if (!isSuperAdmin(user)) {
             return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
         }
 
-        // Query: Buscar empresas com planos e donos
-        const { data, error } = await supabaseAdmin
-            .from('companies')
+        // 1. Buscar empresas 
+        const { data: empresas, error: empresaError } = await supabaseAdmin
+            .from('empresas')
             .select(`
                 id,
                 name,
                 email,
-                phone,
+                telefone,
+                whatsapp,
                 status,
                 created_at,
-                plan_id,
-                plans (
-                    name
-                ),
-                profiles:owner_id (
-                    owner_name,
-                    email
-                )
+                owner_id
             `)
             .order('created_at', { ascending: false })
 
-        if (error) throw error
+        if (empresaError) throw empresaError
 
-        // Em uma implementação real com tabelas de usuários vinculadas por company_id:
-        // let { data: userCounts } = await supabaseAdmin.from('profiles').select('company_id')... group by
-        
-        return NextResponse.json(data || [])
+        // 2. Buscar as assinaturas para vincular o plano
+        const { data: subscriptions } = await supabaseAdmin
+            .from('subscriptions')
+            .select('company_id, plans!plan_id(name)')
+            .eq('status', 'active')
+
+        // 3. Buscar os perfis (owners) para vincular manualmente
+        const ownerIds = empresas.map(e => e.owner_id).filter(Boolean)
+        const { data: profiles } = await supabaseAdmin
+            .from('profiles')
+            .select('id, owner_name, email')
+            .in('id', ownerIds)
+
+        // 4. Mapear dados
+        const planMap = new Map()
+        subscriptions?.forEach(sub => {
+            if (sub.company_id) planMap.set(sub.company_id, sub.plans)
+        })
+
+        const profileMap = new Map()
+        profiles?.forEach(p => profileMap.set(p.id, p))
+
+        const formattedData = empresas.map(emp => ({
+            ...emp,
+            plans: planMap.get(emp.id) || null,
+            profiles: profileMap.get(emp.owner_id) || null
+        }))
+
+        return NextResponse.json(formattedData || [])
 
     } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 })
+        console.error('Critical Error [Admin Companies]:', error.message, error.details)
+        return NextResponse.json({ 
+            error: 'Erro ao carregar empresas reais',
+            details: error.message 
+        }, { status: 500 })
     }
 }

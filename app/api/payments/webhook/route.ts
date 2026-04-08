@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { payment } from '@/lib/mercadopago';
-import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { getPaymentClient } from '@/lib/mercadopago';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export async function POST(req: Request) {
     try {
@@ -10,30 +10,30 @@ export async function POST(req: Request) {
         // Mercado Pago sends 'payment' type only
         if (type === 'payment') {
             const paymentId = data.id;
-            const result = await payment.get({ id: paymentId });
+            const paymentClient = getPaymentClient();
+            const result = await paymentClient.get({ id: paymentId });
 
             if (result.status === 'approved') {
                 const pedidoId = result.external_reference;
 
-                // 1. Update Order Status
+                // 1. Update Order Status in 'orders' table
                 const { error: orderError } = await supabaseAdmin
-                    .from('pedidos')
-                    .update({ status: 'pago' })
+                    .from('orders')
+                    .update({ status: 'novo' }) // 'novo' is the start of production
                     .eq('id', pedidoId);
 
-                if (orderError) console.error('Error updating order to paid:', orderError);
+                if (orderError) console.error('Error updating order to novo:', orderError);
 
-                // 2. Update Legacy Order Status (if exists)
-                await supabaseAdmin
-                    .from('orders')
-                    .update({ status: 'pago' })
-                    .eq('external_id', pedidoId); // Assume we store it if we need sync
+                // 2. Update Payment record in 'payments' table
+                const { error: paymentError } = await supabaseAdmin
+                    .from('payments')
+                    .update({ 
+                        status: 'approved', 
+                        updated_at: new Date().toISOString() 
+                    })
+                    .eq('external_id', paymentId.toString());
 
-                // 3. Update Payment record
-                await supabaseAdmin
-                    .from('pagamentos')
-                    .update({ status: 'aprovado', updated_at: new Date().toISOString() })
-                    .eq('payment_id', paymentId.toString());
+                if (paymentError) console.error('Error updating payment record:', paymentError);
 
                 console.log(`Payment approved for order ${pedidoId}`);
             }

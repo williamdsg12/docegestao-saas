@@ -60,7 +60,7 @@ export default function SupportManagement() {
 
             const formatted: SupportTicket[] = data.map((t: any) => ({
                 id: t.id,
-                company_name: t.companies?.name || 'Sistema',
+                company_name: t.empresas?.name || 'Sistema',
                 owner_name: t.profiles?.owner_name || 'Usuário',
                 subject: t.subject,
                 message: t.message,

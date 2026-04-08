@@ -88,11 +88,40 @@ export default function LogisticaPage() {
     setActiveDeliveries(ordersData || [])
   }, [profile])
 
+  const atualizarMapa = useCallback((newLocation: any) => {
+    setCouriers(prev => prev.map(courier => {
+      // The location payload has entregador_id
+      if (courier.id === newLocation.entregador_id) {
+        return {
+          ...courier,
+          entregador_localizacao: [newLocation]
+        }
+      }
+      return courier
+    }))
+  }, [])
+
   useEffect(() => {
     fetchLogisticsData()
-    const interval = setInterval(fetchLogisticsData, 10000) // Poll every 10s
-    return () => clearInterval(interval)
-  }, [fetchLogisticsData])
+    const interval = setInterval(fetchLogisticsData, 30000) // Fallback fetch every 30s
+    
+    // Configurar Realtime para atualizações imediatas de localização
+    const channel = supabase
+      .channel("localizacao")
+      .on("postgres_changes", {
+        event: "UPDATE",
+        schema: "public",
+        table: "entregador_localizacao"
+      }, (payload: any) => {
+        atualizarMapa(payload.new)
+      })
+      .subscribe()
+
+    return () => {
+      clearInterval(interval)
+      supabase.removeChannel(channel)
+    }
+  }, [fetchLogisticsData, atualizarMapa])
 
   const onSelectMarker = (marker: any, type: 'courier' | 'delivery') => {
     setSelectedMarker({ ...marker, markerType: type })
