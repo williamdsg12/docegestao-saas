@@ -28,6 +28,7 @@ import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/hooks/useAuth"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import { formatarMoeda } from "@/utils/pricing"
 
 const steps = [
   { id: 1, title: "Base", desc: "Nome e Insumos", icon: Milk },
@@ -110,7 +111,7 @@ export function PricingWizard({ isOpen, onClose }: { isOpen: boolean; onClose: (
     const precoRevenda = precoDireto / (1 - (financialSettings?.taxa_revenda || 0.20))
 
     return { custoFinal, precoDireto, precoIfood, precoRevenda, lucro: precoDireto - custoFinal }
-  }, [formData, financialSettings])
+  }, [formData, financialSettings, availableIngredients])
 
   async function handleSave() {
     if (!formData.nome) return toast.error("Dê um nome ao produto")
@@ -297,8 +298,16 @@ export function PricingWizard({ isOpen, onClose }: { isOpen: boolean; onClose: (
 
                   <div className="p-8 bg-slate-900 rounded-[32px] text-white flex items-center justify-between">
                      <div>
-                        <p className="text-[10px] font-black uppercase text-slate-400 mb-1">Custo Estimado de Mão de Obra</p>
-                        <h3 className="text-3xl font-black italic tracking-tighter text-emerald-400">R$ {(((formData.tempo_preparo_min / 60) * ((financialSettings?.salario_alvo + financialSettings?.custo_fixo_total) / ((financialSettings?.dias_trabalhados_semana * 4) * financialSettings?.horas_trabalhadas_dia)))).toFixed(2)}</h3>
+                         <p className="text-[10px] font-black uppercase text-slate-400 mb-1">Custo Estimado de Mão de Obra</p>
+                         <h3 className="text-3xl font-black italic tracking-tighter text-emerald-400">
+                           {formatarMoeda(
+                             ((formData.tempo_preparo_min / 60) * 
+                             ((Number(financialSettings?.salario_alvo || 0) + Number(financialSettings?.custo_fixo_total || 0)) / 
+                             ((Number(financialSettings?.dias_trabalhados_semana || 0) * 4) * Number(financialSettings?.horas_trabalhadas_dia || 0)))) / 
+                             (formData.rendimento || 1), 
+                             2
+                           )}
+                         </h3>
                      </div>
                      <Clock className="text-slate-700" size={48} />
                   </div>
@@ -326,15 +335,15 @@ export function PricingWizard({ isOpen, onClose }: { isOpen: boolean; onClose: (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                      <Card className="rounded-3xl border-slate-100 bg-emerald-50/30 p-6 flex flex-col items-center text-center">
                         <p className="text-[9px] font-black uppercase text-emerald-600 mb-2">Venda Direta</p>
-                        <h4 className="text-2xl font-black italic tracking-tighter text-slate-900">R$ {stats.precoDireto.toFixed(2)}</h4>
+                        <h4 className="text-2xl font-black italic tracking-tighter text-slate-900">{formatarMoeda(stats.precoDireto, 2)}</h4>
                      </Card>
                      <Card className="rounded-3xl border-blue-100 bg-blue-50/30 p-6 flex flex-col items-center text-center">
                         <p className="text-[9px] font-black uppercase text-blue-600 mb-2">Preço iFood</p>
-                        <h4 className="text-2xl font-black italic tracking-tighter text-slate-900">R$ {stats.precoIfood.toFixed(2)}</h4>
+                        <h4 className="text-2xl font-black italic tracking-tighter text-slate-900">{formatarMoeda(stats.precoIfood, 2)}</h4>
                      </Card>
                      <Card className="rounded-3xl border-amber-100 bg-amber-50/30 p-6 flex flex-col items-center text-center">
                         <p className="text-[9px] font-black uppercase text-amber-600 mb-2">Preço Revenda</p>
-                        <h4 className="text-2xl font-black italic tracking-tighter text-slate-900">R$ {stats.precoRevenda.toFixed(2)}</h4>
+                        <h4 className="text-2xl font-black italic tracking-tighter text-slate-900">{formatarMoeda(stats.precoRevenda, 2)}</h4>
                      </Card>
                   </div>
                </motion.div>

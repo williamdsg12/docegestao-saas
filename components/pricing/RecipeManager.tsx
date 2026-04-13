@@ -41,6 +41,7 @@ import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
+import { formatarMoeda } from "@/utils/pricing"
 
 interface Ingredient {
   id: string
@@ -237,9 +238,9 @@ export function RecipeManager({ vendasEstimadas = 100 }: { vendasEstimadas?: num
       lucro,
       taxaHoraria,
       maoObraCalculada,
-      margemPerc: margem * 100,
+      margemPerc: Math.round(margem * 100),
       statusMargem,
-      margemMinimaPerc: margemMinima * 100
+      margemMinimaPerc: Math.round(margemMinima * 100)
     }
   }, [formData, financialSettings])
 
@@ -443,7 +444,7 @@ export function RecipeManager({ vendasEstimadas = 100 }: { vendasEstimadas?: num
                               <div className="flex flex-col">
                                  <span className="font-black text-xs uppercase italic text-slate-900 leading-none">{ing.nome}</span>
                                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
-                                    {ing.quantidade} {ing.unidade} • R$ {(ing.quantidade * (ing.custo_unitario || 0)).toFixed(2)}
+                                    {ing.quantidade}{ing.unidade} • {formatarMoeda(ing.quantidade * (ing.custo_unitario || 0), 2)}
                                  </span>
                               </div>
                            </div>
@@ -544,14 +545,15 @@ export function RecipeManager({ vendasEstimadas = 100 }: { vendasEstimadas?: num
                       <div className="flex justify-between items-center group">
                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 italic">Custo Insumos</span>
                          <span className="text-lg font-black italic">R$ {stats.custoIngredientes.toFixed(2)}</span>
+                         <span className="text-lg font-black italic">{formatarMoeda(stats.custoIngredientes, 2)}</span>
                       </div>
                       <div className="flex justify-between items-center group">
                          <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 italic">Custo / Unidade</span>
-                         <span className="text-lg font-black italic">R$ {stats.custoPorUnidade.toFixed(2)}</span>
+                         <span className="text-lg font-black italic">{formatarMoeda(stats.custoPorUnidade, 2)}</span>
                       </div>
                       <div className="flex justify-between items-center pt-4 border-t border-white/5">
                          <span className="text-[10px] font-black uppercase tracking-widest text-blue-400 italic">Custo Prod. Final</span>
-                         <span className="text-2xl font-black italic text-blue-400">R$ {stats.custoFinal.toFixed(2)}</span>
+                         <span className="text-2xl font-black italic text-blue-400">{formatarMoeda(stats.custoFinal, 2)}</span>
                       </div>
                    </div>
 
@@ -560,7 +562,7 @@ export function RecipeManager({ vendasEstimadas = 100 }: { vendasEstimadas?: num
                          <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
                          <span className="text-[10px] font-black uppercase tracking-widest text-blue-100/70 block mb-2">Preço de Venda Sugerido</span>
                          <div className="text-4xl font-black italic tracking-tighter leading-none text-white">
-                            R$ {stats.precoSugerido.toFixed(2)}
+                            {formatarMoeda(stats.precoSugerido, 2)}
                          </div>
                          <div className="mt-4 flex items-center justify-center gap-2">
                            <Badge className={cn(
@@ -588,7 +590,7 @@ export function RecipeManager({ vendasEstimadas = 100 }: { vendasEstimadas?: num
                            "text-2xl font-black italic tracking-tighter",
                            stats.statusMargem === 'danger' ? "text-rose-400" : 
                            stats.statusMargem === 'warning' ? "text-amber-400" : "text-emerald-400"
-                         )}>R$ {stats.lucro.toFixed(2)}</h4>
+                         )}>{formatarMoeda(stats.lucro, 2)}</h4>
                          
                          {stats.statusMargem === 'danger' && (
                            <p className="text-[8px] font-bold text-rose-500 uppercase mt-2 animate-pulse leading-tight">
@@ -700,31 +702,34 @@ export function RecipeManager({ vendasEstimadas = 100 }: { vendasEstimadas?: num
                </CardHeader>
                <CardContent className="p-6">
                   <div className="space-y-2 mt-2">
-                     <div className="flex justify-between items-center text-xs">
-                        <span className="font-bold text-[var(--text-secondary)] uppercase tracking-widest text-[9px]">Preço Sugerido</span>
-                        <span className="font-black italic text-[var(--text-primary)]">
-                           R$ {(
-                             (recipe.ingredientes!.reduce((acc, curr) => acc + (curr.quantidade * (curr.custo_unitario || 0)), 0) / recipe.rendimento + 
-                             recipe.embalagem + recipe.mao_obra) / (1 - recipe.margem)
-                           ).toFixed(2)}
-                        </span>
-                     </div>
-                     <div className="flex justify-between items-center text-xs">
-                        <span className="font-bold text-[var(--text-secondary)] uppercase tracking-widest text-[9px]">Margem Lucro</span>
-                        <Badge className="bg-emerald-500/10 text-emerald-600 border-none font-black text-[9px] uppercase">{(recipe.margem * 100).toFixed(0)}%</Badge>
-                     </div>
-                     <div className="flex justify-between items-center text-xs pt-2 border-t border-[var(--border)] mt-2">
-                        <span className="font-bold text-indigo-500 uppercase tracking-widest text-[9px]">Lucro Est. ({vendasEstimadas}/mês)</span>
-                        <span className="font-black italic text-indigo-600">
-                           R$ {(
-                             (( (recipe.ingredientes!.reduce((acc, curr) => acc + (curr.quantidade * (curr.custo_unitario || 0)), 0) / recipe.rendimento + 
-                             recipe.embalagem + recipe.mao_obra) / (1 - recipe.margem) ) - 
-                             (recipe.ingredientes!.reduce((acc, curr) => acc + (curr.quantidade * (curr.custo_unitario || 0)), 0) / recipe.rendimento + 
-                             recipe.embalagem + recipe.mao_obra)) * vendasEstimadas
-                           ).toFixed(2)}
-                        </span>
-                     </div>
-                  </div>
+                        {(() => {
+                           const custoIngredientes = recipe.ingredientes!.reduce((acc, curr) => acc + (curr.quantidade * (curr.custo_unitario || 0)), 0);
+                           const custoBase = (custoIngredientes / recipe.rendimento) + Number(recipe.embalagem) + Number(recipe.mao_obra);
+                           const precoVenda = recipe.margem < 1 ? custoBase / (1 - recipe.margem) : custoBase * 2;
+                           const lucroUnidade = precoVenda - custoBase;
+
+                           return (
+                              <>
+                                 <div className="flex justify-between items-center text-xs">
+                                    <span className="font-bold text-[var(--text-secondary)] uppercase tracking-widest text-[9px]">Preço Sugerido</span>
+                                    <span className="font-black italic text-[var(--text-primary)]">
+                                       {formatarMoeda(precoVenda, 2)}
+                                    </span>
+                                 </div>
+                                 <div className="flex justify-between items-center text-xs">
+                                    <span className="font-bold text-[var(--text-secondary)] uppercase tracking-widest text-[9px]">Margem Lucro</span>
+                                    <Badge className="bg-emerald-500/10 text-emerald-600 border-none font-black text-[9px] uppercase">{(recipe.margem * 100).toFixed(0)}%</Badge>
+                                 </div>
+                                 <div className="flex justify-between items-center text-xs pt-2 border-t border-[var(--border)] mt-2">
+                                    <span className="font-bold text-indigo-500 uppercase tracking-widest text-[9px]">Lucro Est. ({vendasEstimadas}/mês)</span>
+                                    <span className="font-black italic text-indigo-600">
+                                       {formatarMoeda(lucroUnidade * vendasEstimadas, 2)}
+                                    </span>
+                                 </div>
+                              </>
+                           );
+                        })()}
+                   </div>
                   
                   <Button 
                     variant="outline" 

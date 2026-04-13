@@ -22,8 +22,16 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table"
-import { Plus, Trash2, Edit2, Loader2, Save, X } from "lucide-react"
+import { Plus, Trash2, Edit2, Loader2, Save, X, Info } from "lucide-react"
 import { toast } from "sonner"
+import { 
+  calcularCustoUnitario, 
+  getUnidadeBase, 
+  formatarMoeda, 
+  converterParaBase,
+  Unidade 
+} from "@/utils/pricing"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface Ingredient {
   id: string
@@ -79,7 +87,12 @@ export function IngredientManager() {
 
     try {
       setSaving(true)
-      const unitCost = calculateUnitCost()
+      const unitCost = calcularCustoUnitario(
+        parseFloat(formData.preco_total),
+        parseFloat(formData.quantidade_total),
+        formData.unidade_compra
+      )
+      
       const payload = {
         user_id: user.id,
         nome: formData.nome,
@@ -151,16 +164,19 @@ export function IngredientManager() {
     })
   }
 
-  // Helper to calculate conversion
-  function calculateUnitCost() {
-    const preco = parseFloat(formData.preco_total) || 0
-    const qtd = parseFloat(formData.quantidade_total) || 1
-    const base = preco / qtd
-    
-    // Simple conversion logic
-    if (formData.unidade_compra === "kg" && formData.unidade === "g") return base / 1000
-    if (formData.unidade_compra === "L" && formData.unidade === "ml") return base / 1000
-    return base
+  // Helper to calculate conversion for display
+  const currentUnitCost = calcularCustoUnitario(
+    parseFloat(formData.preco_total),
+    parseFloat(formData.quantidade_total),
+    formData.unidade_compra
+  )
+
+  const conversionHint = () => {
+    const qty = parseFloat(formData.quantidade_total) || 0
+    if (qty <= 0) return null
+    if (formData.unidade_compra === 'kg') return `${qty}kg = ${qty * 1000}g`
+    if (formData.unidade_compra === 'L') return `${qty}L = ${qty * 1000}ml`
+    return null
   }
 
   return (
@@ -214,7 +230,14 @@ export function IngredientManager() {
                       required
                       className="h-12 rounded-xl border-slate-200 bg-white font-black italic"
                     />
-                    <Select value={formData.unidade_compra} onValueChange={v => setFormData({ ...formData, unidade_compra: v, unidade: v === 'kg' ? 'g' : (v === 'L' ? 'ml' : v) })}>
+                    <Select 
+                      value={formData.unidade_compra} 
+                      onValueChange={v => setFormData({ 
+                        ...formData, 
+                        unidade_compra: v, 
+                        unidade: getUnidadeBase(v) 
+                      })}
+                    >
                       <SelectTrigger className="w-28 h-12 rounded-xl border-slate-200 bg-white font-black italic">
                         <SelectValue />
                       </SelectTrigger>
@@ -225,6 +248,11 @@ export function IngredientManager() {
                       </SelectContent>
                     </Select>
                   </div>
+                  {conversionHint() && (
+                    <p className="text-[9px] font-bold text-blue-500 uppercase mt-1 ml-1 animate-pulse">
+                      ✨ Conversão automática: {conversionHint()}
+                    </p>
+                  )}
                </div>
 
                <div className="space-y-2">
@@ -243,9 +271,25 @@ export function IngredientManager() {
             </div>
 
             <div className="flex items-center justify-between p-4 bg-blue-600 rounded-2xl text-white shadow-lg shadow-blue-500/20">
-               <div>
-                  <p className="text-[8px] font-black uppercase tracking-widest text-blue-100 opacity-70">Custo calculado por {formData.unidade}</p>
-                  <p className="text-xl font-black italic tracking-tighter">R$ {calculateUnitCost().toFixed(4)}</p>
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-1">
+                    <p className="text-[8px] font-black uppercase tracking-widest text-blue-100 opacity-70">
+                      Custo calculado por {formData.unidade}
+                    </p>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info size={10} className="text-blue-200 cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent className="bg-slate-900 text-white border-none text-[10px] p-3 rounded-xl max-w-[200px]">
+                          <p>Este é o custo real que será usado nas suas fichas técnicas. Se você comprou 1kg por R$ 10,00, o custo por grama será R$ 0,0100.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  <p className="text-xl font-black italic tracking-tighter">
+                    {formatarMoeda(currentUnitCost, 4)}
+                  </p>
                </div>
                <div className="flex gap-2">
                   {editingId && (
@@ -304,10 +348,14 @@ export function IngredientManager() {
                 {ingredients.map((ing) => (
                   <TableRow key={ing.id} className="border-b border-[var(--border)] group">
                     <TableCell className="font-black text-[var(--text-primary)] uppercase italic">{ing.nome}</TableCell>
-                    <TableCell className="text-[var(--text-primary)]">R$ {ing.preco_total.toFixed(2)}</TableCell>
-                    <TableCell className="text-[var(--text-primary)]">{ing.quantidade_total} {ing.unidade}</TableCell>
-                    <TableCell className="font-black text-[var(--primary)]">
-                      R$ {ing.custo_unitario.toFixed(2)} / {ing.unidade}
+                    <TableCell className="text-[var(--text-primary)] font-bold italic">
+                      {ing.preco_total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </TableCell>
+                    <TableCell className="text-[var(--text-primary)]">
+                      {ing.quantidade_total} {ing.unidade_compra || (['g', 'ml'].includes(ing.unidade) ? (ing.unidade === 'g' ? 'kg' : 'L') : ing.unidade)}
+                    </TableCell>
+                    <TableCell className="font-black text-[var(--primary)] text-sm">
+                      {formatarMoeda(ing.custo_unitario, 4)} <span className="text-[8px] opacity-60">/ {ing.unidade}</span>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
