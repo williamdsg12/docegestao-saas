@@ -66,6 +66,7 @@ interface Recipe {
   mao_obra: number
   margem: number
   margem_minima?: number
+  tempo_preparo_min?: number
   receita_id?: string // for products relation
   product_id?: string // link to products table
   ingredientes?: RecipeIngredient[]
@@ -79,6 +80,7 @@ export function RecipeManager({ vendasEstimadas = 100 }: { vendasEstimadas?: num
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [financialSettings, setFinancialSettings] = useState<any>(null)
 
   // Form State
   const [isCreating, setIsCreating] = useState(false)
@@ -90,6 +92,7 @@ export function RecipeManager({ vendasEstimadas = 100 }: { vendasEstimadas?: num
     mao_obra: 0,
     margem: 0.5, // 50% default
     margem_minima: 0.3, // 30% default
+    tempo_preparo_min: 30, // 30 min default
     product_id: "",
     ingredientes: []
   })
@@ -103,8 +106,14 @@ export function RecipeManager({ vendasEstimadas = 100 }: { vendasEstimadas?: num
       fetchRecipes()
       fetchIngredients()
       fetchProducts()
+      fetchFinancialSettings()
     }
   }, [user])
+
+  async function fetchFinancialSettings() {
+    const { data } = await supabase.from("financial_settings").select("*").eq("user_id", user?.id).maybeSingle()
+    if (data) setFinancialSettings(data)
+  }
 
   async function fetchRecipes() {
     try {
@@ -191,11 +200,27 @@ export function RecipeManager({ vendasEstimadas = 100 }: { vendasEstimadas?: num
     const rendimento = formData.rendimento || 1
     const custoPorUnidade = custoIngredientes / rendimento
     const embalagem = Number(formData.embalagem) || 0
-    const maoObra = Number(formData.mao_obra) || 0
-    const custoFinal = custoPorUnidade + embalagem + maoObra
+    
+    // Labor Calculation based on time
+    const totalHorasMes = (financialSettings?.dias_trabalhados_semana * 4) * financialSettings?.horas_trabalhadas_dia
+    const taxaHoraria = totalHorasMes > 0 ? (Number(financialSettings?.salario_alvo) + Number(financialSettings?.custo_fixo_total)) / totalHorasMes : 0
+    const tempoPreparo = Number(formData.tempo_preparo_min) || 0
+    const maoObraCalculada = (tempoPreparo / 60) * taxaHoraria
+    
+    // Use manual mao_obra if calculated is 0 or if user explicitly wants to override
+    const maoObraFinal = maoObraCalculada > 0 ? (maoObraCalculada / rendimento) : (Number(formData.mao_obra) || 0)
+    
+    const custoFinal = custoPorUnidade + embalagem + maoObraFinal
     
     const margem = Number(formData.margem) || 0
     const precoSugerido = margem < 1 ? custoFinal / (1 - margem) : custoFinal * 2
+    
+    // Channel Calculations
+    const taxaIfood = financialSettings?.taxa_ifood || 0.27
+    const taxaRevenda = financialSettings?.taxa_revenda || 0.20
+    const precoIfood = precoSugerido / (1 - taxaIfood)
+    const precoRevenda = precoSugerido / (1 - taxaRevenda)
+    
     const lucro = precoSugerido - custoFinal
     
     // Alerta de Margem
@@ -207,12 +232,16 @@ export function RecipeManager({ vendasEstimadas = 100 }: { vendasEstimadas?: num
       custoPorUnidade,
       custoFinal,
       precoSugerido,
+      precoIfood,
+      precoRevenda,
       lucro,
+      taxaHoraria,
+      maoObraCalculada,
       margemPerc: margem * 100,
       statusMargem,
       margemMinimaPerc: margemMinima * 100
     }
-  }, [formData])
+  }, [formData, financialSettings])
 
   async function saveRecipe() {
     if (!user) return
@@ -235,7 +264,8 @@ export function RecipeManager({ vendasEstimadas = 100 }: { vendasEstimadas?: num
           embalagem: formData.embalagem,
           mao_obra: formData.mao_obra,
           margem: formData.margem,
-          margem_minima: formData.margem_minima
+          margem_minima: formData.margem_minima,
+          tempo_preparo_min: formData.tempo_preparo_min
         })
         .select()
         .single()
@@ -448,6 +478,16 @@ export function RecipeManager({ vendasEstimadas = 100 }: { vendasEstimadas?: num
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-blue-500 ml-1">Tempo de Preparo (min)</Label>
+                  <Input 
+                    type="number"
+                    value={formData.tempo_preparo_min}
+                    onChange={e => setFormData({ ...formData, tempo_preparo_min: parseFloat(e.target.value) || 0 })}
+                    className="h-12 rounded-2xl bg-blue-50 border-blue-100 font-extrabold italic text-center text-blue-600"
+                  />
+                  <p className="text-[8px] font-bold text-blue-400 uppercase text-center">Custo Mão de Obra: R$ {stats.maoObraCalculada.toFixed(2)}</p>
+                </div>
+                <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Embalagem (R$)</Label>
                   <Input 
                     type="number"
@@ -542,7 +582,7 @@ export function RecipeManager({ vendasEstimadas = 100 }: { vendasEstimadas?: num
                               "text-[10px] font-black uppercase italic tracking-widest",
                               stats.statusMargem === 'danger' ? "text-rose-400" : 
                               stats.statusMargem === 'warning' ? "text-amber-400" : "text-emerald-400"
-                            )}>Lucro Líquido por Unidade</span>
+                            )}>Lucro Líquido p/ Unidade</span>
                          </div>
                          <h4 className={cn(
                            "text-2xl font-black italic tracking-tighter",
@@ -557,6 +597,26 @@ export function RecipeManager({ vendasEstimadas = 100 }: { vendasEstimadas?: num
                          )}
                       </div>
                    </div>
+
+                   <div className="p-6 bg-white/5 rounded-[32px] border border-white/5 space-y-4">
+                       <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 italic flex items-center gap-2">
+                          <BarChart3 size={14} /> Canais de Venda (Sugerido)
+                       </h4>
+                       <div className="space-y-3">
+                          <div className="flex justify-between items-center p-3 rounded-xl bg-white/5 border border-white/5">
+                             <span className="text-[9px] font-bold text-slate-400 uppercase">Venda Direta</span>
+                             <span className="font-black italic text-sm text-emerald-400">R$ {stats.precoSugerido.toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between items-center p-3 rounded-xl bg-blue-500/10 border border-blue-500/10">
+                             <span className="text-[9px] font-bold text-blue-400 uppercase italic">iFood ({(financialSettings?.taxa_ifood * 100) || 27}%)</span>
+                             <span className="font-black italic text-sm text-blue-400">R$ {stats.precoIfood.toFixed(2)}</span>
+                          </div>
+                          <div className="flex justify-between items-center p-3 rounded-xl bg-amber-500/10 border border-amber-500/10">
+                             <span className="text-[9px] font-bold text-amber-500 uppercase italic">Revenda ({(financialSettings?.taxa_revenda * 100) || 20}%)</span>
+                             <span className="font-black italic text-sm text-amber-500">R$ {stats.precoRevenda.toFixed(2)}</span>
+                          </div>
+                       </div>
+                    </div>
 
                    <div className="p-6 bg-white/5 rounded-[32px] border border-white/5 relative overflow-hidden">
                       <div className="absolute top-0 right-0 p-4 text-white/5 pointer-events-none">

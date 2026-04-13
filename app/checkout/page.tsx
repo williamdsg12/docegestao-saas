@@ -37,6 +37,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import { isStoreOpen } from "@/lib/storeStatus"
 
 export default function CheckoutPage() {
   const router = useRouter()
@@ -56,8 +57,9 @@ export default function CheckoutPage() {
   const [step, setStep] = useState(1) // 1: Identificação, 2: Entrega, 3: Pagamento
   const [isManualAddress, setIsManualAddress] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-
   const [businessFromMenu, setBusinessFromMenu] = useState<any>(null)
+
+  const storeStatus = isStoreOpen(business || businessFromMenu)
 
   // Load cart and business from localStorage
   useEffect(() => {
@@ -149,6 +151,10 @@ export default function CheckoutPage() {
   }
 
   const handleFinalizeOrder = async () => {
+    if (!storeStatus.isOpen) {
+      toast.error(storeStatus.reason)
+      return
+    }
     if (!validateForm()) return
 
     try {
@@ -362,6 +368,20 @@ export default function CheckoutPage() {
               Passo {step} de 3
            </div>
         </div>
+
+        {/* STORE CLOSED BANNER - iFood Standard */}
+        {!storeStatus.isOpen && !loadingBusiness && (
+          <div className={cn(
+            "w-full p-4 flex flex-col items-center justify-center gap-1 transition-all",
+            storeStatus.status === 'OUTSIDE_HOURS' ? "bg-amber-500 text-white" : "bg-rose-500 text-white"
+          )}>
+            <div className="flex items-center gap-2">
+              <AlertCircle className="size-4 animate-pulse" />
+              <span className="text-sm font-black uppercase tracking-tighter">{storeStatus.message}</span>
+            </div>
+            <p className="text-[10px] font-bold opacity-80 uppercase tracking-widest">{storeStatus.reason}</p>
+          </div>
+        )}
       </header>
 
       <main className="flex-1 max-w-7xl mx-auto w-full p-4 md:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start relative z-10">
@@ -744,11 +764,21 @@ export default function CheckoutPage() {
 
                 <Button 
                   onClick={handleFinalizeOrder}
-                  disabled={!address || isCalculating || isSubmitting || cart.length === 0}
-                  className="w-full h-20 md:h-24 rounded-[32px] md:rounded-[40px] bg-gradient-to-r from-[#FF2F81] to-[#FF6B6B] hover:shadow-[0_20px_50px_rgba(255,47,129,0.3)] text-white font-black uppercase text-lg md:text-xl tracking-[0.2em] shadow-xl shadow-pink-100 mt-10 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-40"
+                  disabled={!address || isCalculating || isSubmitting || cart.length === 0 || !storeStatus.isOpen}
+                  className={cn(
+                    "w-full h-20 md:h-24 rounded-[32px] md:rounded-[40px] text-white font-black uppercase text-lg md:text-xl tracking-[0.2em] shadow-xl shadow-pink-100 mt-10 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-40",
+                    storeStatus.isOpen ? "bg-gradient-to-r from-[#FF2F81] to-[#FF6B6B]" : "bg-slate-400"
+                  )}
                 >
                   {isSubmitting ? (
                     <RefreshCcw className="size-8 animate-spin" />
+                  ) : !storeStatus.isOpen ? (
+                    <div className="flex flex-col items-center">
+                      <span className="text-lg md:text-xl font-black uppercase tracking-widest">Loja Fechada</span>
+                      <span className="text-[10px] opacity-80 font-bold uppercase tracking-[0.2em]">
+                        {storeStatus.status === 'OUTSIDE_HOURS' ? `Abrimos às ${storeStatus.nextOpening}` : 'Pausa Operacional'}
+                      </span>
+                    </div>
                   ) : (
                     <span className="flex items-center gap-4">
                       Finalizar Agora

@@ -58,13 +58,17 @@ export default function LoginPage() {
 
         setIsLoading(true)
         try {
-            const { error } = await signInWithEmail(email, password)
+            const { data, error } = await signInWithEmail(email, password)
             if (error) {
                 toast.error("E-mail ou senha inválidos", {
                     description: error.message
                 })
             } else {
                 toast.success("Login realizado com sucesso!")
+                // Redirecionamento direto para evitar atrasos no useEffect
+                if (data?.user) {
+                    router.push("/dashboard")
+                }
             }
         } catch (error) {
             toast.error("Erro ao entrar no sistema")

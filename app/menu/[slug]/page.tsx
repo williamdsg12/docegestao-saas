@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, use } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { motion, AnimatePresence } from "framer-motion"
 import { 
@@ -44,6 +44,8 @@ interface CartItem {
 export default function PublicMenuPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const isPreview = searchParams.get('preview') === 'true'
   
   // Data State
   const [company, setCompany] = useState<any>(null)
@@ -51,6 +53,8 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
   const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [deliverySettings, setDeliverySettings] = useState<any>(null)
+  const [storeSettings, setStoreSettings] = useState<any>(null)
+  const [storeStatus, setStoreStatus] = useState<any>(null)
   
   // UI State
   const [searchTerm, setSearchTerm] = useState("")
@@ -159,13 +163,24 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
       setCategories(catRes.data || [])
       setProducts(prodRes.data || [])
       
+      // 4. Fetch Store Settings for "Single Source of Truth" Status
+      const { data: sSettings } = await supabase
+        .from('store_settings')
+        .select('*')
+        .eq('store_id', targetId)
+        .maybeSingle()
+      
+      setStoreSettings(sSettings)
+
       if (delSettings.data) {
         setDeliverySettings(delSettings.data)
         setDeliveryFee(Number(delSettings.data.taxa_base) || 0)
       }
 
-      // Track View
-      supabase.from('menu_views').insert({ company_id: targetId, user_agent: navigator.userAgent }).then()
+      if (!isPreview) {
+        // Track View
+        supabase.from('menu_views').insert({ company_id: targetId, user_agent: navigator.userAgent }).then()
+      }
       
     } catch (error: any) {
       console.error("Error fetching menu data:", error)
@@ -174,6 +189,72 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
       setLoading(false)
     }
   }
+
+  // Realtime Sync
+  useEffect(() => {
+    if (!company?.id) return
+
+    const targetId = company.id
+    const channel = supabase
+      .channel(`menu-realtime-${targetId}`)
+      .on('postgres_changes', { 
+         event: '*', 
+         schema: 'public', 
+         table: 'products', 
+         filter: `tenant_id=eq.${targetId}` 
+      }, async () => {
+         const { data } = await supabase
+           .from('products')
+           .select('*')
+           .eq('tenant_id', targetId)
+           .eq('active', true)
+           .order('position', { ascending: true })
+         if (data) setProducts(data)
+      })
+      .on('postgres_changes', {
+         event: 'UPDATE',
+         schema: 'public',
+         table: 'companies',
+         filter: `id=eq.${targetId}`
+      }, (payload) => {
+         setCompany(prev => ({ ...prev, ...payload.new }))
+      })
+      .subscribe()
+
+    // Status Realtime Sync
+    const statusChannel = supabase
+      .channel(`store-status-${targetId}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'store_settings',
+        filter: `store_id=eq.${targetId}`
+      }, (payload) => {
+        setStoreSettings(payload.new)
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+      supabase.removeChannel(statusChannel)
+    }
+  }, [company?.id])
+
+  // Calculate status whenever settings change or every minute
+  useEffect(() => {
+    if (!storeSettings) return
+    const { getStoreStatus } = require("@/lib/storeStatus")
+    const status = getStoreStatus(storeSettings)
+    setStoreStatus(status)
+    
+    // Auto-refresh status if outside hours
+    if (!status.isOpen) {
+        const timer = setInterval(() => {
+            setStoreStatus(getStoreStatus(storeSettings))
+        }, 30000)
+        return () => clearInterval(timer)
+    }
+  }, [storeSettings])
 
   // Cart Actions
   const addToCart = (customizedItem: any) => {
@@ -366,7 +447,13 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
           <div className="flex-1 space-y-2">
              <div className="flex flex-col md:flex-row items-center gap-3">
                <h1 className="text-2xl md:text-3xl font-black italic uppercase tracking-tighter text-slate-800">{company.name}</h1>
-               <Badge className="bg-emerald-50 text-emerald-600 border-none px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest leading-none">● Aberto</Badge>
+               {storeStatus?.status === 'OPEN' ? (
+                  <Badge className="bg-emerald-50 text-emerald-600 border-none px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest leading-none">● Aberto</Badge>
+               ) : storeStatus?.status === 'PAUSED' ? (
+                  <Badge className="bg-amber-50 text-amber-600 border-none px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest leading-none animate-pulse">● Pausado</Badge>
+               ) : (
+                  <Badge className="bg-rose-50 text-rose-600 border-none px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest leading-none">● Fechado</Badge>
+               )}
              </div>
              <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 md:gap-6 text-xs font-bold text-slate-500 uppercase tracking-widest">
                 <div className="flex items-center gap-1.5"><Star className="size-3.5 text-amber-400 fill-amber-400" /> 4.9 <span className="opacity-40">(100+)</span></div>
@@ -375,6 +462,36 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
              </div>
           </div>
         </div>
+
+        {/* Store Status Banner */}
+        <AnimatePresence>
+          {storeStatus && !storeStatus.isOpen && (
+             <motion.div 
+               initial={{ height: 0, opacity: 0 }}
+               animate={{ height: "auto", opacity: 1 }}
+               exit={{ height: 0, opacity: 0 }}
+               className="mt-6 overflow-hidden"
+             >
+               <div className={cn(
+                 "p-4 rounded-2xl flex items-center gap-4 border",
+                 storeStatus.isPaused 
+                  ? "bg-amber-50 border-amber-100 text-amber-900" 
+                  : "bg-rose-50 border-rose-100 text-rose-900"
+               )}>
+                 <div className={cn(
+                   "size-10 rounded-xl flex items-center justify-center shrink-0",
+                   storeStatus.isPaused ? "bg-amber-500 text-white" : "bg-rose-500 text-white"
+                 )}>
+                   <Clock className="size-5" />
+                 </div>
+                 <div className="flex-1">
+                   <p className="font-black uppercase italic tracking-tighter text-sm leading-tight">{storeStatus.message}</p>
+                   <p className="text-[10px] uppercase font-bold tracking-widest opacity-60 mt-1">{storeStatus.reason}</p>
+                 </div>
+               </div>
+             </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Search Bar */}
         <div className="mt-8">
@@ -418,7 +535,7 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
                       key={p.id} 
                       product={p} 
                       onClick={setSelectedProduct} 
-                      onAddClick={setSelectedProduct} 
+                      onAddClick={storeStatus?.isOpen ? setSelectedProduct : () => toast.error("Loja fechada no momento.")} 
                     />
                   ))}
                 </div>
@@ -476,6 +593,10 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
         onUpdateQuantity={updateQuantity} 
         onRemoveItem={removeItem} 
         onCheckout={() => {
+          if (!storeStatus?.isOpen) {
+            toast.error("A loja fechou enquanto você montava sua sacola.")
+            return
+          }
           setIsCartOpen(false)
           setIsCheckoutOpen(true)
         }} 

@@ -26,16 +26,20 @@ export async function getServerUser(): Promise<User | null> {
         }
 
         let accessToken: string | null = null
+        let refreshToken: string | null = null
 
         try {
-            // Se for JSON (padrão Supabase), parseia
             const rawValue = decodeURIComponent(authCookie.value)
             try {
                 const sessionData = JSON.parse(rawValue)
-                accessToken = sessionData.access_token || sessionData.token
+                accessToken = sessionData.access_token || sessionData.token || null
+                refreshToken = sessionData.refresh_token || null
+                
+                // Se não encontrou no JSON, pode ser o valor puro (legado)
+                if (!accessToken) accessToken = rawValue
             } catch {
-                // Se não for JSON, assume que é o token puro
-                accessToken = authCookie.value
+                // Se não for JSON, o valor em si é o token
+                accessToken = rawValue
             }
         } catch (e) {
             accessToken = authCookie.value

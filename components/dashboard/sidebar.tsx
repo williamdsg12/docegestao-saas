@@ -26,6 +26,8 @@ import {
   Printer,
   Menu,
   Award,
+  Palette,
+  Monitor
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -64,21 +66,11 @@ const menuGroups = [
     name: "Vendas",
     icon: ShoppingCart,
     items: [
-      { name: "Pedidos", icon: ShoppingCart, path: "/dashboard/pedidos", feature: "pedidos" },
+      { name: "Pedidos", icon: ShoppingCart, path: "/dashboard/painel-pedidos", feature: "pedidos" },
       { name: "Orçamentos", icon: ClipboardList, path: "/dashboard/orcamentos", feature: "orcamentos" },
       { name: "Clientes", icon: Users, path: "/dashboard/clientes", feature: "clientes" },
+      { name: "Histórico de Vendas", icon: ClipboardList, path: "/dashboard/delivery-painel/historico", feature: "delivery-painel" },
       { name: "Cardápio Digital", icon: Coffee, path: "/dashboard/menu", feature: "menu" },
-    ]
-  },
-  {
-    name: "Sistema Delivery",
-    icon: Globe,
-    items: [
-      { name: "Painel Delivery", icon: ShoppingCart, path: "/dashboard/delivery-painel", badge: "Live", feature: "delivery-painel" },
-      { name: "Cozinha", icon: Coffee, path: "/dashboard/cozinha", feature: "cozinha" },
-      { name: "Entregas", icon: Globe, path: "/dashboard/entregas", feature: "entregas" },
-      { name: "Equipe", icon: Users, path: "/dashboard/equipe", feature: "equipe" },
-      { name: "Histórico", icon: ClipboardList, path: "/dashboard/delivery-painel/historico", feature: "delivery-painel" },
     ]
   },
   {
@@ -103,8 +95,9 @@ const menuGroups = [
     name: "Configurações",
     icon: Settings,
     items: [
-      { name: "Perfil", icon: Settings, path: "/dashboard/settings/profile", feature: "perfil" },
-      { name: "Afiliados", icon: Award, path: "/dashboard/afiliados", badge: "NOVO", feature: "afiliados" },
+      { name: "Visual do Sistema", icon: Palette, path: "/dashboard/configuracoes", badge: "NOVO", feature: "perfil" },
+      { name: "Meu Perfil", icon: Settings, path: "/dashboard/settings/profile", feature: "perfil" },
+      { name: "Afiliados", icon: Award, path: "/dashboard/afiliados", feature: "afiliados" },
       { name: "Impressoras", icon: Printer, path: "/dashboard/settings/impressoras", badge: "PRO", feature: "pro_features" },
     ]
   }
@@ -187,15 +180,15 @@ function SidebarContent({
   return (
     <div className="flex flex-col h-full bg-[#0F172A] text-slate-300 overflow-hidden">
       {/* Header / Logo */}
-      <div className="h-20 flex items-center px-6 border-b border-slate-800 shrink-0">
+      <div className="h-16 flex items-center px-6 border-b border-slate-800 shrink-0">
         <div className="flex items-center gap-3">
-          <div className="size-10 shrink-0 flex items-center justify-center p-2 bg-blue-600 rounded-xl shadow-lg shadow-blue-900/20">
+          <div className="size-8 shrink-0 flex items-center justify-center p-1.5 bg-blue-600 rounded-lg shadow-lg shadow-blue-900/20">
             <UtensilsCrossed className="size-full text-white" />
           </div>
           {(!isCollapsed || isMobile) && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col min-w-0">
-              <span className="font-black text-white leading-none uppercase tracking-tighter text-lg italic">Doce Gestão</span>
-              <span className="text-[10px] text-blue-400 font-bold uppercase tracking-widest leading-none mt-1">SaaS Platinum</span>
+              <span className="font-bold text-white leading-none uppercase tracking-tight text-sm">Doce Gestão</span>
+              <span className="text-[9px] text-blue-400 font-medium uppercase tracking-widest leading-none mt-1">SaaS Platinum</span>
             </motion.div>
           )}
         </div>
@@ -203,7 +196,7 @@ function SidebarContent({
 
       {/* Nav Content */}
       <TooltipProvider delayDuration={0}>
-        <div className="flex-1 overflow-y-auto py-6 px-3 space-y-4 scrollbar-none">
+        <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1 scrollbar-none">
           {menuGroups.map((group) => {
             const isOpen = openGroups.includes(group.name)
             const hasActive = group.items.some(i => i.path === pathname)
@@ -217,14 +210,14 @@ function SidebarContent({
                     <button
                       onClick={() => (isCollapsed && !isMobile) ? onToggleCollapse?.() : toggleGroup(group.name)}
                       className={cn(
-                        "w-full flex items-center gap-4 px-4 py-2.5 rounded-xl transition-all duration-300",
+                        "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-300",
                         (isOpen && !isCollapsed) || (hasActive && isCollapsed) ? "text-white" : "text-slate-500 hover:bg-white/5 hover:text-slate-300"
                       )}
                     >
-                      <GroupIcon className={cn("size-5 shrink-0 transition-colors", hasActive && "text-blue-500")} />
+                      <GroupIcon className={cn("size-4 shrink-0 transition-colors", hasActive && "text-blue-500")} />
                       {(!isCollapsed || isMobile) && (
                         <>
-                          <span className="flex-1 text-left font-black text-[11px] uppercase tracking-widest italic">{group.name}</span>
+                          <span className="flex-1 text-left font-semibold text-[10px] uppercase tracking-wider">{group.name}</span>
                           <ChevronDown className={cn("size-3 transition-transform duration-300", isOpen ? "rotate-0" : "-rotate-90 opacity-50")} />
                         </>
                       )}
@@ -250,10 +243,10 @@ function SidebarContent({
                           return (
                             <Link key={item.path} href={item.path}>
                               <div className={cn(
-                                "relative flex items-center justify-between px-4 py-2.5 rounded-xl transition-all group cursor-pointer",
+                                "relative flex items-center justify-between px-3 py-1.5 rounded-lg transition-all group cursor-pointer",
                                 isActive ? "bg-blue-600/10 text-blue-400" : "hover:bg-white/5 text-slate-400 hover:text-white"
                               )}>
-                                <span className="font-bold text-xs uppercase tracking-tight italic truncate">{item.name}</span>
+                                <span className="font-medium text-xs tracking-tight truncate">{item.name}</span>
                                 {item.badge && (
                                   <span className="px-1.5 py-0.5 rounded-md bg-blue-500/10 text-blue-400 text-[8px] font-black uppercase shrink-0 border border-blue-500/20">
                                     {item.badge}
@@ -327,7 +320,7 @@ export function DashboardSidebar({ children }: { children: React.ReactNode }) {
         {!isMobile && (
           <motion.aside
             initial={false}
-            animate={{ width: isCollapsed ? 80 : 260 }}
+            animate={{ width: isCollapsed ? 68 : 240 }}
             className={cn(
               "relative flex flex-col bg-[#0F172A] border-r border-slate-800 transition-all duration-300 z-50 overflow-hidden shrink-0",
               isCollapsed && "items-center"

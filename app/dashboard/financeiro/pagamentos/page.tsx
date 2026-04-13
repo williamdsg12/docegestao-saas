@@ -1,5 +1,6 @@
 "use client"
 
+import { Suspense } from "react"
 import { FeatureGuard } from "@/components/dashboard/FeatureGuard"
 import { PageHeader } from "@/components/dashboard/PageHeader"
 import { PaymentMethodsSettings } from "@/components/dashboard/payments/PaymentMethodsSettings"
@@ -13,11 +14,12 @@ export default function MetodosPagamentoPage() {
           title="Métodos de" 
           highlight="Pagamento" 
           subtitle="Gerencie como seus clientes pagam: dinheiro, cartão ou pagamentos online com PIX"
-          icon={<Wallet className="text-blue-500" size={32} />}
         />
         
         <div className="mt-8">
-          <PaymentMethodsSettings />
+          <Suspense fallback={<div className="h-40 bg-slate-50 animate-pulse rounded-[40px]" />}>
+            <PaymentMethodsSettings />
+          </Suspense>
         </div>
       </div>
     </FeatureGuard>

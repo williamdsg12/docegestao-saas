@@ -3,6 +3,38 @@ import { getPaymentClient } from '@/lib/mercadopago';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { createTunaPixPayment } from '@/lib/payments/tuna';
 
+export async function GET(req: Request) {
+    try {
+        const { searchParams } = new URL(req.url);
+        const tenant_id = searchParams.get('tenant_id');
+        const check_only = searchParams.get('check_only');
+
+        if (!tenant_id) {
+            return NextResponse.json({ error: 'Missing tenant_id' }, { status: 400 });
+        }
+
+        if (check_only === 'true') {
+            // Check if Tuna PIX is active for this tenant
+            const { data: tunaAccount } = await supabaseAdmin
+                .from('tuna_accounts')
+                .select('*')
+                .eq('tenant_id', tenant_id)
+                .eq('connected', true)
+                .eq('pix_enabled', true)
+                .single();
+
+            return NextResponse.json({ 
+                provider: tunaAccount ? 'tuna' : 'mercadopago' 
+            });
+        }
+
+        return NextResponse.json({ error: 'Method Not Allowed' }, { status: 405 });
+    } catch (error: any) {
+        console.error('PIX GET Error:', error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}
+
 export async function POST(req: Request) {
     try {
         const body = await req.json();

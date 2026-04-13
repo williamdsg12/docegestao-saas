@@ -15,8 +15,13 @@ import { useState, useEffect } from "react"
 import { toast } from "sonner"
 import { SidebarTrigger } from "@/components/dashboard/sidebar"
 import { CommandPalette } from "@/components/dashboard/CommandPalette"
+import { cn } from "@/lib/utils"
+import { Volume2, VolumeX } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { usePedidoStore } from "@/store/pedidoStore"
 
 import { AuthGuard } from "@/components/auth/AuthGuard"
+import { initSound, requestNotificationPermission, startAlert, stopAlert } from "@/lib/notifications"
 
 export default function DashboardLayout({
   children,
@@ -26,6 +31,58 @@ export default function DashboardLayout({
   const { user, subscription, isAdmin, loadingSubscription } = useAuth()
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [commandOpen, setCommandOpen] = useState(false)
+  const [soundEnabled, setSoundEnabled] = useState(true)
+
+  const novoPedido = usePedidoStore(s => s.novoPedido)
+  // usePedidoSound removido para usar o novo sistema nativo em notifications.ts
+
+  const pedidos = usePedidoStore(s => s.pedidos)
+
+  useEffect(() => {
+    const saved = localStorage.getItem("order_sound_enabled")
+    if (saved !== null) {
+      setSoundEnabled(saved === "true")
+    }
+  }, [])
+
+  // Efeito reativo para controlar o som baseado nos pedidos pendentes
+  useEffect(() => {
+    if (!soundEnabled) {
+      stopAlert()
+      return
+    }
+
+    const temPedidosPendentes = pedidos.some(p => p.status === 'novo' || p.status === 'pending')
+    
+    if (temPedidosPendentes) {
+      startAlert()
+    } else {
+      stopAlert()
+    }
+  }, [pedidos, soundEnabled])
+
+  const toggleSound = async () => {
+    const newState = !soundEnabled
+    
+    if (newState) {
+      // Gesto do usuário para inicializar áudio e pedir permissão
+      const soundOk = await initSound()
+      const pushOk = await requestNotificationPermission()
+      
+      if (soundOk && pushOk) {
+        toast.success("Sistema de Alertas iFood Ativado! 🔔🔊")
+      } else if (soundOk) {
+        toast.warning("Som ativado, mas as notificações push foram bloqueadas.")
+      }
+    }
+
+    setSoundEnabled(newState)
+    localStorage.setItem("order_sound_enabled", String(newState))
+    if (!newState) {
+      stopAlert()
+      toast.info("Som de alerta desativado")
+    }
+  }
 
   // Update showOnboarding if user data changes later (e.g. after login)
   useEffect(() => {
@@ -38,7 +95,7 @@ export default function DashboardLayout({
   }, [user, isAdmin, loadingSubscription])
 
   const calculateDaysLeft = () => {
-    // ... logic preserved (omitted for brevity in replacement but kept in tool call)
+    // ... logic preserved
     if (subscription?.trial_end) {
       return differenceInDays(new Date(subscription.trial_end), new Date())
     }
@@ -71,7 +128,7 @@ export default function DashboardLayout({
               {/* Modern Header - Professional & Clean */}
               <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 px-8 flex items-center justify-between shrink-0 relative z-20">
                 <div className="flex items-center gap-6 flex-1">
-                  <button 
+                  <button
                     onClick={() => setCommandOpen(true)}
                     className="hidden md:flex items-center gap-3 px-4 py-2 bg-slate-100 rounded-2xl w-full max-w-md border border-slate-200 hover:bg-slate-200 transition-all group"
                   >
@@ -100,6 +157,18 @@ export default function DashboardLayout({
 
                   <div className="flex items-center gap-3">
                     <ThemeToggle />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={toggleSound}
+                      className={cn(
+                        "size-10 rounded-full border transition-all shadow-sm",
+                        soundEnabled ? "border-emerald-100 bg-emerald-50 text-emerald-600 hover:bg-emerald-100" : "border-slate-100 bg-slate-50 text-slate-400 hover:bg-slate-100"
+                      )}
+                      title={soundEnabled ? "Som Ativo" : "Som Mudo"}
+                    >
+                      {soundEnabled ? <Volume2 size={20} strokeWidth={3} /> : <VolumeX size={20} />}
+                    </Button>
                     <NotificationBell />
                     <UserAvatarMenu />
                   </div>

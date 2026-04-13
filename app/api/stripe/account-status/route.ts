@@ -39,6 +39,7 @@ export async function GET() {
 
     const chargesEnabled = account.charges_enabled;
     const payoutsEnabled = account.payouts_enabled;
+    const detailsSubmitted = account.details_submitted;
     const currentlyDue = account.requirements?.currently_due || [];
     const pendingVerification = account.requirements?.pending_verification || [];
 
@@ -50,8 +51,8 @@ export async function GET() {
     } else if (pendingVerification.length > 0) {
       status = 'em análise';
       details = 'A Stripe está analisando seus documentos.';
-    } else if (account.details_submitted) {
-      status = 'pendente'; // Processando ou falta algo minor
+    } else if (detailsSubmitted) {
+      status = 'pendente';
     }
 
     // Sincronizar com o banco de dados
@@ -60,6 +61,8 @@ export async function GET() {
       .update({
         stripe_charges_enabled: chargesEnabled,
         stripe_payouts_enabled: payoutsEnabled,
+        stripe_details_submitted: detailsSubmitted,
+        stripe_onboarding_complete: detailsSubmitted && currentlyDue.length === 0,
         stripe_account_status: status,
         updated_at: new Date().toISOString()
       })

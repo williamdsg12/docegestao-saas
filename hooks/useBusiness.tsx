@@ -114,12 +114,13 @@ export const BusinessProvider = ({ children }: { children: React.ReactNode }) =>
                 
                 if (tenantId) {
                     // Fetch all possible data sources in parallel for robustness
-                    const [resTenant, resEmpresa, resCompany, resDelivery, resMenu] = await Promise.all([
+                    const [resTenant, resEmpresa, resCompany, resDelivery, resMenu, resSettings] = await Promise.all([
                         supabase.from('tenants').select('*').eq('id', tenantId).maybeSingle(),
                         supabase.from('empresas').select('*').eq('id', tenantId).maybeSingle(),
                         supabase.from('companies').select('*').eq('id', tenantId).maybeSingle(),
                         supabase.from('delivery_settings').select('*').eq('tenant_id', tenantId).maybeSingle(),
-                        supabase.from('digital_menu_settings').select('*').eq('company_id', tenantId).maybeSingle()
+                        supabase.from('digital_menu_settings').select('*').eq('company_id', tenantId).maybeSingle(),
+                        supabase.from('store_settings').select('*').eq('store_id', tenantId).maybeSingle()
                     ])
 
                     // 3. Robust Data Merging (Cascading from most recent/specific to legacy)
@@ -143,20 +144,26 @@ export const BusinessProvider = ({ children }: { children: React.ReactNode }) =>
                         delivery_radius: resDelivery.data?.max_km ?? resEmpresa.data?.delivery_radius ?? resCompany.data?.delivery_radius ?? 0,
                         min_order_value: resEmpresa.data?.min_order_value ?? resCompany.data?.min_order_value ?? 0,
                         
-                        // Visual Identity (Config JSON or Menu Settings)
                         config: {
-                            ...(resEmpresa.data?.config || {}),
-                            primary_color: resMenu.data?.primary_color || resEmpresa.data?.config?.primary_color || resCompany.data?.primary_color,
+                            primary_color: resMenu.data?.primary_color || resCompany.data?.primary_color || resSettings.data?.primary_color,
                             instagram: resMenu.data?.instagram || profileData?.instagram || resCompany.data?.instagram,
-                            rate_per_km: resDelivery.data?.fee_per_km ?? resEmpresa.data?.config?.rate_per_km ?? 0,
-                            operating_hours: resEmpresa.data?.config?.operating_hours || resCompany.data?.opening_hours
+                            rate_per_km: resDelivery.data?.fee_per_km ?? 0,
+                            monthly_goal: 10000
                         },
                         
-                        logo_url: resMenu.data?.menu_logo || resEmpresa.data?.logo_url || resCompany.data?.logo_url,
+                        opening_hours: resSettings.data?.opening_hours || resCompany.data?.opening_hours || resEmpresa.data?.opening_hours || {},
+                        
+                        // Store Status Fields (Single Source of Truth)
+                        is_manual_override: resSettings.data?.is_manual_override,
+                        manual_status: resSettings.data?.manual_status,
+                        
+                        logo_url: resMenu.data?.menu_logo || resEmpresa.data?.logo_url || resCompany.data?.logo_url || resSettings.data?.logo_url,
                         
                         // Legacy Metadata needed by some pages
                         owner_id: resTenant.data?.owner_id || resCompany.data?.owner_id || user.id,
-                        slug: resTenant.data?.slug || resCompany.data?.menu_slug || slugify(resTenant.data?.nome || resEmpresa.data?.nome || resCompany.data?.name || profileData?.business_name || "convidado")
+                        slug: resTenant.data?.slug || resCompany.data?.menu_slug || slugify(resTenant.data?.nome || resEmpresa.data?.nome || resCompany.data?.name || profileData?.business_name || "convidado"),
+                        address_city: resEmpresa.data?.address_city || resCompany.data?.address_city,
+                        address_state: resEmpresa.data?.address_state || resCompany.data?.address_state
                     } as any
 
                     setBusiness(combinedData)

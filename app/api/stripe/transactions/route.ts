@@ -8,10 +8,22 @@ export async function GET() {
     const user = await getServerUser();
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+    // 1a. Buscar o perfil para pegar o tenant_id
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('tenant_id')
+      .eq('id', user.id)
+      .single();
+
+    if (!profile?.tenant_id) {
+      return NextResponse.json({ error: 'Tenant não encontrado' }, { status: 404 });
+    }
+
+    // 1b. Buscar stripe_account_id do tenant
     const { data: settings } = await supabaseAdmin
       .from('payment_settings')
       .select('stripe_account_id')
-      .eq('tenant_id', user.tenant_id)
+      .eq('tenant_id', profile.tenant_id)
       .single();
 
     if (!settings?.stripe_account_id) {

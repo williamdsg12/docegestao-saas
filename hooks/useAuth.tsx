@@ -22,6 +22,7 @@ interface AuthContextType {
     plan: string | null
     trial_ends_at: string | null
     subscription_status: string | null
+    profile: any | null
     logout: () => Promise<void>
 }
 
@@ -39,6 +40,7 @@ const AuthContext = createContext<AuthContextType>({
     plan: null,
     trial_ends_at: null,
     subscription_status: null,
+    profile: null,
     signInWithGoogle: async () => { },
     signInWithEmail: async () => ({ error: null }),
     signUp: async () => ({ error: null }),
@@ -57,6 +59,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [trialEndsAt, setTrialEndsAt] = useState<string | null>(null)
     const [userPlan, setUserPlan] = useState<string | null>(null)
     const [subStatus, setSubStatus] = useState<string | null>(null)
+    const [profile, setProfile] = useState<any | null>(null)
 
     const fetchSubscription = async (userId: string) => {
         setLoadingSubscription(true)
@@ -71,7 +74,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             // Fetch Admin Status and Role from profiles
             const profilePromise = supabase
                 .from('profiles')
-                .select('is_admin, role, trial_ends_at, plan, subscription_status')
+                .select('*, is_admin, role, trial_ends_at, plan, subscription_status, tenant_id, company_id')
                 .eq('id', userId)
                 .maybeSingle()
 
@@ -104,6 +107,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 setTrialEndsAt(profRes.data.trial_ends_at)
                 setUserPlan(profRes.data.plan)
                 setSubStatus(profRes.data.subscription_status)
+                setProfile(profRes.data)
             } else {
                 console.warn("DEBUG AUTH: No profile found for user ID:", userId)
                 setIsAdmin(false)
@@ -111,6 +115,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 setTrialEndsAt(null)
                 setUserPlan(null)
                 setSubStatus(null)
+                setProfile(null)
             }
         } catch (error: any) {
             console.error("Error fetching auth data:", error.message || error)
@@ -122,13 +127,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
 
     useEffect(() => {
-        // Synchronize session to cookie for server-side access (getServerUser)
-        if (session) {
+        // Synchronize token to cookie for server-side access (proxy)
+        if (session?.access_token) {
             const expiration = new Date()
             expiration.setTime(expiration.getTime() + (30 * 24 * 60 * 60 * 1000)) // 30 days
-            document.cookie = `supabase-session=${session.access_token}; Path=/; Expires=${expiration.toUTCString()}; SameSite=Lax`
+            // Salvamos o token de acesso e refresh em JSON para permitir refresh no servidor
+            const sessionData = JSON.stringify({ 
+                access_token: session.access_token, 
+                refresh_token: session.refresh_token 
+            })
+            document.cookie = `supabase-session=${encodeURIComponent(sessionData)}; Path=/; Expires=${expiration.toUTCString()}; SameSite=Lax`
         } else {
-            document.cookie = `supabase-session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT`
+            document.cookie = `supabase-session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/`
         }
     }, [session])
 
@@ -149,6 +159,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const { data: { subscription: authListener } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
             if (session?.user) {
                 setLoadingSubscription(true)
+                // Sincronização imediata do token
+                const expiration = new Date()
+                expiration.setTime(expiration.getTime() + (30 * 24 * 60 * 60 * 1000))
+                const sessionData = JSON.stringify({ 
+                    access_token: session.access_token, 
+                    refresh_token: session.refresh_token 
+                })
+                document.cookie = `supabase-session=${encodeURIComponent(sessionData)}; Path=/; Expires=${expiration.toUTCString()}; SameSite=Lax`
             }
             setSession(session)
             setUser(session?.user ?? null)
@@ -162,6 +180,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 setTrialEndsAt(null)
                 setUserPlan(null)
                 setSubStatus(null)
+                setProfile(null)
+                document.cookie = `supabase-session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/`
             }
             setLoading(false)
         })
@@ -194,7 +214,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 email,
                 password,
             })
-            return { error }
+            
+            if (data?.session) {
+                const expiration = new Date()
+                expiration.setTime(expiration.getTime() + (30 * 24 * 60 * 60 * 1000))
+                const sessionData = JSON.stringify({ 
+                    access_token: data.session.access_token, 
+                    refresh_token: data.session.refresh_token 
+                })
+                document.cookie = `supabase-session=${encodeURIComponent(sessionData)}; Path=/; Expires=${expiration.toUTCString()}; SameSite=Lax`
+            }
+            
+            return { data, error }
         } catch (error: any) {
             return { error }
         }
@@ -283,6 +314,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             plan: userPlan,
             trial_ends_at: trialEndsAt,
             subscription_status: subStatus,
+            profile,
             logout
         }}>
             {children}

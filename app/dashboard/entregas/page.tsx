@@ -26,6 +26,7 @@ import { formatDistanceToNow } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { cn } from "@/lib/utils"
 import { motion } from "framer-motion"
+import { formatAddress } from "@/lib/formatters"
 
 function DeliveryTimeline({ status }: { status: string }) {
   const steps = [
@@ -266,9 +267,7 @@ function EntregasContent() {
                         <div>
                           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Destino</p>
                           <p className="text-xs font-bold text-slate-700 leading-snug line-clamp-2">
-                             {order.addresses?.street ? (
-                                `${order.addresses.street}${order.addresses.number ? `, ${order.addresses.number}` : ''}${order.addresses.neighborhood ? ` - ${order.addresses.neighborhood}` : ''}`
-                             ) : "Endereço não informado"}
+                             {formatAddress(order)}
                           </p>
                         </div>
                       </div>

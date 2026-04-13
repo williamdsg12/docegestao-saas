@@ -30,8 +30,9 @@ interface Ingredient {
   nome: string
   preco_total: number
   quantidade_total: number
-  unidade: string
-  custo_unitario: number
+  unidade: string // Unidade de uso (g, ml, un)
+  unidade_compra: string // Unidade de compra (kg, L, un)
+  custo_unitario: number // Custo por unidade de uso
 }
 
 const UNIDADES = ["g", "kg", "ml", "L", "unidade"]
@@ -47,7 +48,8 @@ export function IngredientManager() {
     nome: "",
     preco_total: "",
     quantidade_total: "",
-    unidade: "g"
+    unidade: "g",
+    unidade_compra: "kg"
   })
 
   useEffect(() => {
@@ -77,12 +79,15 @@ export function IngredientManager() {
 
     try {
       setSaving(true)
+      const unitCost = calculateUnitCost()
       const payload = {
         user_id: user.id,
         nome: formData.nome,
         preco_total: parseFloat(formData.preco_total),
         quantidade_total: parseFloat(formData.quantidade_total),
-        unidade: formData.unidade
+        unidade: formData.unidade,
+        unidade_compra: formData.unidade_compra,
+        custo_unitario: unitCost
       }
 
       if (editingId) {
@@ -102,7 +107,13 @@ export function IngredientManager() {
         toast.success("Ingrediente cadastrado!")
       }
 
-      setFormData({ nome: "", preco_total: "", quantidade_total: "", unidade: "g" })
+      setFormData({ 
+        nome: "", 
+        preco_total: "", 
+        quantidade_total: "", 
+        unidade: "g", 
+        unidade_compra: "kg" 
+      })
       setEditingId(null)
       fetchIngredients()
     } catch (error: any) {
@@ -135,8 +146,21 @@ export function IngredientManager() {
       nome: ing.nome,
       preco_total: ing.preco_total.toString(),
       quantidade_total: ing.quantidade_total.toString(),
-      unidade: ing.unidade
+      unidade: ing.unidade || "g",
+      unidade_compra: ing.unidade_compra || "kg"
     })
+  }
+
+  // Helper to calculate conversion
+  function calculateUnitCost() {
+    const preco = parseFloat(formData.preco_total) || 0
+    const qtd = parseFloat(formData.quantidade_total) || 1
+    const base = preco / qtd
+    
+    // Simple conversion logic
+    if (formData.unidade_compra === "kg" && formData.unidade === "g") return base / 1000
+    if (formData.unidade_compra === "L" && formData.unidade === "ml") return base / 1000
+    return base
   }
 
   return (
@@ -151,78 +175,100 @@ export function IngredientManager() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Nome</Label>
-              <Input 
-                value={formData.nome}
-                onChange={e => setFormData({ ...formData, nome: e.target.value })}
-                placeholder="Ex: Farinha de Trigo"
-                required
-                className="rounded-xl border-[var(--border)] bg-[var(--bg-app)]"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Preço Total (R$)</Label>
-              <Input 
-                type="number"
-                step="0.01"
-                value={formData.preco_total}
-                onChange={e => setFormData({ ...formData, preco_total: e.target.value })}
-                placeholder="0,00"
-                required
-                className="rounded-xl border-[var(--border)] bg-[var(--bg-app)]"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-secondary)]">Qtd. Total</Label>
-              <div className="flex gap-2">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1 italic">Qual o nome do insumo?</Label>
+                <Input 
+                  value={formData.nome}
+                  onChange={e => setFormData({ ...formData, nome: e.target.value })}
+                  placeholder="Ex: Chocolate Meio Amargo"
+                  required
+                  className="h-12 rounded-xl border-slate-200 bg-slate-50 font-black italic"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1 italic">Preço Pago (R$)</Label>
                 <Input 
                   type="number"
-                  step="0.001"
-                  value={formData.quantidade_total}
-                  onChange={e => setFormData({ ...formData, quantidade_total: e.target.value })}
-                  placeholder="0.000"
+                  step="0.01"
+                  value={formData.preco_total}
+                  onChange={e => setFormData({ ...formData, preco_total: e.target.value })}
+                  placeholder="0,00"
                   required
-                  className="rounded-xl border-[var(--border)] bg-[var(--bg-app)]"
+                  className="h-12 rounded-xl border-slate-200 bg-slate-50 font-black italic"
                 />
-                <Select 
-                  value={formData.unidade} 
-                  onValueChange={v => setFormData({ ...formData, unidade: v })}
-                >
-                  <SelectTrigger className="w-24 rounded-xl border-[var(--border)] bg-[var(--bg-app)]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {UNIDADES.map(u => (
-                      <SelectItem key={u} value={u}>{u}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
             </div>
-            <div className="flex items-end gap-2">
-              <Button 
-                type="submit" 
-                disabled={saving}
-                className="w-full h-10 rounded-xl bg-[var(--primary)] hover:bg-[var(--primary)]/90 text-white font-black uppercase italic tracking-widest"
-              >
-                {saving ? <Loader2 className="animate-spin" /> : editingId ? <Save size={18} /> : <Plus size={18} />}
-                <span className="ml-2">{editingId ? "Salvar" : "Adicionar"}</span>
-              </Button>
-              {editingId && (
-                <Button 
-                  type="button" 
-                  variant="outline"
-                  onClick={() => {
-                    setEditingId(null)
-                    setFormData({ nome: "", preco_total: "", quantidade_total: "", unidade: "g" })
-                  }}
-                  className="rounded-xl border-[var(--border)]"
-                >
-                  <X size={18} />
-                </Button>
-              )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-slate-50 rounded-3xl border border-slate-100">
+               <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-blue-500 ml-1 italic">Como você compra?</Label>
+                  <div className="flex gap-2">
+                    <Input 
+                      type="number"
+                      step="0.001"
+                      value={formData.quantidade_total}
+                      onChange={e => setFormData({ ...formData, quantidade_total: e.target.value })}
+                      placeholder="Qtd."
+                      required
+                      className="h-12 rounded-xl border-slate-200 bg-white font-black italic"
+                    />
+                    <Select value={formData.unidade_compra} onValueChange={v => setFormData({ ...formData, unidade_compra: v, unidade: v === 'kg' ? 'g' : (v === 'L' ? 'ml' : v) })}>
+                      <SelectTrigger className="w-28 h-12 rounded-xl border-slate-200 bg-white font-black italic">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {UNIDADES.map(u => (
+                          <SelectItem key={u} value={u}>{u}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+               </div>
+
+               <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-emerald-500 ml-1 italic">Como você usa na receita?</Label>
+                  <Select value={formData.unidade} onValueChange={v => setFormData({ ...formData, unidade: v })}>
+                    <SelectTrigger className="h-12 rounded-xl border-slate-200 bg-white font-black italic">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {UNIDADES.map(u => (
+                        <SelectItem key={u} value={u}>{u}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+               </div>
+            </div>
+
+            <div className="flex items-center justify-between p-4 bg-blue-600 rounded-2xl text-white shadow-lg shadow-blue-500/20">
+               <div>
+                  <p className="text-[8px] font-black uppercase tracking-widest text-blue-100 opacity-70">Custo calculado por {formData.unidade}</p>
+                  <p className="text-xl font-black italic tracking-tighter">R$ {calculateUnitCost().toFixed(4)}</p>
+               </div>
+               <div className="flex gap-2">
+                  {editingId && (
+                    <Button 
+                      type="button" 
+                      variant="ghost"
+                      onClick={() => {
+                        setEditingId(null)
+                        setFormData({ nome: "", preco_total: "", quantidade_total: "", unidade: "g", unidade_compra: "kg" })
+                      }}
+                      className="rounded-xl border-white/20 text-white hover:bg-white/10"
+                    >
+                      <X size={18} />
+                    </Button>
+                  )}
+                  <Button 
+                    type="submit" 
+                    disabled={saving}
+                    className="h-12 px-8 rounded-xl bg-white text-blue-600 hover:bg-blue-50 font-black uppercase italic tracking-widest"
+                  >
+                    {saving ? <Loader2 className="animate-spin" /> : editingId ? "Atualizar" : "Salvar Insumo"}
+                  </Button>
+               </div>
             </div>
           </form>
         </CardContent>
@@ -261,7 +307,7 @@ export function IngredientManager() {
                     <TableCell className="text-[var(--text-primary)]">R$ {ing.preco_total.toFixed(2)}</TableCell>
                     <TableCell className="text-[var(--text-primary)]">{ing.quantidade_total} {ing.unidade}</TableCell>
                     <TableCell className="font-black text-[var(--primary)]">
-                      R$ {ing.custo_unitario.toFixed(4)} / {ing.unidade}
+                      R$ {ing.custo_unitario.toFixed(2)} / {ing.unidade}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
