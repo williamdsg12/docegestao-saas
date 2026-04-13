@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 export function AdminTopbar() {
-    const { user, logout } = useAuth()
+    const { user, profile, logout } = useAuth()
     const router = useRouter()
 
     const handleLogout = async () => {
@@ -53,13 +53,13 @@ export function AdminTopbar() {
                     <DropdownMenuTrigger asChild>
                         <button className="flex items-center gap-3 focus:outline-none group">
                             <div className="text-right hidden sm:block">
-                                <p className="text-sm font-bold text-white leading-none mb-1 group-hover:text-primary transition-colors">{user?.name || 'Administrador'}</p>
+                                <p className="text-sm font-bold text-white leading-none mb-1 group-hover:text-primary transition-colors">{profile?.owner_name || 'Administrador'}</p>
                                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Super Admin</p>
                             </div>
                             <div className="size-10 rounded-xl bg-gradient-to-br from-indigo-500 to-primary p-[2px] shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-transform">
                                 <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center overflow-hidden">
-                                    {user?.avatar_url ? (
-                                        <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                                    {profile?.avatar_url ? (
+                                        <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
                                     ) : (
                                         <User className="size-5 text-indigo-400" />
                                     )}

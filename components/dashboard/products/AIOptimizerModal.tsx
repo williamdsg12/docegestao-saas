@@ -64,7 +64,7 @@ export function AIOptimizerModal({
   product,
   optimization,
   onApply
-}) {
+}: AIOptimizerModalProps) {
   const [activeTab, setActiveTab] = useState("compare")
   const [sliderPos, setSliderPos] = useState(50)
 

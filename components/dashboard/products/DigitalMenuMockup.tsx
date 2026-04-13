@@ -40,7 +40,7 @@ export function DigitalMenuMockup({
   products,
   city,
   state
-}) {
+}: DigitalMenuMockupProps) {
   const activeProducts = products.filter(p => p.active)
   const categories = Array.from(new Set(activeProducts.map(p => p.category)))
 

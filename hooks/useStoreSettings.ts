@@ -105,7 +105,7 @@ export function useStoreSettings() {
                 }, { onConflict: 'store_id' })
 
             if (error) throw error
-            setSettings(prev => ({ ...prev, ...updates }))
+            setSettings((prev: any) => ({ ...prev, ...updates }))
             return { success: true }
         } catch (error: any) {
             toast.error('Erro ao atualizar: ' + error.message)

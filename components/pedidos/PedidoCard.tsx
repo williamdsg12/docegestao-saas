@@ -162,7 +162,7 @@ export function PedidoCard({ pedido, onAccept, onReject, onNextStep, onUpdatePay
                         <span className="text-sm font-black text-slate-700 truncate">{pedido.customers?.name || "Cliente Final"}</span>
                         <div className="flex items-center gap-1 bg-[#F0FDF4] text-[#22C55E] rounded-md px-1.5 py-0.5 border border-[#DCFCE7] cursor-pointer hover:bg-[#DCFCE7]">
                             <MessageCircle className="size-3 fill-current" />
-                            <span className="text-[9px] font-black">{formatPhone(pedido.customers?.phone)}</span>
+                            <span className="text-[9px] font-black">{formatPhone(pedido.customers?.phone || "")}</span>
                             <ChevronDown className="size-2.5" />
                         </div>
                     </div>

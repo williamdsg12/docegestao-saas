@@ -31,10 +31,10 @@ export async function GET() {
     }
 
     // Listar as últimas 10 cobranças (charges)
-    const charges = await stripe.charges.list({
-      limit: 10,
-      stripeAccount: settings.stripe_account_id,
-    });
+    const charges = await stripe.charges.list(
+      { limit: 10 },
+      { stripeAccount: settings.stripe_account_id }
+    );
 
     return NextResponse.json({
       data: charges.data,

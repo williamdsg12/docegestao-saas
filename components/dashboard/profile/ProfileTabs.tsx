@@ -60,6 +60,7 @@ const EXPERIENCE_LEVELS = [
 ]
 
 import { useSearchParams } from "next/navigation"
+import { TunaOnboardingModal } from "@/components/dashboard/payments/TunaOnboardingModal"
 
 export function ProfileTabs() {
   const searchParams = useSearchParams()
@@ -71,6 +72,7 @@ export function ProfileTabs() {
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab ] = useState(tabParam || "perfil")
   const [copied, setCopied] = useState(false)
+  const [isTunaModalOpen, setIsTunaModalOpen] = useState(false)
 
   useEffect(() => {
     if (tabParam) {
@@ -1187,7 +1189,7 @@ export function ProfileTabs() {
                           </div>
                           
                           <Button 
-                            onClick={connectTuna}
+                            onClick={() => setIsTunaModalOpen(true)}
                             disabled={loadingPayments}
                             className={cn(
                                "h-16 px-12 rounded-2xl font-black uppercase italic text-sm gap-4 transition-all shadow-xl active:scale-95",
@@ -1275,6 +1277,16 @@ export function ProfileTabs() {
           )}
         </AnimatePresence>
       </div>
+
+      <TunaOnboardingModal 
+        isOpen={isTunaModalOpen}
+        onClose={() => setIsTunaModalOpen(false)}
+        onSuccess={() => {
+          refreshBusiness()
+          setIsTunaModalOpen(false)
+        }}
+        tenantId={profile?.company_id || ''}
+      />
     </Tabs>
   )
 }

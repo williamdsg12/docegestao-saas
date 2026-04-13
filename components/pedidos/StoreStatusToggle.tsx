@@ -13,7 +13,7 @@ interface StoreStatusToggleProps {
 }
 
 export function StoreStatusToggle({ status, onToggle, isLoading }: StoreStatusToggleProps) {
-    const isManualOpen = status.status !== 'MANUAL_CLOSED' // Actually is_open_manual is what we toggle
+    const isManualOpen = status.status !== 'CLOSED' // Actually is_open_manual is what we toggle
 
     return (
         <div className="flex flex-col gap-1">

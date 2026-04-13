@@ -274,7 +274,7 @@ export function PedidoDrawer({ onUpdateStatus, onUpdatePaymentStatus }: PedidoDr
                                 </div>
                                 <div className="max-w-[150px]">
                                     <h4 className="font-black text-slate-900 text-sm leading-tight truncate">{pedido.customers?.name || "Cliente Final"}</h4>
-                                    <p className="text-xs text-slate-400 font-bold">{formatPhone(pedido.customers?.phone)}</p>
+                                    <p className="text-xs text-slate-400 font-bold">{formatPhone(pedido.customers?.phone || "")}</p>
                                 </div>
                                 <Badge variant="secondary" className="bg-[#EDF2F7] text-[#4A5568] border-none rounded-md px-2 py-0 text-[9px] font-bold uppercase shrink-0">Vip</Badge>
                             </div>

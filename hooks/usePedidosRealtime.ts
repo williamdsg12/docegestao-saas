@@ -25,7 +25,7 @@ export function usePedidosRealtime() {
                     filter: `tenant_id=eq.${tenantId}`
                 },
                 (payload) => {
-                    const newOrder = payload.new
+                    const newOrder = payload.new as any
                     addPedido(newOrder)
                     if (newOrder.status === 'novo' || newOrder.status === 'pending') {
                         startAlert()
@@ -46,7 +46,7 @@ export function usePedidosRealtime() {
                     filter: `tenant_id=eq.${tenantId}`
                 },
                 (payload) => {
-                    updatePedido(payload.new.id, payload.new)
+                    updatePedido(payload.new.id, payload.new as any)
                 }
             )
             .subscribe()

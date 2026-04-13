@@ -20,6 +20,7 @@ import {
   Banknote,
   Navigation,
   Globe,
+  Loader2,
   Sparkles
 } from "lucide-react"
 import { supabase } from "@/lib/supabase"

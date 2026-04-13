@@ -32,6 +32,8 @@ export async function GET() {
 
     // 2. Buscar saldo na Stripe para a conta conectada
     const balance = await stripe.balance.retrieve({
+      // empty params
+    }, {
       stripeAccount: settings.stripe_account_id,
     });
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { motion } from "framer-motion"
 import { 
@@ -19,7 +19,7 @@ import { FinancialSettings } from "@/components/pricing/FinancialSettings"
 import { PricingWizard } from "@/components/pricing/PricingWizard"
 import { FeatureGuard } from "@/components/dashboard/FeatureGuard"
 
-export default function PrecificacaoInteligentePage() {
+function PrecificacaoContent() {
   const searchParams = useSearchParams()
   const wizardParam = searchParams.get("wizard")
   const [isWizardOpen, setIsWizardOpen] = useState(false)
@@ -94,5 +94,20 @@ export default function PrecificacaoInteligentePage() {
 
       <PricingWizard isOpen={isWizardOpen} onClose={() => setIsWizardOpen(false)} />
     </FeatureGuard>
+  )
+}
+
+export default function PrecificacaoInteligentePage() {
+  return (
+    <Suspense fallback={
+      <div className="container mx-auto py-8 flex items-center justify-center">
+        <div className="animate-pulse flex flex-col items-center gap-4">
+           <div className="size-12 bg-slate-200 rounded-2xl" />
+           <div className="h-4 w-32 bg-slate-200 rounded-full" />
+        </div>
+      </div>
+    }>
+      <PrecificacaoContent />
+    </Suspense>
   )
 }

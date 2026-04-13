@@ -9,7 +9,7 @@ interface AuthContextType {
     session: Session | null
     loading: boolean
     signInWithGoogle: () => Promise<void>
-    signInWithEmail: (email: string, password: string) => Promise<{ error: any }>
+    signInWithEmail: (email: string, password: string) => Promise<{ data: any; error: any }>
     signUp: (email: string, password: string, metadata: any) => Promise<{ error: any }>
     updateProfile: (metadata: any) => Promise<{ error: any }>
     subscription: any | null
@@ -42,7 +42,7 @@ const AuthContext = createContext<AuthContextType>({
     subscription_status: null,
     profile: null,
     signInWithGoogle: async () => { },
-    signInWithEmail: async () => ({ error: null }),
+    signInWithEmail: async () => ({ data: null, error: null }),
     signUp: async () => ({ error: null }),
     updateProfile: async () => ({ error: null }),
     logout: async () => { },
@@ -227,7 +227,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             
             return { data, error }
         } catch (error: any) {
-            return { error }
+            return { data: null, error }
         }
     }
 

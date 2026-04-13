@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, use } from "react"
+import { useState, useEffect, use, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { motion, AnimatePresence } from "framer-motion"
@@ -41,8 +41,8 @@ interface CartItem {
   totalItemPrice: number
 }
 
-export default function PublicMenuPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = use(params)
+function MenuContent({ params }: { params: { slug: string } }) {
+  const { slug } = params
   const router = useRouter()
   const searchParams = useSearchParams()
   const isPreview = searchParams.get('preview') === 'true'
@@ -217,7 +217,7 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
          table: 'companies',
          filter: `id=eq.${targetId}`
       }, (payload) => {
-         setCompany(prev => ({ ...prev, ...payload.new }))
+         setCompany((prev: any) => ({ ...prev, ...payload.new }))
       })
       .subscribe()
 
@@ -613,6 +613,19 @@ export default function PublicMenuPage({ params }: { params: Promise<{ slug: str
       />
 
     </div>
+  )
+}
+
+export default function PublicMenuPage({ params }: { params: Promise<{ slug: string }> }) {
+  const resolvedParams = use(params)
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="animate-spin size-10 border-4 border-slate-100 border-t-red-500 rounded-full" />
+      </div>
+    }>
+      <MenuContent params={resolvedParams} />
+    </Suspense>
   )
 }
 

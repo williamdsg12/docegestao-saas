@@ -27,8 +27,9 @@ import { cn } from "@/lib/utils"
 import { useSearchParams } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { AnimatePresence } from "framer-motion"
+import { Suspense } from "react"
 
-export default function OrderConfirmedPage() {
+function OrderConfirmedContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const orderId = searchParams.get("orderId")
@@ -186,7 +187,7 @@ export default function OrderConfirmedPage() {
           <div className="absolute top-0 right-0 w-32 h-32 bg-pink-500 blur-[80px] -mr-16 -mt-16 opacity-30" />
           <div className="flex flex-col md:flex-row items-center justify-between gap-8 relative z-10">
             <div>
-              <h4 className="text-xl font-black text-white tracking-tighter uppercase italic italic mb-2">Alguma dúvida?</h4>
+              <h4 className="text-xl font-black text-white tracking-tighter uppercase italic mb-2">Alguma dúvida?</h4>
               <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest leading-loose">
                 Fale diretamente com o estabelecimento<br />pelo WhatsApp.
               </p>
@@ -285,5 +286,20 @@ export default function OrderConfirmedPage() {
         )}
       </AnimatePresence>
     </div>
+  )
+}
+
+export default function OrderConfirmedPage() {
+  return (
+    <Suspense fallback={
+       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+          <div className="animate-pulse flex flex-col items-center gap-4">
+             <div className="size-20 bg-slate-200 rounded-[32px]" />
+             <div className="h-4 w-48 bg-slate-200 rounded-full" />
+          </div>
+       </div>
+    }>
+      <OrderConfirmedContent />
+    </Suspense>
   )
 }
