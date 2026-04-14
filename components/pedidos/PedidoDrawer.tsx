@@ -194,7 +194,7 @@ export function PedidoDrawer({ onUpdateStatus, onUpdatePaymentStatus }: PedidoDr
 
     return (
         <Sheet open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-            <SheetContent className="w-full sm:max-w-md md:max-w-[480px] p-0 flex flex-col h-full bg-[#F4F7F6] border-none shadow-2xl">
+            <SheetContent side="right" className="w-full sm:max-w-md md:max-w-[480px] p-0 flex flex-col h-full bg-[#F4F7F6] border-none shadow-2xl">
                 <SheetHeader className="sr-only">
                     <SheetTitle>Pedido #{pedido.id.slice(0, 4)}</SheetTitle>
                     <SheetDescription>Detalhes operativos do pedido</SheetDescription>

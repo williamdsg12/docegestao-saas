@@ -128,37 +128,37 @@ export function PedidoKanbanCard({ pedido, onAccept, onReject, onNextStep }: Ped
         </div>
       </div>
 
-      {/* Footer: Actions */}
+      {/* Footer: Actions - Always visible on mobile, hover-only on desktop */}
       <div className={cn(
           "flex gap-1.5 border-t border-slate-100 pt-1.5 mt-1.5 transition-all",
-          "opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0"
+          "md:opacity-0 md:group-hover:opacity-100 md:translate-y-1 md:group-hover:translate-y-0"
       )} onClick={(e) => e.stopPropagation()}>
          {isNew ? (
             <div className="flex w-full gap-1">
                  <Button 
                    size="sm" 
-                   className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg h-7 p-0"
+                   className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg h-8 md:h-7 p-0"
                    onClick={() => onAccept?.(pedido.id)}
                  >
-                   <Check className="size-3.5" />
+                   <Check className="size-4 md:size-3.5" />
                  </Button>
                  <Button 
                    size="sm" 
                    variant="ghost"
-                   className="rounded-lg h-7 w-7 text-rose-500 p-0"
+                   className="rounded-lg h-8 md:h-7 w-8 md:w-7 text-rose-500 p-0"
                    onClick={() => onReject?.(pedido.id)}
                  >
-                   <X className="size-3.5" />
+                   <X className="size-4 md:size-3.5" />
                  </Button>
             </div>
          ) : !isFinished && (
             <Button 
               size="sm" 
-              className="w-full bg-slate-900 hover:bg-slate-800 text-white rounded-lg h-7 text-[10px] p-0 font-bold"
+              className="w-full bg-slate-900 hover:bg-slate-800 text-white rounded-lg h-9 md:h-7 text-[11px] md:text-[10px] p-0 font-black uppercase tracking-widest italic"
               onClick={() => onNextStep?.(pedido.id, pedido.status)}
             >
               {['preparando', 'em_preparo', 'preparing'].includes(pedido.status) ? 'Despachar' : 'Finalizar'}
-              <ArrowRight className="ml-1 size-3" />
+              <ArrowRight className="ml-2 size-3.5 md:size-3" />
             </Button>
          )}
       </div>

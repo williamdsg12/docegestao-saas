@@ -49,6 +49,11 @@ export default function CheckoutPage() {
   const [deliveryFee, setDeliveryFee] = useState<number>(0)
   const [cart, setCart] = useState<any[]>([])
   const [isCalculating, setIsCalculating] = useState(false)
+  const [customerInfo, setCustomerInfo] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    notes: "",
     payment_method: "pix", // pix, money, card_on_delivery, stripe
     change_for: 0 as number | string,
     complement: ""

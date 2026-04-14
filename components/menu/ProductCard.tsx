@@ -46,13 +46,13 @@ export function ProductCard({ product, onClick, onAddClick }: ProductCardProps) 
           </span>
           <Button 
             size="icon"
-            className="size-8 md:size-10 rounded-xl bg-red-500 hover:bg-red-600 text-white shadow-lg transition-all active:scale-90 group/btn shrink-0"
+            className="size-11 md:size-10 rounded-xl bg-red-500 hover:bg-red-600 text-white shadow-lg transition-all active:scale-90 group/btn shrink-0"
             onClick={(e) => {
               e.stopPropagation()
               onAddClick(product)
             }}
           >
-            <Plus className="size-4 md:size-5 group-hover/btn:rotate-90 transition-transform" />
+            <Plus className="size-5 md:size-5 group-hover/btn:rotate-90 transition-transform" />
           </Button>
         </div>
       </div>

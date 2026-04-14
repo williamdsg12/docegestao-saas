@@ -187,8 +187,8 @@ function SidebarContent({
           </div>
           {(!isCollapsed || isMobile) && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col min-w-0">
-              <span className="font-bold text-white leading-none uppercase tracking-tight text-sm">Doce Gestão</span>
-              <span className="text-[9px] text-blue-400 font-medium uppercase tracking-widest leading-none mt-1">SaaS Platinum</span>
+              <span className="font-black text-white leading-none uppercase tracking-tighter text-sm italic">Doce Gestão</span>
+              <span className="text-[8px] text-blue-400 font-black uppercase tracking-[0.2em] leading-none mt-1">SaaS Platinum</span>
             </motion.div>
           )}
         </div>
@@ -217,7 +217,7 @@ function SidebarContent({
                       <GroupIcon className={cn("size-4 shrink-0 transition-colors", hasActive && "text-blue-500")} />
                       {(!isCollapsed || isMobile) && (
                         <>
-                          <span className="flex-1 text-left font-semibold text-[10px] uppercase tracking-wider">{group.name}</span>
+                          <span className="flex-1 text-left font-black text-[9px] uppercase tracking-widest">{group.name}</span>
                           <ChevronDown className={cn("size-3 transition-transform duration-300", isOpen ? "rotate-0" : "-rotate-90 opacity-50")} />
                         </>
                       )}
@@ -246,7 +246,7 @@ function SidebarContent({
                                 "relative flex items-center justify-between px-3 py-1.5 rounded-lg transition-all group cursor-pointer",
                                 isActive ? "bg-blue-600/10 text-blue-400" : "hover:bg-white/5 text-slate-400 hover:text-white"
                               )}>
-                                <span className="font-medium text-xs tracking-tight truncate">{item.name}</span>
+                                <span className={cn("font-bold text-xs tracking-tight truncate", isMobile && "text-sm")}>{item.name}</span>
                                 {item.badge && (
                                   <span className="px-1.5 py-0.5 rounded-md bg-blue-500/10 text-blue-400 text-[8px] font-black uppercase shrink-0 border border-blue-500/20">
                                     {item.badge}
@@ -336,7 +336,7 @@ export function DashboardSidebar({ children }: { children: React.ReactNode }) {
 
         {isMobile && (
           <Sheet open={isOpenMobile} onOpenChange={setIsOpenMobile}>
-            <SheetContent side="left" className="p-0 border-none w-72 bg-[#0F172A]">
+            <SheetContent side="left" className="p-0 border-none w-[280px] bg-[#0F172A]">
               <SidebarContent isCollapsed={false} onLogout={handleLogout} isMobile />
             </SheetContent>
           </Sheet>

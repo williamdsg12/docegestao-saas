@@ -128,17 +128,14 @@ export default function DashboardLayout({
               {/* Modern Header - Professional & Clean */}
               <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 px-8 flex items-center justify-between shrink-0 relative z-20">
                 <div className="flex items-center gap-6 flex-1">
-                  <button
+                   <button
                     onClick={() => setCommandOpen(true)}
-                    className="hidden md:flex items-center gap-3 px-4 py-2 bg-slate-100 rounded-2xl w-full max-w-md border border-slate-200 hover:bg-slate-200 transition-all group"
+                    className="hidden lg:flex items-center gap-3 px-4 py-2 bg-slate-100 rounded-2xl w-full max-w-xs border border-slate-200 hover:bg-slate-200 transition-all group"
                   >
                     <Search className="size-4 text-slate-400 group-hover:text-blue-500" />
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest text-left flex-1">
-                      Pesquisa Inteligente (⌘+K)
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left flex-1">
+                      BUSCAR (⌘+K)
                     </span>
-                    <kbd className="hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border border-slate-300 bg-white px-1.5 font-mono text-[10px] font-black text-slate-500">
-                      <span className="text-xs">⌘</span>K
-                    </kbd>
                   </button>
                   <SidebarTrigger className="md:hidden" />
                 </div>
@@ -175,9 +172,9 @@ export default function DashboardLayout({
                 </div>
               </header>
 
-              {/* Standardized Content Area */}
-              <div className="flex-1 overflow-y-auto w-full min-w-0">
-                <main className="max-w-[1600px] mx-auto px-6 md:px-10 py-8 lg:py-12">
+               {/* Standardized Content Area */}
+              <div className="flex-1 overflow-y-auto w-full min-w-0 bg-[#F8FAFC]">
+                <main className="max-w-[1600px] mx-auto px-4 md:px-8 py-6 md:py-10">
                   {children}
                 </main>
               </div>

@@ -301,7 +301,7 @@ export default function PedidosPage() {
           <Separator orientation="vertical" className="hidden md:block h-10 bg-slate-100" />
 
           {/* Stats Grid */}
-          <div className="flex items-center gap-2 md:gap-4 overflow-x-auto no-scrollbar py-1">
+          <div className="flex items-center gap-3 md:gap-4 overflow-x-auto no-scrollbar py-1 pr-4">
              <StatCard 
                 label="Hoje" 
                 value={formatCurrency(stats.faturamento)} 
@@ -321,7 +321,9 @@ export default function PedidosPage() {
                 color={getDelayedBadgeColor()}
                 isAlert={stats.atrasados > 0}
              />
-             <Separator orientation="vertical" className="hidden lg:block h-10 bg-slate-100" />
+             <div className="hidden lg:block">
+               <Separator orientation="vertical" className="h-10 bg-slate-100" />
+             </div>
              <StatCard 
                 label="TMP Médio" 
                 value={`${stats.tempoMedio} min`} 
@@ -335,9 +337,9 @@ export default function PedidosPage() {
                 color="amber"
              />
              {stats.emRisco > 0 && (
-                 <div className="hidden lg:flex bg-orange-500 text-white rounded-full px-3 py-1 animate-pulse items-center gap-1.5 shadow-lg shadow-orange-200">
-                     <Zap className="size-3" />
-                     <span className="text-[10px] font-black uppercase">{stats.emRisco} EM RISCO</span>
+                 <div className="hidden lg:flex bg-orange-500 text-white rounded-full px-4 py-2 animate-pulse items-center gap-2 shadow-lg shadow-orange-200 shrink-0">
+                     <Zap className="size-4" />
+                     <span className="text-[10px] font-black uppercase tracking-wider">{stats.emRisco} EM RISCO</span>
                  </div>
              )}
           </div>
@@ -354,32 +356,39 @@ export default function PedidosPage() {
              Configurações
           </Button>
         </div>
-      </div>
-
-      {/* MOBILE TABS SWITCHER */}
-      <div className="md:hidden bg-white border-b border-slate-100 px-4 py-2 flex items-center justify-between gap-1 shrink-0 overflow-x-auto no-scrollbar">
+          {/* MOBILE TABS SWITCHER - iFood Pro Style */}
+      <div className="md:hidden bg-white border-b border-slate-100 px-4 pt-4 pb-0 flex items-center justify-between gap-2 shrink-0 overflow-x-auto no-scrollbar">
           {tabs.map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                    "flex-1 flex flex-col items-center py-2 px-1 rounded-xl transition-all border",
-                    activeTab === tab.id 
-                        ? `border-${tab.color === 'rose' ? 'rose' : tab.color}-500 bg-${tab.color === 'rose' ? 'rose' : tab.color}-50` 
-                        : "border-transparent text-slate-400"
+                    "flex-1 flex flex-col items-center pb-3 px-1 transition-all relative",
+                    activeTab === tab.id ? "text-slate-900" : "text-slate-400"
                 )}
               >
                   <span className={cn(
-                      "text-[9px] font-bold uppercase tracking-wider mb-0.5",
-                      activeTab === tab.id ? `text-${tab.color === 'rose' ? 'rose' : tab.color}-600` : "text-slate-400"
+                      "text-[10px] font-black uppercase tracking-widest mb-1 transition-colors",
+                      activeTab === tab.id ? `text-${tab.color === 'rose' ? 'rose' : tab.color === 'blue' ? 'blue' : tab.color}-600` : "text-slate-400"
                   )}>{tab.label}</span>
                   <span className={cn(
-                      "text-sm font-bold",
+                      "text-base font-black italic tracking-tighter",
                       activeTab === tab.id ? "text-slate-900" : "text-slate-300"
                   )}>{getColPedidos(tab.id).length}</span>
+                  
+                  {activeTab === tab.id && (
+                    <motion.div 
+                      layoutId="activeTabUnderline" 
+                      className={cn(
+                        "absolute bottom-0 left-0 right-0 h-1 rounded-t-full",
+                        `bg-${tab.color === 'rose' ? 'rose' : tab.color === 'blue' ? 'blue' : tab.color}-500`
+                      )} 
+                    />
+                  )}
               </button>
           ))}
       </div>
+    </div>
 
       {/* KANBAN BOARD */}
       <div className="flex-1 overflow-x-auto no-scrollbar bg-slate-50 p-4 md:p-6">

@@ -279,13 +279,12 @@ export function CheckoutFlow({ isOpen, onClose, subtotal, deliveryFee, total, te
             e.preventDefault();
           }
         }}
-        className="sm:max-w-xl p-0 overflow-hidden border-none shadow-2xl bg-white flex flex-col max-h-[90vh] rounded-[32px]"
+        className="w-full sm:max-w-xl p-0 overflow-hidden border-none shadow-2xl bg-white flex flex-col h-full sm:h-auto sm:max-h-[90vh] rounded-none sm:rounded-[32px]"
       >
-        {/* Header */}
-        <div className="p-6 md:p-8 bg-slate-900 text-white relative overflow-hidden shrink-0">
+        <div className="p-5 md:p-8 bg-slate-900 text-white relative overflow-hidden shrink-0">
           <div className="absolute top-0 right-0 size-40 bg-red-500 rounded-full blur-[80px] opacity-20" />
           <div className="relative z-10">
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-4 md:mb-2">
               <DialogTitle className="text-xl md:text-2xl font-black italic uppercase tracking-tighter leading-none">
                 Finalizar <span className="text-red-500">Pedido</span>
               </DialogTitle>
@@ -293,8 +292,8 @@ export function CheckoutFlow({ isOpen, onClose, subtotal, deliveryFee, total, te
                 <DialogDescription>Fluxo de finalização de pedido com dados do cliente e pagamento.</DialogDescription>
               </VisuallyHidden.Root>
               {!isSubmitting && (
-                <Button variant="ghost" size="icon" className="bg-white/10 hover:bg-white/20 text-white rounded-full size-8 transition-all" onClick={onClose}>
-                  <X className="size-4" />
+                <Button variant="ghost" size="icon" className="bg-white/10 hover:bg-white/20 text-white rounded-full size-10 transition-all sm:size-8" onClick={onClose}>
+                  <X className="size-5 sm:size-4" />
                 </Button>
               )}
             </div>
@@ -355,12 +354,12 @@ export function CheckoutFlow({ isOpen, onClose, subtotal, deliveryFee, total, te
                       </div>
                     </div>
 
-                    <Button
+                     <Button
                       disabled={!customerInfo.name || !customerInfo.phone}
                       onClick={handleNext}
-                      className="w-full h-14 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black uppercase italic tracking-[0.1em] shadow-xl mt-8 transition-all active:scale-95 flex items-center justify-between px-6"
+                      className="w-full h-16 md:h-14 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black uppercase italic tracking-[0.1em] shadow-xl mt-8 transition-all active:scale-95 flex items-center justify-between px-8"
                     >
-                      Continuar <ArrowRight className="size-4" />
+                      Continuar <ArrowRight className="size-5" />
                     </Button>
                   </motion.div>
                 )}

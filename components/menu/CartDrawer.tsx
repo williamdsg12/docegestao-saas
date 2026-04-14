@@ -119,26 +119,26 @@ export function CartDrawer({
                       </div>
 
                       <div className="flex items-center justify-between pt-1">
-                        <div className="flex items-center bg-slate-50 rounded-xl p-0.5 border border-slate-100 shadow-sm">
+                        <div className="flex items-center bg-slate-50 rounded-xl p-1 border border-slate-100 shadow-sm">
                           <button 
                             onClick={() => onUpdateQuantity(item.id, -1)} 
-                            className="size-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-white transition-all active:scale-90"
+                            className="size-9 md:size-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-white transition-all active:scale-90"
                           >
-                            <Minus className="size-3" />
+                            <Minus className="size-4 md:size-3" />
                           </button>
-                          <span className="w-8 text-center font-black text-[11px] text-slate-700">{item.quantity}</span>
+                          <span className="w-10 md:w-8 text-center font-black text-sm md:text-[11px] text-slate-700">{item.quantity}</span>
                           <button 
                             onClick={() => onUpdateQuantity(item.id, 1)} 
-                            className="size-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-white transition-all active:scale-90"
+                            className="size-9 md:size-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-white transition-all active:scale-90"
                           >
-                            <Plus className="size-3" />
+                            <Plus className="size-4 md:size-3" />
                           </button>
                         </div>
                         <button 
                           onClick={() => onRemoveItem(item.id)}
-                          className="p-2 text-slate-300 hover:text-red-500 transition-colors active:scale-90"
+                          className="p-3 md:p-2 text-slate-300 hover:text-red-500 transition-colors active:scale-90"
                         >
-                          <Trash2 className="size-4" />
+                          <Trash2 className="size-5 md:size-4" />
                         </button>
                       </div>
                     </div>
