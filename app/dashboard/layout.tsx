@@ -124,61 +124,67 @@ export default function DashboardLayout({
             <OnboardingModal onComplete={() => setShowOnboarding(false)} />
           )}
           <DashboardSidebar>
-            <div className="flex-1 flex flex-col min-h-0 bg-[#F8FAFC]">
-              {/* Modern Header - Professional & Clean */}
-              <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 px-8 flex items-center justify-between shrink-0 relative z-20">
-                <div className="flex items-center gap-6 flex-1">
-                   <button
-                    onClick={() => setCommandOpen(true)}
-                    className="hidden lg:flex items-center gap-3 px-4 py-2 bg-slate-100 rounded-2xl w-full max-w-xs border border-slate-200 hover:bg-slate-200 transition-all group"
-                  >
-                    <Search className="size-4 text-slate-400 group-hover:text-blue-500" />
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left flex-1">
-                      BUSCAR (⌘+K)
-                    </span>
-                  </button>
-                  <SidebarTrigger className="md:hidden" />
+                <div className="flex-1 overflow-y-auto w-full min-w-0 bg-[#F8FAFC]">
+                  {/* Modern Header - Professional & Fluid */}
+                  <header className="h-[var(--min-tap-target)] md:h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 md:px-8 flex items-center justify-between shrink-0 relative z-20 sticky top-0">
+                    <div className="flex items-center gap-3 md:gap-6 flex-1 min-w-0">
+                      <SidebarTrigger />
+                      <button
+                        onClick={() => setCommandOpen(true)}
+                        className="hidden lg:flex items-center gap-3 px-4 py-2 bg-slate-100 rounded-2xl w-full max-w-xs border border-slate-200 hover:bg-slate-200 transition-all group"
+                      >
+                        <Search className="size-4 text-slate-400 group-hover:text-blue-500" />
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left flex-1">
+                          BUSCAR (⌘+K)
+                        </span>
+                      </button>
+                      <div className="lg:hidden">
+                        <h1 className="text-sm font-black italic uppercase tracking-tighter text-slate-900 truncate">
+                          Doce <span className="text-pink-500">Gestão</span>
+                        </h1>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 md:gap-4 ml-auto">
+                      {/* Subscription Info - Desktop Only */}
+                      <Link
+                        href="/dashboard/billing"
+                        className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 font-bold text-[10px] uppercase tracking-widest hover:bg-amber-100 transition-all shrink-0"
+                      >
+                        <Clock className="size-3 animate-pulse" />
+                        <span>{getTrialLabel()}</span>
+                      </Link>
+
+                      <div className="h-6 w-px bg-slate-200 mx-1 hidden md:block" />
+
+                      <div className="flex items-center gap-2 md:gap-3">
+                        <ThemeToggle />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={toggleSound}
+                          className={cn(
+                            "size-10 rounded-full border transition-all shadow-sm",
+                            soundEnabled ? "border-emerald-100 bg-emerald-50 text-emerald-600 hover:bg-emerald-100" : "border-slate-100 bg-slate-50 text-slate-400 hover:bg-slate-100"
+                          )}
+                        >
+                          {soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+                        </Button>
+                        <NotificationBell />
+                        <UserAvatarMenu />
+                      </div>
+                    </div>
+                  </header>
+
+                  <main className="max-w-[1600px] mx-auto p-[var(--space-sm)] md:p-[var(--space-lg)]">
+                    {children}
+                  </main>
+                  
+                  <footer className="mt-auto h-12 bg-white border-t border-slate-200 px-4 md:px-8 flex items-center justify-between text-[8px] font-bold text-slate-400 shrink-0 uppercase tracking-widest">
+                    <div className="truncate">© 2026 DOCE GESTÃO <span className="text-pink-500 font-black ml-2">• PRO</span></div>
+                    <div className="hidden sm:block opacity-60">SaaS Platinum v4.5</div>
+                  </footer>
                 </div>
-
-                <div className="flex items-center gap-4">
-                  {/* Trial Info - Professional Badge */}
-                  <Link
-                    href="/dashboard/billing"
-                    className="hidden lg:flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 font-bold text-[10px] uppercase tracking-widest hover:bg-amber-100 transition-all"
-                  >
-                    <Clock className="size-3 animate-pulse" />
-                    <span>{getTrialLabel()}</span>
-                  </Link>
-
-                  <div className="h-8 w-px bg-slate-200 mx-2 hidden md:block" />
-
-                  <div className="flex items-center gap-3">
-                    <ThemeToggle />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={toggleSound}
-                      className={cn(
-                        "size-10 rounded-full border transition-all shadow-sm",
-                        soundEnabled ? "border-emerald-100 bg-emerald-50 text-emerald-600 hover:bg-emerald-100" : "border-slate-100 bg-slate-50 text-slate-400 hover:bg-slate-100"
-                      )}
-                      title={soundEnabled ? "Som Ativo" : "Som Mudo"}
-                    >
-                      {soundEnabled ? <Volume2 size={20} strokeWidth={3} /> : <VolumeX size={20} />}
-                    </Button>
-                    <NotificationBell />
-                    <UserAvatarMenu />
-                  </div>
-                </div>
-              </header>
-
-               {/* Standardized Content Area */}
-              <div className="flex-1 overflow-y-auto w-full min-w-0 bg-[#F8FAFC]">
-                <main className="max-w-[1600px] mx-auto px-4 md:px-8 py-6 md:py-10">
-                  {children}
-                </main>
-              </div>
-            </div>
           </DashboardSidebar>
           <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
         </div>

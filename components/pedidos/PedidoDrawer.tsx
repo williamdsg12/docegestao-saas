@@ -201,15 +201,15 @@ export function PedidoDrawer({ onUpdateStatus, onUpdatePaymentStatus }: PedidoDr
                 </SheetHeader>
 
                 {/* 1. Header - Orange/Yellow Bar */}
-                <div className="bg-[#FBA41A] p-4 flex items-center justify-between shrink-0 shadow-md">
-                    <div className="flex items-center gap-4">
-                        <h2 className="text-3xl font-black text-white italic tracking-tighter">#{pedido.id.slice(0, 4).toUpperCase()}</h2>
+                <div className="bg-[#FBA41A] p-4 flex items-center justify-between shrink-0 shadow-md h-[var(--min-tap-target)] md:h-20">
+                    <div className="flex items-center gap-3 md:gap-4">
+                        <h2 className="text-[var(--font-xl)] md:text-3xl font-black text-white italic tracking-tighter">#{pedido.id.slice(0, 4).toUpperCase()}</h2>
                         <div className="flex items-center gap-2">
-                            <div className="bg-white/20 backdrop-blur-md rounded-lg px-2.5 py-1 flex items-center gap-1.5 text-white">
-                                <Bike className="size-4" />
-                                <span className="text-[10px] font-black uppercase tracking-widest leading-none mt-0.5">{isDelivery ? 'Delivery' : 'Retirada'}</span>
+                            <div className="bg-white/20 backdrop-blur-md rounded-lg px-2 py-1 flex items-center gap-1.5 text-white">
+                                <Bike className="size-3.5" />
+                                <span className="text-[8px] md:text-[10px] font-black uppercase tracking-widest leading-none mt-0.5">{isDelivery ? 'Delivery' : 'Retirada'}</span>
                             </div>
-                            <div className={cn("rounded-lg px-2.5 py-1 text-[10px] font-black uppercase tracking-widest leading-none mt-0.5 shadow-sm", statusCfg.className)}>
+                            <div className={cn("rounded-lg px-2 py-1 text-[8px] md:text-[10px] font-black uppercase tracking-widest leading-none mt-0.5 shadow-sm", statusCfg.className)}>
                                 {statusCfg.label}
                             </div>
                         </div>
@@ -218,16 +218,13 @@ export function PedidoDrawer({ onUpdateStatus, onUpdatePaymentStatus }: PedidoDr
                         <Button 
                             variant="ghost" 
                             size="icon" 
-                            className="text-white hover:bg-white/10 rounded-full h-10 w-10"
+                            className="text-white hover:bg-white/10 rounded-full h-9 w-9 md:h-10 md:w-10"
                             onClick={() => printOrder(pedido, items)} 
                         >
-                            <Printer className="size-5" />
+                            <Printer className="size-4 md:size-5" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 rounded-full h-10 w-10">
-                            <Pencil className="size-5" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 rounded-full h-10 w-10" onClick={handleClose}>
-                            <X className="size-7" />
+                        <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 rounded-full h-9 w-9 md:h-10 md:w-10" onClick={handleClose}>
+                            <X className="size-6 md:size-7" />
                         </Button>
                     </div>
                 </div>

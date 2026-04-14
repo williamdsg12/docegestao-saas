@@ -279,13 +279,13 @@ export function CheckoutFlow({ isOpen, onClose, subtotal, deliveryFee, total, te
             e.preventDefault();
           }
         }}
-        className="w-full sm:max-w-xl p-0 overflow-hidden border-none shadow-2xl bg-white flex flex-col h-full sm:h-auto sm:max-h-[90vh] rounded-none sm:rounded-[32px]"
+        className="w-full sm:max-w-xl p-0 overflow-hidden border-none shadow-2xl bg-white flex flex-col h-[100dvh] sm:h-auto sm:max-h-[90vh] rounded-none sm:rounded-[32px]"
       >
         <div className="p-5 md:p-8 bg-slate-900 text-white relative overflow-hidden shrink-0">
           <div className="absolute top-0 right-0 size-40 bg-red-500 rounded-full blur-[80px] opacity-20" />
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-4 md:mb-2">
-              <DialogTitle className="text-xl md:text-2xl font-black italic uppercase tracking-tighter leading-none">
+              <DialogTitle className="text-[var(--font-lg)] md:text-[var(--font-xl)] font-black italic uppercase tracking-tighter leading-none">
                 Finalizar <span className="text-red-500">Pedido</span>
               </DialogTitle>
               <VisuallyHidden.Root>
@@ -354,13 +354,15 @@ export function CheckoutFlow({ isOpen, onClose, subtotal, deliveryFee, total, te
                       </div>
                     </div>
 
-                     <Button
-                      disabled={!customerInfo.name || !customerInfo.phone}
-                      onClick={handleNext}
-                      className="w-full h-16 md:h-14 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black uppercase italic tracking-[0.1em] shadow-xl mt-8 transition-all active:scale-95 flex items-center justify-between px-8"
-                    >
-                      Continuar <ArrowRight className="size-5" />
-                    </Button>
+                     <div className="sticky bottom-0 left-0 right-0 p-4 bg-white border-t sm:p-0 sm:bg-transparent sm:border-none sm:relative md:p-0">
+                       <Button
+                        disabled={!customerInfo.name || !customerInfo.phone}
+                        onClick={handleNext}
+                        className="w-full h-14 md:h-14 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black uppercase italic tracking-[0.1em] shadow-xl md:mt-8 transition-all active:scale-95 flex items-center justify-between px-8"
+                      >
+                        Continuar <ArrowRight className="size-5" />
+                      </Button>
+                    </div>
                   </motion.div>
                 )}
 
@@ -458,7 +460,7 @@ export function CheckoutFlow({ isOpen, onClose, subtotal, deliveryFee, total, te
                       </div>
                     )}
 
-                    <div className="flex gap-4 pt-4">
+                    <div className="sticky bottom-0 left-0 right-0 p-4 bg-white border-t sm:p-0 sm:bg-transparent sm:border-none sm:relative md:p-0 flex gap-4">
                       <Button variant="ghost" className="h-14 px-6 rounded-2xl text-slate-400 font-black uppercase text-[10px] tracking-widest shadow-sm border border-slate-50" onClick={handleBack}>Voltar</Button>
                       <Button
                         disabled={deliveryType === "entrega" && (!customerInfo.address || !customerInfo.number)}
@@ -551,7 +553,7 @@ export function CheckoutFlow({ isOpen, onClose, subtotal, deliveryFee, total, te
                       <Textarea placeholder="Observações" className="min-h-[80px] rounded-2xl bg-white border-2 border-slate-100 font-medium p-4 text-xs" value={customerInfo.notes} onChange={e => setCustomerInfo({ ...customerInfo, notes: e.target.value })} />
                     </div>
 
-                    <div className="flex gap-4 pt-4 pb-4">
+                    <div className="sticky bottom-0 left-0 right-0 p-4 bg-white border-t sm:p-0 sm:bg-transparent sm:border-none sm:relative md:p-0 flex gap-4 pb-4">
                       <Button variant="ghost" className="h-14 px-6 rounded-2xl text-slate-400 font-black uppercase text-[10px] tracking-widest" onClick={handleBack}>Voltar</Button>
                       <Button disabled={isSubmitting || !customerInfo.payment_method} onClick={handleSubmit} className="flex-1 h-14 md:h-16 rounded-2xl bg-red-500 hover:bg-red-600 text-white font-black uppercase italic tracking-[0.1em] shadow-xl flex items-center justify-center gap-3">
                         {isSubmitting ? <Loader2 className="size-5 animate-spin" /> : <CheckCircle2 className="size-5" />}Fazer Pedido

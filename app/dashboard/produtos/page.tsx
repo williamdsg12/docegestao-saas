@@ -248,37 +248,37 @@ function ProdutosContentV4() {
       
       {/* 🚀 HEADER PREMIUM (ESTILO IFOOD) */}
       <div className="bg-white border-b border-slate-100 sticky top-0 z-30 shadow-sm">
-         <div className="max-w-7xl mx-auto px-6 h-24 flex items-center justify-between gap-8">
-            <div className="flex items-center gap-6 flex-1">
-               <div className="hidden lg:flex flex-col">
-                  <h1 className="text-xl font-black italic uppercase tracking-tighter text-slate-900 leading-none">Meus <span className="text-indigo-600">Produtos</span></h1>
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 whitespace-nowrap">Gestão de Cardápio</p>
+         <div className="max-w-7xl mx-auto px-[var(--space-md)] h-auto py-4 md:h-24 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 md:gap-8">
+            <div className="flex items-center gap-4 md:gap-6 flex-1">
+               <div className="hidden sm:flex flex-col shrink-0">
+                  <h1 className="text-[var(--font-base)] md:text-[var(--font-lg)] font-black italic uppercase tracking-tighter text-slate-900 leading-none">Meus <span className="text-indigo-600">Produtos</span></h1>
+                  <p className="text-[var(--font-xs)] font-bold text-slate-400 uppercase tracking-widest mt-0.5 whitespace-nowrap">Cardápio</p>
                </div>
                
-               <div className="relative max-w-xl w-full group">
-                  <Search className="absolute left-5 top-1/2 -translate-y-1/2 size-5 text-slate-300 group-focus-within:text-indigo-500 transition-colors" />
+               <div className="relative flex-1 group">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-300 group-focus-within:text-indigo-500 transition-colors" />
                   <Input 
-                    placeholder="Busque por nome, categoria ou descrição..." 
+                    placeholder="Buscar..." 
                     value={search} onChange={e => setSearch(e.target.value)}
-                    className="h-14 pl-14 rounded-2xl border-none bg-slate-50 font-bold text-slate-600 placeholder:text-slate-300 focus:ring-4 focus:ring-indigo-100 transition-all shadow-inner"
+                    className="h-12 md:h-14 pl-12 rounded-2xl border-none bg-slate-50 font-bold text-slate-600 placeholder:text-slate-300 focus:ring-4 focus:ring-indigo-100 transition-all shadow-inner"
                   />
                </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
                <Button 
                 onClick={() => setShowPreview(!showPreview)}
                 variant={showPreview ? "default" : "outline"} 
                 className={cn(
-                  "h-12 px-6 rounded-2xl font-bold text-[10px] uppercase italic gap-2 transition-all shadow-sm",
+                  "hidden sm:flex h-12 px-4 md:px-6 rounded-2xl font-bold text-[10px] uppercase italic gap-2 transition-all shadow-sm",
                   showPreview ? "bg-indigo-600 text-white" : "border-slate-100 bg-white text-slate-500"
                 )}
                >
-                  <Smartphone size={16} /> {showPreview ? "Ocultar Preview" : "Ver Preview"}
+                  <Smartphone size={16} /> <span className="hidden md:inline">{showPreview ? "Ocultar Preview" : "Ver Preview"}</span>
                </Button>
                <Button 
                 onClick={() => handleOpenModal()}
-                className="h-14 px-8 rounded-[24px] bg-slate-900 hover:bg-black text-white font-black italic uppercase text-[11px] gap-3 shadow-2xl shadow-slate-900/20 active:scale-95 transition-all"
+                className="flex-1 md:flex-none h-12 md:h-14 px-6 md:px-8 rounded-[20px] md:rounded-[24px] bg-slate-900 hover:bg-black text-white font-black italic uppercase text-[10px] md:text-[11px] gap-2 md:gap-3 shadow-2xl shadow-slate-900/20 active:scale-95 transition-all"
                >
                   <PlusCircle size={18} /> Novo Produto
                </Button>

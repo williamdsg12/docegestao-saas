@@ -246,133 +246,108 @@ export default function PedidosPage() {
     <div className="flex flex-col h-screen bg-[#F4F7F6] overflow-hidden font-sans">
       
       {/* 1. OPERATIONAL HEADER */}
-      <div className="bg-white border-b border-slate-200 px-4 md:px-6 h-16 flex items-center justify-between shrink-0 shadow-sm z-30">
-        <div className="flex items-center gap-4 md:gap-6">
-          <div className="hidden md:flex flex-col">
-            <h1 className="text-lg font-bold text-slate-800 tracking-tight leading-none">Central de <span className="text-primary">Operações</span></h1>
-            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mt-0.5">Gestão em Tempo Real</p>
+      <div className="bg-white border-b border-slate-200 px-[var(--space-sm)] md:px-[var(--space-md)] py-[var(--space-sm)] flex flex-col md:flex-row md:items-center justify-between shrink-0 shadow-sm z-30 sticky top-[var(--min-tap-target)] md:top-20">
+        <div className="flex items-center justify-between md:justify-start gap-4 md:gap-6 mb-4 md:mb-0">
+          <div className="flex flex-col">
+            <h1 className="text-[var(--font-lg)] font-black italic uppercase tracking-tighter text-slate-800 leading-none">
+              Central de <span className="text-primary">Operações</span>
+            </h1>
+            <p className="text-[var(--font-xs)] font-bold text-slate-400 uppercase tracking-widest mt-1">Real-Time Ops</p>
           </div>
 
-          <div className="md:hidden flex flex-col">
-             <h1 className="text-lg font-black italic tracking-tighter text-slate-800">OPERACIONAL</h1>
-          </div>
+          <div className="flex items-center gap-3">
+             <Separator orientation="vertical" className="h-8 bg-slate-100 hidden md:block" />
+             <StoreStatusToggle 
+                status={storeStatus}
+                isLoading={isUpdatingStatus}
+                onToggle={async (newManualState) => {
+                    try {
+                        setIsUpdatingStatus(true)
+                        if (!tenantId) throw new Error("Sessão expirada")
 
-          <Separator orientation="vertical" className="h-10 bg-slate-100 mx-2" />
-
-          {/* STORE STATUS TOGGLE - Single Source of Truth */}
-          <StoreStatusToggle 
-            status={storeStatus}
-            isLoading={isUpdatingStatus}
-            onToggle={async (newManualState) => {
-                try {
-                    setIsUpdatingStatus(true)
-                    if (!tenantId) throw new Error("Sessão expirada")
-
-                    const updates = {
-                        is_manual_override: !newManualState ? true : false, // If closing, override. If opening, set to automatic (or manual open)
-                        manual_status: newManualState ? 'open' : 'closed',
-                        updated_at: new Date().toISOString()
-                    }
-
-                    const { error } = await supabase
-                        .from('store_settings')
-                        .upsert({
-                            store_id: tenantId,
-                            ...updates,
+                        const updates = {
+                            is_manual_override: !newManualState ? true : false,
+                            manual_status: newManualState ? 'open' : 'closed',
                             updated_at: new Date().toISOString()
-                        }, { onConflict: 'store_id' })
-                    
-                    if (error) throw error
-                    await fetchData()
-                    
-                    if (newManualState) {
-                        toast.success("Loja ativa! 🚀")
-                    } else {
-                        toast.info("Loja fechada manual.")
+                        }
+
+                        const { error } = await supabase
+                            .from('store_settings')
+                            .upsert({
+                                store_id: tenantId,
+                                ...updates,
+                                updated_at: new Date().toISOString()
+                            }, { onConflict: 'store_id' })
+                        
+                        if (error) throw error
+                        await fetchData()
+                        toast.success(newManualState ? "Loja ativa! 🚀" : "Loja fechada manual.")
+                    } catch (e: any) {
+                        toast.error("Erro ao alternar status")
+                    } finally {
+                        setIsUpdatingStatus(false)
                     }
-                } catch (e: any) {
-                    toast.error("Erro ao alternar status")
-                } finally {
-                    setIsUpdatingStatus(false)
-                }
-            }}
-          />
-
-          <Separator orientation="vertical" className="hidden md:block h-10 bg-slate-100" />
-
-          {/* Stats Grid */}
-          <div className="flex items-center gap-3 md:gap-4 overflow-x-auto no-scrollbar py-1 pr-4">
-             <StatCard 
-                label="Hoje" 
-                value={formatCurrency(stats.faturamento)} 
-                icon={<DollarSign className="size-3 md:size-4 text-emerald-500" />}
-                color="emerald"
-             />
-             <StatCard 
-                label="Preparo" 
-                value={stats.preparando} 
-                icon={<Package className="size-3 md:size-4 text-amber-500" />}
-                color="amber"
-             />
-             <StatCard 
-                label="Atrasados" 
-                value={stats.atrasados} 
-                icon={<Clock className={cn("size-3 md:size-4", stats.atrasados > 0 ? "text-white" : "text-slate-500")} />}
-                color={getDelayedBadgeColor()}
-                isAlert={stats.atrasados > 0}
-             />
-             <div className="hidden lg:block">
-               <Separator orientation="vertical" className="h-10 bg-slate-100" />
-             </div>
-             <StatCard 
-                label="TMP Médio" 
-                value={`${stats.tempoMedio} min`} 
-                icon={<Zap className="size-3 md:size-4 text-blue-500" />}
-                color="blue"
-             />
-             <StatCard 
-                label="Top Cliente" 
-                value={stats.topCliente} 
-                icon={<Trophy className="size-3 md:size-4 text-amber-500" />}
-                color="amber"
-             />
-             {stats.emRisco > 0 && (
-                 <div className="hidden lg:flex bg-orange-500 text-white rounded-full px-4 py-2 animate-pulse items-center gap-2 shadow-lg shadow-orange-200 shrink-0">
-                     <Zap className="size-4" />
-                     <span className="text-[10px] font-black uppercase tracking-wider">{stats.emRisco} EM RISCO</span>
-                 </div>
-             )}
+                }}
+              />
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Button variant="outline" size="icon" className="size-10 rounded-xl border-slate-200 bg-white" onClick={fetchData}>
-            <RotateCw className="size-4 text-slate-500" />
-          </Button>
-          <Button 
+        {/* Stats Grid - Fluid & Responsive */}
+        <div className="flex items-center gap-[var(--space-xs)] overflow-x-auto no-scrollbar pb-1 md:pb-0">
+           <StatCard 
+              label="Hoje" 
+              value={formatCurrency(stats.faturamento)} 
+              icon={<DollarSign className="size-4 text-emerald-500" />}
+              color="emerald"
+           />
+           <StatCard 
+              label="Preparo" 
+              value={stats.preparando} 
+              icon={<Package className="size-4 text-amber-500" />}
+              color="amber"
+           />
+           <StatCard 
+              label="Atrasados" 
+              value={stats.atrasados} 
+              icon={<Clock className={cn("size-4", stats.atrasados > 0 ? "text-white" : "text-slate-500")} />}
+              color={getDelayedBadgeColor()}
+              isAlert={stats.atrasados > 0}
+           />
+           <StatCard 
+              label="TMP Médio" 
+              value={`${stats.tempoMedio} min`} 
+              icon={<Zap className="size-4 text-blue-500" />}
+              color="blue"
+           />
+           <Button variant="outline" size="icon" className="touch-target rounded-xl shrink-0" onClick={fetchData}>
+              <RotateCw className="size-4 text-slate-500" />
+           </Button>
+           <Button 
             onClick={() => setShowSettings(true)}
-            className="hidden md:flex h-10 rounded-xl bg-slate-900 text-white font-bold text-[11px] px-6 shadow-sm hover:bg-slate-800 transition-all"
+            className="hidden md:flex btn-responsive rounded-xl bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest shadow-sm shrink-0"
           >
-             Configurações
+             Config
           </Button>
         </div>
-          {/* MOBILE TABS SWITCHER - iFood Pro Style */}
-      <div className="md:hidden bg-white border-b border-slate-100 px-4 pt-4 pb-0 flex items-center justify-between gap-2 shrink-0 overflow-x-auto no-scrollbar">
+      </div>
+
+      {/* MOBILE TABS SWITCHER - iFood Pro Style */}
+      <div className="md:hidden bg-white border-b border-slate-100 flex items-center justify-between gap-1 shrink-0 overflow-x-auto no-scrollbar relative z-20">
           {tabs.map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                    "flex-1 flex flex-col items-center pb-3 px-1 transition-all relative",
+                    "flex-1 flex flex-col items-center pt-4 pb-3 px-2 transition-all relative",
                     activeTab === tab.id ? "text-slate-900" : "text-slate-400"
                 )}
               >
                   <span className={cn(
-                      "text-[10px] font-black uppercase tracking-widest mb-1 transition-colors",
+                      "text-[9px] font-black uppercase tracking-widest mb-1 transition-colors",
                       activeTab === tab.id ? `text-${tab.color === 'rose' ? 'rose' : tab.color === 'blue' ? 'blue' : tab.color}-600` : "text-slate-400"
                   )}>{tab.label}</span>
                   <span className={cn(
-                      "text-base font-black italic tracking-tighter",
+                      "text-sm font-black italic tracking-tighter",
                       activeTab === tab.id ? "text-slate-900" : "text-slate-300"
                   )}>{getColPedidos(tab.id).length}</span>
                   
@@ -380,7 +355,7 @@ export default function PedidosPage() {
                     <motion.div 
                       layoutId="activeTabUnderline" 
                       className={cn(
-                        "absolute bottom-0 left-0 right-0 h-1 rounded-t-full",
+                        "absolute bottom-0 left-2 right-2 h-1 rounded-t-full",
                         `bg-${tab.color === 'rose' ? 'rose' : tab.color === 'blue' ? 'blue' : tab.color}-500`
                       )} 
                     />
@@ -388,12 +363,11 @@ export default function PedidosPage() {
               </button>
           ))}
       </div>
-    </div>
 
       {/* KANBAN BOARD */}
-      <div className="flex-1 overflow-x-auto no-scrollbar bg-slate-50 p-4 md:p-6">
+      <div className="flex-1 overflow-x-auto no-scrollbar bg-[#F8FAFC] p-[var(--space-sm)] md:p-[var(--space-md)]">
         {/* Desktop Grid */}
-        <div className="hidden md:grid min-w-[1240px] h-full grid-cols-4 gap-6">
+        <div className="hidden md:grid min-w-[1240px] h-full grid-cols-4 gap-[var(--space-md)]">
           <KanbanColumn title="Novos" icon={<Plus size={14} strokeWidth={3} />} color="rose" pedidos={getColPedidos('novos')} onUpdateStatus={handleUpdateStatus} />
           <KanbanColumn title="Preparo" icon={<Package size={14} strokeWidth={3} />} color="amber" pedidos={getColPedidos('preparo')} onUpdateStatus={handleUpdateStatus} />
           <KanbanColumn title="Entrega" icon={<Bike size={14} strokeWidth={3} />} color="blue" pedidos={getColPedidos('entrega')} onUpdateStatus={handleUpdateStatus} />
@@ -405,15 +379,18 @@ export default function PedidosPage() {
             <AnimatePresence mode="wait">
                 <motion.div
                     key={activeTab}
-                    initial={{ opacity: 0, x: 10 }}
+                    initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -10 }}
+                    exit={{ opacity: 0, y: -10 }}
                     className="h-full"
                 >
-                    {activeTab === 'novos' && <KanbanColumn title="Novos" icon={<Plus size={14} strokeWidth={3} />} color="rose" pedidos={getColPedidos('novos')} onUpdateStatus={handleUpdateStatus} />}
-                    {activeTab === 'preparo' && <KanbanColumn title="Preparo" icon={<Package size={14} strokeWidth={3} />} color="amber" pedidos={getColPedidos('preparo')} onUpdateStatus={handleUpdateStatus} />}
-                    {activeTab === 'entrega' && <KanbanColumn title="Entrega" icon={<Bike size={14} strokeWidth={3} />} color="blue" pedidos={getColPedidos('entrega')} onUpdateStatus={handleUpdateStatus} />}
-                    {activeTab === 'finalizados' && <KanbanColumn title="Concluídos" icon={<Check size={14} strokeWidth={4} />} color="slate" pedidos={getColPedidos('finalizados')} onUpdateStatus={handleUpdateStatus} isFinished />}
+                    <KanbanColumn 
+                      title={tabs.find(t => t.id === activeTab)?.label} 
+                      icon={activeTab === 'novos' ? <Plus size={14} /> : activeTab === 'preparo' ? <Package size={14} /> : <Bike size={14} />} 
+                      color={tabs.find(t => t.id === activeTab)?.color} 
+                      pedidos={getColPedidos(activeTab)} 
+                      onUpdateStatus={handleUpdateStatus} 
+                    />
                 </motion.div>
             </AnimatePresence>
         </div>

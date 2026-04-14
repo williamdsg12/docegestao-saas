@@ -130,35 +130,36 @@ export function PedidoKanbanCard({ pedido, onAccept, onReject, onNextStep }: Ped
 
       {/* Footer: Actions - Always visible on mobile, hover-only on desktop */}
       <div className={cn(
-          "flex gap-1.5 border-t border-slate-100 pt-1.5 mt-1.5 transition-all",
+          "flex gap-2 border-t border-slate-100 pt-2 mt-2 transition-all",
           "md:opacity-0 md:group-hover:opacity-100 md:translate-y-1 md:group-hover:translate-y-0"
       )} onClick={(e) => e.stopPropagation()}>
          {isNew ? (
-            <div className="flex w-full gap-1">
+            <div className="flex w-full gap-2">
                  <Button 
                    size="sm" 
-                   className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg h-8 md:h-7 p-0"
+                   className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl h-12 md:h-8 p-0 shadow-sm active:scale-95"
                    onClick={() => onAccept?.(pedido.id)}
                  >
-                   <Check className="size-4 md:size-3.5" />
+                   <Check className="size-5 md:size-4" />
+                   <span className="md:hidden ml-2 font-black uppercase text-[10px] tracking-widest italic">Aceitar</span>
                  </Button>
                  <Button 
                    size="sm" 
                    variant="ghost"
-                   className="rounded-lg h-8 md:h-7 w-8 md:w-7 text-rose-500 p-0"
+                   className="rounded-xl h-12 md:h-8 w-12 md:w-8 text-rose-500 p-0 border md:border-none"
                    onClick={() => onReject?.(pedido.id)}
                  >
-                   <X className="size-4 md:size-3.5" />
+                   <X className="size-5 md:size-4" />
                  </Button>
             </div>
          ) : !isFinished && (
             <Button 
               size="sm" 
-              className="w-full bg-slate-900 hover:bg-slate-800 text-white rounded-lg h-9 md:h-7 text-[11px] md:text-[10px] p-0 font-black uppercase tracking-widest italic"
+              className="w-full bg-slate-900 hover:bg-slate-800 text-white rounded-xl h-12 md:h-8 text-[11px] md:text-[10px] p-0 font-black uppercase tracking-widest italic shadow-lg active:scale-95 transition-all"
               onClick={() => onNextStep?.(pedido.id, pedido.status)}
             >
               {['preparando', 'em_preparo', 'preparing'].includes(pedido.status) ? 'Despachar' : 'Finalizar'}
-              <ArrowRight className="ml-2 size-3.5 md:size-3" />
+              <ArrowRight className="ml-2 size-4 md:size-3" />
             </Button>
          )}
       </div>

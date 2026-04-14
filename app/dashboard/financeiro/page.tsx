@@ -91,31 +91,31 @@ export default function FinanceiroPage() {
       />
 
       {/* KPI CARDS - Premium Style */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="kpi-grid">
         {[
-          { label: "Saldo Disponível", value: stats.disponivel, icon: Wallet, color: "text-emerald-500", bg: "bg-emerald-50/50" },
-          { label: "Saldo Pendente", value: stats.pendente, icon: Clock, color: "text-amber-500", bg: "bg-amber-50/50" },
-          { label: "Total Recebido", value: stats.total_recebido, icon: ArrowUpCircle, color: "text-blue-500", bg: "bg-blue-50/50" },
-          { label: "Total Sacado", value: stats.total_sacado, icon: ArrowDownCircle, color: "text-slate-400", bg: "bg-slate-50" },
+          { label: "Saldo Disponível", value: stats.disponivel, icon: Wallet, color: "text-emerald-500" },
+          { label: "Saldo Pendente", value: stats.pendente, icon: Clock, color: "text-amber-500" },
+          { label: "Total Recebido", value: stats.total_recebido, icon: ArrowUpCircle, color: "text-blue-500" },
+          { label: "Total Sacado", value: stats.total_sacado, icon: ArrowDownCircle, color: "text-slate-400" },
         ].map((kpi, idx) => (
           <motion.div 
             key={idx} 
-            initial={{ opacity: 0, y: 10 }} 
-            animate={{ opacity: 1, y: 0 }} 
+            initial={{ opacity: 0, scale: 0.95 }} 
+            animate={{ opacity: 1, scale: 1 }} 
             transition={{ delay: idx * 0.1 }}
-            className={cn("p-6 rounded-[32px] border border-slate-100 shadow-sm flex flex-col gap-4 relative overflow-hidden group bg-white")}
+            className="kpi-card relative overflow-hidden group"
           >
-            <div className={cn("size-12 rounded-2xl flex items-center justify-center bg-white shadow-sm border border-slate-50", kpi.color)}>
-              <kpi.icon size={24} />
+            <div className={cn("size-10 rounded-xl flex items-center justify-center bg-slate-50 border border-slate-100 shadow-sm transition-transform group-hover:scale-110", kpi.color)}>
+              <kpi.icon size={20} />
             </div>
-            <div>
-              <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest block mb-1 italic">{kpi.label}</span>
-              <span className={cn("text-2xl font-black italic tracking-tight text-slate-900")}>
+            <div className="mt-4">
+              <span className="text-[var(--font-xs)] font-black uppercase text-slate-400 tracking-widest block mb-1 italic leading-none">{kpi.label}</span>
+              <span className="text-[var(--font-xl)] font-black italic tracking-tight text-slate-900 leading-none">
                 R$ {kpi.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </span>
             </div>
-            <div className={cn("absolute -right-4 -bottom-4 size-24 opacity-[0.03] group-hover:scale-110 transition-transform", kpi.color)}>
-              <kpi.icon size={96} />
+            <div className={cn("absolute -right-4 -bottom-4 size-20 opacity-[0.03] group-hover:scale-110 transition-transform", kpi.color)}>
+              <kpi.icon size={80} />
             </div>
           </motion.div>
         ))}

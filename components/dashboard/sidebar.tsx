@@ -122,10 +122,10 @@ export function SidebarTrigger({ className }: { className?: string }) {
     <Button
       variant="ghost"
       size="icon"
-      className={cn("md:hidden text-slate-600 hover:bg-slate-100", className)}
+      className={cn("md:hidden touch-target text-slate-600 hover:bg-slate-100", className)}
       onClick={() => setIsOpenMobile(true)}
     >
-      <Menu className="size-6" />
+      <Menu className="size-6 md:hidden" />
     </Button>
   )
 }
