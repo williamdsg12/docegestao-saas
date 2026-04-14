@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { supabase } from "@/lib/supabase"
 import { useBusiness } from "@/hooks/useBusiness"
 import { Button } from "@/components/ui/button"
@@ -21,8 +21,11 @@ import {
   MapPin,
   Eye,
   Clock,
-  DollarSign
+  DollarSign,
+  Trophy,
+  Zap
 } from "lucide-react"
+import { playDelayedBeep } from "@/lib/notifications"
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -60,8 +63,51 @@ export default function PedidosPage() {
   const removeFromQueue = usePedidoStore(s => s.removeFromQueue)
   const config = usePedidoStore(s => s.config)
   const [storeSettings, setStoreSettings] = useState<any>(null)
+  const [now, setNow] = useState(Date.now()) // Real-time ticker
+  const prevAtrasadosCount = useRef(0) // For sound alert trigger
   
   const storeStatus = isStoreOpen(storeSettings)
+  
+  // Stats calculations for Operational Header (MUST BE INITIALIZED BEFORE USEEffects)
+  const stats = {
+    faturamento: pedidos.reduce((acc, o) => {
+        const isToday = new Date(o.created_at).toDateString() === new Date().toDateString()
+        const isFinished = ['finalizado', 'delivered', 'done'].includes(o.status)
+        return isToday && isFinished ? acc + Number(o.total || 0) : acc
+    }, 0),
+    preparando: pedidos.filter(o => ['preparando', 'em_preparo', 'preparing'].includes(o.status)).length,
+    atrasados: pedidos.filter(o => {
+        if (['finalizado', 'delivered', 'done', 'cancelado'].includes(o.status)) return false
+        // Use reactive 'now' for precise counting
+        const minutes = Math.floor((now - new Date(o.created_at).getTime()) / 60000)
+        return minutes >= (config.alertMin || 15) // Use alertMin or 15 as base
+    }).length,
+    tempoMedio: (() => {
+        const finished = pedidos.filter(o => ['finalizado', 'delivered', 'done'].includes(o.status))
+        if (finished.length === 0) return 0
+        const totalMs = finished.reduce((acc, o) => {
+            const start = new Date(o.created_at).getTime()
+            const end = new Date(o.updated_at || Date.now()).getTime()
+            return acc + (end - start)
+        }, 0)
+        return Math.floor(totalMs / finished.length / 60000)
+    })(),
+    topCliente: (() => {
+        const names = pedidos.map(o => o.customers?.name || "Cliente Final")
+        if (names.length === 0) return "---"
+        const counts = names.reduce((acc: any, name) => {
+            acc[name] = (acc[name] || 0) + 1
+            return acc
+        }, {})
+        return Object.entries(counts).sort((a: any, b: any) => b[1] - a[1])[0][0]
+    })(),
+    emRisco: pedidos.filter(o => {
+        if (!['preparando', 'em_preparo', 'preparing'].includes(o.status)) return false
+        const minutes = Math.floor((now - new Date(o.created_at).getTime()) / 60000)
+        const limit = config.criticalMin || 15
+        return minutes >= (limit * 0.7) && minutes < limit 
+    }).length
+  }
 
   // Custom Hooks
   usePedidosRealtime()
@@ -75,6 +121,10 @@ export default function PedidosPage() {
         Notification.requestPermission()
       }
     }
+
+    // Ticker for real-time atrasados (updates every 1s like iFood)
+    const ticker = setInterval(() => setNow(Date.now()), 1000)
+
     // Real-time synchronization for store settings
     if (!tenantId) return
 
@@ -92,15 +142,32 @@ export default function PedidosPage() {
 
     return () => {
       supabase.removeChannel(settingsChannel)
+      clearInterval(ticker)
     }
   }, [profile, tenantId])
+
+  // AUDIO ALERT TRIGGER: Beep when a order BECOMES delayed
+  useEffect(() => {
+    if (stats.atrasados > prevAtrasadosCount.current) {
+        playDelayedBeep()
+    }
+    prevAtrasadosCount.current = stats.atrasados
+  }, [stats.atrasados])
 
   async function fetchData() {
     try {
       if (!tenantId) return
+      
+      const startOfDay = new Date()
+      startOfDay.setHours(0,0,0,0)
 
       const [ordersRes, settingsRes] = await Promise.all([
-        supabase.from('orders').select('*, customers(*)').eq('tenant_id', tenantId).order('created_at', { ascending: false }),
+        supabase
+            .from('orders')
+            .select('*, customers(*)')
+            .eq('tenant_id', tenantId)
+            .gte('created_at', startOfDay.toISOString()) // DAILY RESET: Fetch only today's orders
+            .order('created_at', { ascending: false }),
         supabase.from('store_settings').select('*').eq('store_id', tenantId).maybeSingle()
       ])
 
@@ -148,24 +215,20 @@ export default function PedidosPage() {
       case 'novos': return pedidos.filter(o => ['novo', 'pending', 'pending_payment'].includes(o.status))
       case 'preparo': return pedidos.filter(o => ['preparando', 'em_preparo', 'preparing'].includes(o.status))
       case 'entrega': return pedidos.filter(o => ['saiu-entrega', 'saiu_entrega', 'delivery'].includes(o.status))
-      case 'finalizados': return pedidos.filter(o => ['finalizado', 'delivered', 'done'].includes(o.status)).slice(0, 15)
+      case 'finalizados': 
+        // Hide concluded/canceled if store is closed/manual override to closed
+        if (!storeStatus.isOpen) return []
+        return pedidos.filter(o => ['finalizado', 'delivered', 'done'].includes(o.status)).slice(0, 15)
       default: return []
     }
   }
 
-  // Stats calculations for Operational Header
-  const stats = {
-    faturamento: pedidos.reduce((acc, o) => {
-        const isToday = new Date(o.created_at).toDateString() === new Date().toDateString()
-        const isFinished = ['finalizado', 'delivered', 'done'].includes(o.status)
-        return isToday && isFinished ? acc + Number(o.total || 0) : acc
-    }, 0),
-    preparando: pedidos.filter(o => ['preparando', 'em_preparo', 'preparing'].includes(o.status)).length,
-    atrasados: pedidos.filter(o => {
-        if (['finalizado', 'delivered', 'done', 'cancelado'].includes(o.status)) return false
-        const minutes = Math.floor((Date.now() - new Date(o.created_at).getTime()) / 60000)
-        return minutes >= (config.criticalMin || 15)
-    }).length
+
+  // Visual Urgency for Atrasados Stats
+  const getDelayedBadgeColor = () => {
+    if (stats.atrasados === 0) return "slate"
+    if (stats.atrasados <= 5) return "amber"
+    return "rose"
   }
 
   const currentPopupOrder = popupQueue[0]
@@ -254,10 +317,29 @@ export default function PedidosPage() {
              <StatCard 
                 label="Atrasados" 
                 value={stats.atrasados} 
-                icon={<Clock className="size-3 md:size-4 text-rose-500" />}
-                color="rose"
+                icon={<Clock className={cn("size-3 md:size-4", stats.atrasados > 0 ? "text-white" : "text-slate-500")} />}
+                color={getDelayedBadgeColor()}
                 isAlert={stats.atrasados > 0}
              />
+             <Separator orientation="vertical" className="hidden lg:block h-10 bg-slate-100" />
+             <StatCard 
+                label="TMP Médio" 
+                value={`${stats.tempoMedio} min`} 
+                icon={<Zap className="size-3 md:size-4 text-blue-500" />}
+                color="blue"
+             />
+             <StatCard 
+                label="Top Cliente" 
+                value={stats.topCliente} 
+                icon={<Trophy className="size-3 md:size-4 text-amber-500" />}
+                color="amber"
+             />
+             {stats.emRisco > 0 && (
+                 <div className="hidden lg:flex bg-orange-500 text-white rounded-full px-3 py-1 animate-pulse items-center gap-1.5 shadow-lg shadow-orange-200">
+                     <Zap className="size-3" />
+                     <span className="text-[10px] font-black uppercase">{stats.emRisco} EM RISCO</span>
+                 </div>
+             )}
           </div>
         </div>
 
@@ -361,7 +443,8 @@ function StatCard({ label, value, icon, color, isAlert }: any) {
             <div className={cn(
                 "size-8 rounded-lg flex items-center justify-center",
                 color === 'emerald' ? "bg-emerald-50 text-emerald-600" :
-                color === 'amber' ? "bg-amber-50 text-amber-600" : "bg-rose-50 text-rose-600"
+                color === 'amber' ? "bg-amber-50 text-amber-600" : 
+                color === 'rose' ? "bg-rose-50 text-rose-600" : "bg-slate-50 text-slate-400"
             )}>
                 {icon}
             </div>

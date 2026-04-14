@@ -35,17 +35,24 @@ export function PedidoKanbanCard({ pedido, onAccept, onReject, onNextStep }: Ped
   const config = usePedidoStore(s => s.config)
 
   useEffect(() => {
-    const start = new Date(pedido.created_at).getTime()
     const update = () => {
       const isFinished = ['finalizado', 'delivered', 'done', 'cancelado', 'cancelled'].includes(pedido.status)
-      const endTime = isFinished ? new Date(pedido.updated_at || Date.now()).getTime() : Date.now()
+      
+      // UTC Robust Parsing
+      const start = new Date(pedido.created_at).getTime()
+      const now = Date.now()
+      
+      const endTime = isFinished 
+        ? new Date(pedido.updated_at || now).getTime() 
+        : now
+        
       setMinutesElapsed(Math.floor((endTime - start) / 60000))
     }
     update()
     const interval = setInterval(() => {
       const isFinished = ['finalizado', 'delivered', 'done', 'cancelado', 'cancelled'].includes(pedido.status)
       if (!isFinished) update()
-    }, 60000)
+    }, 10000) // Update every 10s is enough for Kanban view
     return () => clearInterval(interval)
   }, [pedido.created_at, pedido.status, pedido.updated_at])
 
@@ -53,15 +60,15 @@ export function PedidoKanbanCard({ pedido, onAccept, onReject, onNextStep }: Ped
   
   const getUrgencyStyles = () => {
     if (isFinished) return "border-slate-200 opacity-80"
-    if (minutesElapsed >= (config.criticalMin || 15)) return "border-rose-300 bg-rose-50/50"
-    if (minutesElapsed >= (config.alertMin || 5)) return "border-amber-300 bg-amber-50/50"
-    return "border-emerald-200 bg-white"
+    if (minutesElapsed >= 15) return "border-rose-300 bg-rose-50/50"
+    if (minutesElapsed >= 5) return "border-amber-300 bg-amber-50/50"
+    return "border-emerald-200 bg-emerald-50/20"
   }
 
   const getTimerStyles = () => {
     if (isFinished) return "bg-slate-100 text-slate-500"
-    if (minutesElapsed >= (config.criticalMin || 15)) return "bg-rose-500 text-white"
-    if (minutesElapsed >= (config.alertMin || 5)) return "bg-amber-400 text-white"
+    if (minutesElapsed >= 15) return "bg-rose-500 text-white"
+    if (minutesElapsed >= 5) return "bg-amber-400 text-white"
     return "bg-emerald-500 text-white"
   }
 
@@ -109,6 +116,15 @@ export function PedidoKanbanCard({ pedido, onAccept, onReject, onNextStep }: Ped
             <span className="font-bold text-emerald-600 text-sm tracking-tight">
                 {formatCurrency(pedido.total)}
             </span>
+            <div className="flex items-center gap-1 bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded-md">
+                {pedido.payment_method === 'pix' ? (
+                   <span className="text-[8px] font-black text-emerald-500 uppercase">PIX</span>
+                ) : pedido.payment_method === 'money' ? (
+                   <DollarSign className="size-2.5 text-amber-500" />
+                ) : (
+                   <CreditCard className="size-2.5 text-blue-500" />
+                )}
+            </div>
         </div>
       </div>
 

@@ -23,11 +23,12 @@ interface CheckoutFlowProps {
   subtotal: number
   deliveryFee: number
   total: number
-  tenantId: string
+   tenantId: string
   onSubmit: (data: any) => Promise<void>
+  onFeeUpdate: (fee: number) => void
 }
 
-export function CheckoutFlow({ isOpen, onClose, subtotal, deliveryFee, total, tenantId, onSubmit }: CheckoutFlowProps) {
+export function CheckoutFlow({ isOpen, onClose, subtotal, deliveryFee, total, tenantId, onSubmit, onFeeUpdate }: CheckoutFlowProps) {
   const [step, setStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -59,7 +60,13 @@ export function CheckoutFlow({ isOpen, onClose, subtotal, deliveryFee, total, te
   const [paymentStatus, setPaymentStatus] = useState<"idle" | "processing" | "pending_pix" | "awaiting_card" | "success" | "error">("idle")
   const [pixData, setPixData] = useState<any>(null)
   const [orderCreated, setOrderCreated] = useState<any>(null)
-  const [paymentProvider, setPaymentProvider] = useState<"mercadopago" | "tuna">("mercadopago")
+   const [paymentProvider, setPaymentProvider] = useState<"mercadopago" | "tuna">("mercadopago")
+  
+  // Logistics states (iFood Pro)
+  const [isCalculating, setIsCalculating] = useState(false)
+  const [distance, setDistance] = useState<number | null>(null)
+  const [estimatedTime, setEstimatedTime] = useState<string | null>(null)
+  const [durationMinutes, setDurationMinutes] = useState<number | null>(null)
 
   const router = useRouter()
   const [isPolling, setIsPolling] = useState(false)
@@ -108,8 +115,40 @@ export function CheckoutFlow({ isOpen, onClose, subtotal, deliveryFee, total, te
         console.error("Error fetching provider:", err);
       }
     };
-    if (tenantId) fetchProvider();
+     if (tenantId) fetchProvider();
   }, [tenantId]);
+
+  const calculateFee = async (lat: number, lng: number, city: string) => {
+    try {
+      setIsCalculating(true)
+      const res = await fetch('/api/calculate-delivery', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lat, lng, city })
+      })
+
+      const data = await res.json()
+      
+      if (!res.ok) {
+        throw new Error(data.error || "Erro ao calcular entrega")
+      }
+      
+      setDistance(data.distance)
+      setEstimatedTime(data.time)
+      setDurationMinutes(data.durationMinutes)
+      onFeeUpdate(data.fee)
+      
+    } catch (error: any) {
+      console.error("Calculation error:", error)
+      toast.error(error.message || "Não foi possível calcular a taxa de entrega.")
+      
+      // Fallback: Use parent fixed fee if calculation fails
+      setDistance(null)
+      setEstimatedTime(null)
+    } finally {
+      setIsCalculating(false)
+    }
+  }
 
 
   const handleFinalize = (orderId: string) => {
@@ -137,10 +176,13 @@ export function CheckoutFlow({ isOpen, onClose, subtotal, deliveryFee, total, te
       const orderData = {
         ...customerInfo,
         delivery_type: deliveryType,
-        precisa_troco: changeData.precisa_troco,
+         precisa_troco: changeData.precisa_troco,
         valor_pago: changeData.valor_pago,
         troco: changeData.troco,
-        items: [] // This should be passed from parent or handled by onSubmit prop
+        items: [],
+        distance_km: distance,
+        estimated_time: estimatedTime,
+        duration_minutes: durationMinutes
       }
 
       // If online payment, we first create the order, then handle payment
@@ -366,9 +408,13 @@ export function CheckoutFlow({ isOpen, onClose, subtotal, deliveryFee, total, te
                                 ...prev,
                                 address: addr.street || addr.formatted_address,
                                 neighborhood: addr.neighborhood,
-                                cep: addr.zip,
+                                 cep: addr.zip,
+                                city: addr.city,
                                 number: addr.number || prev.number
                               }))
+                              if (addr.lat && addr.lng) {
+                                calculateFee(addr.lat, addr.lng, addr.city || "")
+                              }
                             }}
                             placeholder="Ex: Rua das Flores, 123"
                             className="h-14 rounded-2xl bg-white border-2 border-slate-100 px-6 font-bold text-slate-700 focus:border-red-200"
@@ -482,8 +528,23 @@ export function CheckoutFlow({ isOpen, onClose, subtotal, deliveryFee, total, te
                     </AnimatePresence>
 
                     <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 space-y-4">
-                      <div className="flex justify-between items-center text-xs font-bold text-slate-600"><span>Resumo</span><span>{total.toFixed(2)}</span></div>
-                      <div className="flex justify-between items-center pt-1 border-t border-slate-200"><span className="text-xs font-black uppercase text-slate-900">Total</span><span className="text-3xl font-black italic text-red-500">R$ {total.toFixed(2)}</span></div>
+                       <div className="flex justify-between items-center text-xs font-bold text-slate-600">
+                        <span>Taxa de Entrega</span>
+                        <span className={cn(isCalculating && "animate-pulse text-red-500")}>
+                          {isCalculating ? "Calculando..." : deliveryFee > 0 ? `+ R$ ${deliveryFee.toFixed(2)}` : "Grátis"}
+                        </span>
+                      </div>
+                      
+                      {distance && !isCalculating && (
+                         <p className="text-[10px] font-bold text-red-500 uppercase tracking-widest italic text-center">
+                            Rota: {distance.toFixed(1)} km • {estimatedTime}
+                         </p>
+                      )}
+
+                      <div className="flex justify-between items-center pt-2 border-t border-slate-200">
+                        <span className="text-xs font-black uppercase text-slate-900">Total</span>
+                        <span className="text-3xl font-black italic text-red-500">R$ {total.toFixed(2)}</span>
+                      </div>
                     </div>
 
                     <div className="space-y-4">

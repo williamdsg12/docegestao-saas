@@ -355,9 +355,12 @@ function MenuContent({ params }: { params: { slug: string } }) {
             extras: item.extras,
             observation: item.observation
           })),
-          precisa_troco: orderData.precisa_troco,
+           precisa_troco: orderData.precisa_troco,
           valor_pago: orderData.valor_pago,
-          troco: orderData.troco
+          troco: orderData.troco,
+          distance_km: orderData.distance_km,
+          estimated_time: orderData.estimated_time,
+          duration_minutes: orderData.duration_minutes
         })
       })
 
@@ -377,9 +380,11 @@ function MenuContent({ params }: { params: { slug: string } }) {
         total,
         payment_method: orderData.payment_method,
         notes: orderData.notes,
-        precisa_troco: orderData.precisa_troco,
+         precisa_troco: orderData.precisa_troco,
         valor_pago: orderData.valor_pago,
-        troco: orderData.troco
+        troco: orderData.troco,
+        distance_km: orderData.distance_km,
+        estimated_time: orderData.estimated_time
       })
 
       // We return the result to CheckoutFlow which will manage the next steps
@@ -607,9 +612,10 @@ function MenuContent({ params }: { params: { slug: string } }) {
         onClose={() => setIsCheckoutOpen(false)} 
         subtotal={subtotal} 
         deliveryFee={deliveryFee} 
-        total={total} 
+         total={total} 
         tenantId={company?.id}
-        onSubmit={handleOrderSubmit} 
+        onSubmit={handleOrderSubmit}
+        onFeeUpdate={setDeliveryFee}
       />
 
     </div>

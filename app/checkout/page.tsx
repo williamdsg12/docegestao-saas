@@ -42,17 +42,16 @@ import { isStoreOpen } from "@/lib/storeStatus"
 export default function CheckoutPage() {
   const router = useRouter()
   const { business, profile, loadingBusiness } = useBusiness()
-  const [address, setAddress] = useState<any>(null)
+   const [address, setAddress] = useState<any>(null)
   const [distance, setDistance] = useState<number | null>(null)
+  const [estimatedTime, setEstimatedTime] = useState<string | null>(null)
+  const [durationMinutes, setDurationMinutes] = useState<number | null>(null)
   const [deliveryFee, setDeliveryFee] = useState<number>(0)
   const [cart, setCart] = useState<any[]>([])
   const [isCalculating, setIsCalculating] = useState(false)
-  const [customerInfo, setCustomerInfo] = useState({
-    name: "",
-    phone: "",
-    email: "",
-    notes: "",
-    payment_method: "pix" // pix, money, card_on_delivery, stripe
+    payment_method: "pix", // pix, money, card_on_delivery, stripe
+    change_for: 0 as number | string,
+    complement: ""
   })
   const [step, setStep] = useState(1) // 1: Identificação, 2: Entrega, 3: Pagamento
   const [isManualAddress, setIsManualAddress] = useState(false)
@@ -103,7 +102,11 @@ export default function CheckoutPage() {
       const res = await fetch('/api/calculate-delivery', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lat: selectedAddress.lat, lng: selectedAddress.lng })
+        body: JSON.stringify({ 
+          lat: selectedAddress.lat, 
+          lng: selectedAddress.lng,
+          city: selectedAddress.city 
+        })
       })
 
       if (!res.ok) {
@@ -115,6 +118,9 @@ export default function CheckoutPage() {
 
       setDistance(data.distance)
       setDeliveryFee(data.fee)
+      setEstimatedTime(data.time)
+      setDurationMinutes(data.durationMinutes)
+      
       setAddress({
         ...selectedAddress,
         estimated_time: data.time
@@ -227,7 +233,13 @@ export default function CheckoutPage() {
         delivery_number: address.number,
         delivery_neighborhood: address.neighborhood,
         delivery_city: address.city,
-        notes: customerInfo.notes
+        delivery_complement: customerInfo.complement,
+        change_for: customerInfo.payment_method === 'money' ? Number(customerInfo.change_for) : null,
+        notes: customerInfo.notes,
+        // iFood Pro Persistence
+        distance_km: distance,
+        estimated_time: estimatedTime,
+        duration_minutes: durationMinutes
       }
 
       const { data: order, error: orderError } = await supabase.from('orders').insert(orderPayload).select().single()
@@ -503,18 +515,31 @@ export default function CheckoutPage() {
 
                         <div className="flex flex-wrap gap-4 relative z-10">
                           {distance && (
-                            <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full border border-white/10">
-                              <Zap className="size-3 text-pink-400" />
-                              <span className="text-[10px] font-black uppercase tracking-widest">{distance.toFixed(1)} km</span>
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full border border-white/10">
+                                <Zap className="size-3 text-pink-400" />
+                                <span className="text-[10px] font-black uppercase tracking-widest">{distance.toFixed(1)} km (por rota)</span>
+                              </div>
                             </div>
                           )}
                             <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-full border border-white/10">
                               <Clock className="size-3 text-pink-400" />
                               <span className="text-[10px] font-black uppercase tracking-widest">
-                                {address.estimated_time || "30-45"} min
+                                {estimatedTime || "30-45"} min
                               </span>
                             </div>
                         </div>
+                      </div>
+
+                      {/* Complemento - New Field */}
+                      <div className="mt-6 space-y-3">
+                        <Label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 ml-4">Complemento (Opcional)</Label>
+                        <Input 
+                            placeholder="Ex: Apartamento 402, Bloco B" 
+                            value={customerInfo.complement} 
+                            onChange={e => setCustomerInfo({...customerInfo, complement: e.target.value})}
+                            className="h-16 rounded-[28px] bg-slate-50 border-2 border-transparent focus:border-pink-200 focus:bg-white transition-all font-bold px-8 text-slate-700"
+                        />
                       </div>
                     </motion.div>
                   )}
@@ -629,9 +654,47 @@ export default function CheckoutPage() {
                         "text-sm font-black uppercase tracking-widest block",
                         customerInfo.payment_method === "money" ? "text-[#FF2F81]" : "text-slate-500"
                       )}>Dinheiro</span>
-                      <span className="text-[9px] font-bold text-slate-400 uppercase mt-1 block">Pagar na Entrega</span>
+                      <span className="text-[9px] font-bold text-slate-400 uppercase mt-1 block">Rápido e Seguro</span>
                     </div>
                 </button>
+
+                {/* Change For (Troco) - Sub-Step if Cash */}
+                <AnimatePresence>
+                  {customerInfo.payment_method === 'money' && (
+                    <motion.div 
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="md:col-span-2 overflow-hidden"
+                    >
+                      <div className="p-8 bg-amber-50 rounded-[32px] border-2 border-amber-100 mt-4">
+                        <Label className="text-[11px] font-black uppercase tracking-[0.2em] text-amber-600 block mb-4 ml-2">Precisa de troco?</Label>
+                        <div className="flex items-center gap-4">
+                           <div className="relative flex-1">
+                              <DollarSign className="absolute left-6 top-1/2 -translate-y-1/2 size-5 text-amber-500" />
+                              <Input 
+                                type="number"
+                                placeholder="Troco para quanto?" 
+                                value={customerInfo.change_for} 
+                                onChange={e => setCustomerInfo({...customerInfo, change_for: e.target.value})}
+                                className="h-16 rounded-[24px] bg-white border-none focus:ring-2 focus:ring-amber-200 font-bold pl-14 text-slate-700 md:text-xl"
+                              />
+                           </div>
+                           <div className="text-right shrink-0 pr-2">
+                              <p className="text-[9px] font-bold text-amber-400 uppercase tracking-widest">Seu Total</p>
+                              <p className="text-xl font-black text-amber-600 leading-none">R$ {total.toFixed(2)}</p>
+                           </div>
+                        </div>
+                        {customerInfo.change_for && Number(customerInfo.change_for) > total && (
+                           <p className="text-[10px] font-bold text-amber-500 mt-4 ml-2 uppercase italic flex items-center gap-2 animate-pulse">
+                              <RefreshCcw className="size-3" />
+                              Levaremos R$ {(Number(customerInfo.change_for) - total).toFixed(2)} de troco
+                           </p>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                <button 
                   onClick={() => setCustomerInfo({...customerInfo, payment_method: "card_on_delivery"})}
@@ -735,18 +798,32 @@ export default function CheckoutPage() {
                       <span>Subtotal</span>
                       <span className="text-slate-800">R$ {subtotal.toFixed(2)}</span>
                    </div>
-                   <div className="flex justify-between items-center text-slate-500 font-bold text-[11px] uppercase tracking-widest">
-                      <span className="flex items-center gap-2">
-                        Taxa de Entrega 
-                        {isCalculating && <RefreshCcw className="size-3 animate-spin text-pink-400" />}
-                      </span>
-                      <span className={cn(
-                        "font-black tracking-tighter",
-                        deliveryFee === 0 ? "text-emerald-500" : "text-slate-800"
-                      )}>
-                        {deliveryFee > 0 ? `R$ ${deliveryFee.toFixed(2)}` : 'Grátis'}
-                      </span>
-                   </div>
+                   <div className="flex flex-col gap-1">
+                      <div className="flex justify-between items-center text-slate-500 font-bold text-[11px] uppercase tracking-widest">
+                        <span className="flex items-center gap-2">
+                          Taxa de Entrega 
+                          {isCalculating && <RefreshCcw className="size-3 animate-spin text-pink-400" />}
+                        </span>
+                        <span className={cn(
+                          "font-black tracking-tighter",
+                          deliveryFee === 0 ? "text-emerald-500" : "text-slate-800"
+                        )}>
+                          {isCalculating ? (
+                              <div className="flex items-center gap-2 text-[10px] text-pink-500 animate-pulse">
+                                  <Loader2 className="size-3 animate-spin" />
+                                  CALCULANDO...
+                              </div>
+                          ) : (
+                              deliveryFee > 0 ? `R$ ${deliveryFee.toFixed(2)}` : 'Grátis'
+                          )}
+                        </span>
+                      </div>
+                      {distance && !isCalculating && (
+                        <p className="text-[9px] font-bold text-pink-400 uppercase tracking-widest italic leading-none">
+                          {distance.toFixed(1)} km • {estimatedTime}
+                        </p>
+                      )}
+                    </div>
                    
                    <div className="pt-6 relative">
                       <div className="absolute inset-0 bg-pink-50/10 blur-2xl -z-10" />

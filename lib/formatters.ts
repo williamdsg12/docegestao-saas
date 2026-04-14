@@ -55,7 +55,7 @@ export const formatAddress = (order: any): string => {
     let neigh = order.delivery_neighborhood || order.bairro || order.neighborhood
     let city = order.delivery_city || order.cidade || order.city
 
-    // 2. Fallback to joined 'addresses' table if primary fields are empty
+    // 2. Fallback to joined 'addresses' table (legacy or different structure)
     if (!addr && order.addresses) {
         addr = order.addresses.street || order.addresses.address
         num = order.addresses.number
@@ -63,20 +63,20 @@ export const formatAddress = (order: any): string => {
         city = order.addresses.city
     }
 
-    // 3. Fallback to joined 'address' (singular) if exists
-    if (!addr && order.address) {
-        const a = order.address
-        if (typeof a === 'object') {
-            addr = a.street || a.address || a.endereco || a.formatted_address
-            num = a.number || a.numero
-            neigh = a.neighborhood || a.bairro
-            city = a.city || a.cidade
-        } else if (typeof a === 'string') {
-            addr = a
+    // 3. Fallback to order.customers.address (if customer has address in profile)
+    if (!addr && order.customers) {
+        const cAddr = order.customers.address
+        if (typeof cAddr === 'object' && cAddr !== null) {
+            addr = cAddr.street || cAddr.address || cAddr.endereco || cAddr.formatted_address
+            num = cAddr.number || cAddr.numero
+            neigh = cAddr.neighborhood || cAddr.bairro
+            city = cAddr.city || cAddr.cidade
+        } else if (typeof cAddr === 'string') {
+            addr = cAddr
         }
     }
 
-    // 4. Final check if addr is still an object (can happen with JSONB columns)
+    // 4. Handle Case where addr is an object (JSONB column)
     if (typeof addr === 'object' && addr !== null) {
         num = addr.number || addr.numero || num
         neigh = addr.neighborhood || addr.bairro || neigh
@@ -84,9 +84,12 @@ export const formatAddress = (order: any): string => {
         addr = addr.street || addr.address || addr.endereco || addr.formatted_address
     }
     
+    if (!addr && (!order.delivery_address && !order.address)) return 'Endereço não informado'
+
     const parts = [
         addr, 
         num ? `nº ${num}` : null, 
+        order.delivery_complement || order.complement ? `${order.delivery_complement || order.complement}` : null,
         neigh ? `(${neigh})` : null, 
         city
     ].filter(Boolean)

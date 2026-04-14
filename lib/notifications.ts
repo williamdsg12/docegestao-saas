@@ -112,4 +112,31 @@ export function vibrateDevice() {
     navigator.vibrate([300, 100, 300, 100, 500]);
   }
 }
+/**
+ * Plays a short, distinct beep for delayed orders (Web Audio API)
+ */
+export function playDelayedBeep() {
+    if (typeof window === 'undefined') return;
+    
+    try {
+        const context = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const oscillator = context.createOscillator();
+        const gainNode = context.createGain();
 
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(440, context.currentTime); // A4 note
+        oscillator.frequency.exponentialRampToValueAtTime(880, context.currentTime + 0.1); // Slide up
+        
+        gainNode.gain.setValueAtTime(0, context.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.1, context.currentTime + 0.01);
+        gainNode.gain.linearRampToValueAtTime(0, context.currentTime + 0.2);
+
+        oscillator.connect(gainNode);
+        gainNode.connect(context.destination);
+
+        oscillator.start();
+        oscillator.stop(context.currentTime + 0.2);
+    } catch (e) {
+        console.warn("Audio Context beep failed", e);
+    }
+}

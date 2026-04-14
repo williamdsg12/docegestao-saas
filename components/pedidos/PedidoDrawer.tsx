@@ -43,6 +43,7 @@ import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { usePedidoStore } from "@/store/pedidoStore"
 import { formatCurrency, formatPhone, formatAddress, getStatusConfig } from "@/lib/formatters"
+import { printOrder } from "@/lib/printer"
 import {
     Popover,
     PopoverContent,
@@ -84,9 +85,9 @@ export function PedidoDrawer({ onUpdateStatus, onUpdatePaymentStatus }: PedidoDr
                 setCurrentTime(new Date())
             }, 1000)
 
-            // 2. Operational Timer (Stops when finished)
+            // 2. Operational Timer (Stops when finished or dispatched)
             const updateTimer = () => {
-                const isFinished = ['finalizado', 'delivered', 'done', 'cancelado', 'cancelled'].includes(pedido.status)
+                const isFinished = ['finalizado', 'delivered', 'done', 'cancelado', 'cancelled', 'saiu-entrega', 'saiu_entrega', 'delivery'].includes(pedido.status)
                 const startTime = new Date(pedido.created_at).getTime()
                 const endTime = isFinished ? new Date(pedido.updated_at || Date.now()).getTime() : Date.now()
                 
@@ -100,7 +101,7 @@ export function PedidoDrawer({ onUpdateStatus, onUpdatePaymentStatus }: PedidoDr
             
             updateTimer()
             const timerInterval = setInterval(() => {
-                const isFinished = ['finalizado', 'delivered', 'done', 'cancelado', 'cancelled'].includes(pedido.status)
+                const isFinished = ['finalizado', 'delivered', 'done', 'cancelado', 'cancelled', 'saiu-entrega', 'saiu_entrega', 'delivery'].includes(pedido.status)
                 if (!isFinished) updateTimer()
             }, 1000)
 
@@ -214,6 +215,14 @@ export function PedidoDrawer({ onUpdateStatus, onUpdatePaymentStatus }: PedidoDr
                         </div>
                     </div>
                     <div className="flex items-center gap-1">
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="text-white hover:bg-white/10 rounded-full h-10 w-10"
+                            onClick={() => printOrder(pedido, items)} 
+                        >
+                            <Printer className="size-5" />
+                        </Button>
                         <Button variant="ghost" size="icon" className="text-white hover:bg-white/10 rounded-full h-10 w-10">
                             <Pencil className="size-5" />
                         </Button>
@@ -241,11 +250,20 @@ export function PedidoDrawer({ onUpdateStatus, onUpdatePaymentStatus }: PedidoDr
                     </div>
                     <div className={cn(
                         "flex items-center gap-2 font-black italic tracking-tighter transition-all px-4 py-2 rounded-2xl",
-                        timeElapsed.min >= 30 ? "bg-rose-500 text-white animate-pulse shadow-lg shadow-rose-200" : 
-                        ['finalizado', 'delivered', 'done'].includes(pedido.status) ? "bg-emerald-50 text-emerald-500 border border-emerald-100" : "bg-white border border-rose-100 text-rose-500 shadow-sm"
+                        // iFood Style Urgency Colors
+                        timeElapsed.min >= 15 ? "bg-rose-500 text-white animate-pulse shadow-lg shadow-rose-200" : 
+                        timeElapsed.min >= 5 ? "bg-amber-400 text-white shadow-md shadow-amber-100" :
+                        ['finalizado', 'delivered', 'done'].includes(pedido.status) ? "bg-emerald-50 text-emerald-500 border border-emerald-100" : "bg-emerald-500 text-white shadow-md shadow-emerald-100"
                     )}>
-                        <TimerIcon className={cn("size-4", timeElapsed.min >= 30 ? "text-white" : "text-rose-500")} />
-                        <span className="text-[16px] tabular-nums font-mono">{String(timeElapsed.min).padStart(2, '0')}:{String(timeElapsed.sec).padStart(2, '0')}</span>
+                        <TimerIcon className={cn("size-4", (timeElapsed.min >= 5 || !['finalizado', 'delivered', 'done'].includes(pedido.status)) ? "text-white" : "text-emerald-500")} />
+                        <div className="flex flex-col items-center">
+                            <span className="text-[16px] tabular-nums font-mono leading-none">
+                                {String(timeElapsed.min).padStart(2, '0')}:{String(timeElapsed.sec).padStart(2, '0')}
+                            </span>
+                            <span className="text-[7px] uppercase tracking-widest mt-0.5 opacity-80">
+                                Pedido há {timeElapsed.min} min
+                            </span>
+                        </div>
                     </div>
                 </div>
 
@@ -281,7 +299,7 @@ export function PedidoDrawer({ onUpdateStatus, onUpdatePaymentStatus }: PedidoDr
                             <div className="flex items-center gap-2">
                                 <Button
                                     size="icon"
-                                    className="h-10 w-10 bg-[#25D366] hover:bg-[#128C7E] text-white rounded-xl shadow-lg shadow-green-100 transition-all hover:scale-110 active:scale-95"
+                                    className="h-10 w-10 bg-[#25D366] hover:bg-[#128C7E] text-white rounded-xl shadow-lg shadow-green-100 transition-all hover:scale-111 active:scale-95"
                                     onClick={() => window.open(`https://wa.me/55${pedido.customers?.phone?.replace(/\D/g, '')}`, '_blank')}
                                 >
                                     <MessageCircle className="size-5 fill-current" />
@@ -293,17 +311,31 @@ export function PedidoDrawer({ onUpdateStatus, onUpdatePaymentStatus }: PedidoDr
                         </div>
 
                         {/* 4. Address Section */}
-                        <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 flex items-center justify-between">
+                        <div className={cn(
+                            "bg-white rounded-xl p-4 shadow-sm border flex items-center justify-between group transition-all",
+                            formatAddress(pedido) !== "Endereço não informado" ? "border-emerald-100" : "border-slate-100"
+                        )}>
                             <div className="flex items-center gap-3 flex-1 overflow-hidden">
-                                <div className="size-8 rounded-lg bg-orange-50 flex items-center justify-center text-[#FBA41A]">
+                                <div className={cn(
+                                    "size-8 rounded-lg flex items-center justify-center transition-colors",
+                                    formatAddress(pedido) !== "Endereço não informado" ? "bg-emerald-50 text-emerald-500" : "bg-orange-50 text-[#FBA41A]"
+                                )}>
                                     <MapPin className="size-5" />
                                 </div>
-                                <span className="text-[13px] font-bold text-slate-600 truncate italic">
-                                    {formatAddress(pedido)}
-                                </span>
+                                <div className="flex flex-col min-w-0">
+                                    <span className={cn(
+                                        "text-[13px] font-bold truncate italic leading-tight",
+                                        formatAddress(pedido) !== "Endereço não informado" ? "text-slate-900" : "text-slate-400"
+                                    )}>
+                                        {formatAddress(pedido) !== "Endereço não informado" ? `📍 ${formatAddress(pedido)}` : formatAddress(pedido)}
+                                    </span>
+                                    {formatAddress(pedido) !== "Endereço não informado" && (
+                                        <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mt-0.5">Endereço Confirmado</span>
+                                    )}
+                                </div>
                             </div>
                             <div className="flex items-center gap-1">
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300">
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-blue-500">
                                     <ExternalLink className="size-5" />
                                 </Button>
                             </div>
@@ -436,6 +468,15 @@ export function PedidoDrawer({ onUpdateStatus, onUpdatePaymentStatus }: PedidoDr
                                         <CreditCard className="size-3.5 text-slate-400" />
                                         <span className="text-[10px] font-black text-slate-500 uppercase">{pedido.payment_method || 'A DEFINIR'}</span>
                                     </div>
+                                    {pedido.payment_method === 'money' && pedido.change_for > 0 && (
+                                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-2 mt-1">
+                                            <p className="text-[9px] font-bold text-amber-600 uppercase leading-none mb-1">Troco solicitado</p>
+                                            <div className="flex justify-between items-center gap-4">
+                                                <span className="text-[10px] font-bold text-slate-500 italic">Pago: {formatCurrency(pedido.change_for)}</span>
+                                                <span className="text-[11px] font-black text-amber-600">Troco: {formatCurrency(pedido.change_for - pedido.total)}</span>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="text-right flex flex-col items-end">
                                     <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Total à Pagar</p>
