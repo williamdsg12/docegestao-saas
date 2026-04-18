@@ -21,6 +21,7 @@ import {
   ShoppingBag, 
   Truck, 
   CreditCard, 
+  DollarSign,
   CheckCircle2, 
   ChevronRight,
   MapPin,

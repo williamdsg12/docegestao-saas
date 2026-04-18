@@ -110,8 +110,8 @@ export default function CalendarioPage() {
         const startDate = startOfWeek(monthStart)
         const endDate = endOfWeek(monthEnd)
 
-        const rows = []
-        let days = []
+        const rows: any[] = []
+        let days: any[] = []
         let day = startDate
         let formattedDate = ""
 

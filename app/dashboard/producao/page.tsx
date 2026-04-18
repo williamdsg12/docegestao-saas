@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { useBusiness } from "@/hooks/useBusiness"
 import { useAuth } from "@/hooks/useAuth"
+import Link from "next/link"
 import { 
     ChefHat, 
     Plus, 
@@ -90,13 +91,13 @@ export default function ProductionERPPage() {
                     </p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <ProduzirModal onSuccess={fetchProductions}>
+                    <Link href="/dashboard/receitas">
                         <Button 
                             className="h-12 px-8 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black uppercase text-[10px] tracking-widest gap-2 shadow-xl shadow-slate-900/10"
                         >
                             <Plus size={16} /> Nova Produção
                         </Button>
-                    </ProduzirModal>
+                    </Link>
                 </div>
             </div>
 

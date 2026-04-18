@@ -214,7 +214,11 @@ export default function InventoryERPPage() {
                 unidade_base: "g",
                 estoque_atual: "",
                 estoque_minimo: "",
-                custo_medio: ""
+                custo_medio: "",
+                preco_total: "",
+                quantidade_total: "1",
+                fator_rendimento: "1",
+                unidade_compra: "Unid"
             })
         } catch (e) {
             toast.error("Erro ao cadastrar ingrediente")
@@ -538,7 +542,7 @@ export default function InventoryERPPage() {
 
             {/* Quick Movement Modal */}
             <Dialog open={isMoveModalOpen} onOpenChange={setIsMoveModalOpen}>
-                <DialogContent className="sm:max-w-xs rounded-[40px] p-10 border-none shadow-2xl">
+                <DialogContent className="sm:max-w-xs rounded-[40px] p-10 border-none shadow-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader className="mb-8 items-center text-center">
                         <div className={cn(
                             "size-16 rounded-[24px] flex items-center justify-center mb-4 shadow-xl",
@@ -583,7 +587,7 @@ export default function InventoryERPPage() {
 
             {/* New Ingredient Modal */}
             <Dialog open={isNewModalOpen} onOpenChange={setIsNewModalOpen}>
-                <DialogContent className="sm:max-w-md rounded-[40px] p-10 border-none shadow-2xl">
+                <DialogContent className="sm:max-w-md rounded-[40px] p-10 border-none shadow-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader className="mb-8">
                         <DialogTitle className="text-3xl font-black italic uppercase text-slate-900 tracking-tighter leading-none">Novo Insumo</DialogTitle>
                         <DialogDescription className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] italic mt-1">Configure as bases do seu novo ingrediente</DialogDescription>
@@ -980,7 +984,7 @@ export default function InventoryERPPage() {
                 isOpen={isImportModalOpen}
                 onOpenChange={setIsImportModalOpen}
                 onImportComplete={fetchInsumos}
-                tenantId={profile?.tenant_id || profile?.company_id}
+                tenantId={profile?.tenant_id || profile?.company_id || ""}
                 userId={user?.id || ""}
             />
         </div>

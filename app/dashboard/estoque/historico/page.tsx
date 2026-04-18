@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { AnimatePresence } from "framer-motion"
 
 export default function InventoryHistoryPage() {
     const { profile } = useBusiness()

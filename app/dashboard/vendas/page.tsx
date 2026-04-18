@@ -271,7 +271,7 @@ export default function SalesERPPage() {
 
             {/* Register Sale Modal */}
             <Dialog open={isSaleModalOpen} onOpenChange={setIsSaleModalOpen}>
-                <DialogContent className="sm:max-w-md rounded-[40px] p-10 border-none shadow-2xl">
+                <DialogContent className="sm:max-w-md rounded-[40px] p-10 border-none shadow-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader className="mb-8 items-center text-center">
                         <div className="size-16 rounded-2xl bg-emerald-50 text-emerald-500 flex items-center justify-center mb-4">
                             <DollarSign size={32} />

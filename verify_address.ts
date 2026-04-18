@@ -1,5 +1,5 @@
 
-import { formatAddress } from './lib/formatters.ts';
+import { formatAddress } from './lib/formatters';
 
 const mockOrders = [
   {

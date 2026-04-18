@@ -359,7 +359,7 @@ export default function ProfessionalShoppingListPage() {
 
             {/* Add Item Modal */}
             <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-                <DialogContent className="sm:max-w-md rounded-[40px] p-10 border-none shadow-2xl">
+                <DialogContent className="sm:max-w-md rounded-[40px] p-10 border-none shadow-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader className="mb-8 items-center text-center">
                         <div className="size-16 rounded-2xl bg-emerald-50 text-emerald-500 flex items-center justify-center mb-4">
                             <Plus size={32} />
@@ -439,7 +439,7 @@ export default function ProfessionalShoppingListPage() {
 
             {/* Finalize Purchase Modal */}
             <Dialog open={isFinalizeModalOpen} onOpenChange={setIsFinalizeModalOpen}>
-                <DialogContent className="sm:max-w-md rounded-[40px] p-10 border-none shadow-2xl">
+                <DialogContent className="sm:max-w-md rounded-[40px] p-10 border-none shadow-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader className="mb-8 items-center text-center">
                         <div className="size-20 rounded-3xl bg-emerald-500 text-white flex items-center justify-center mb-4 shadow-xl shadow-emerald-200">
                             <CheckCircle2 size={40} />

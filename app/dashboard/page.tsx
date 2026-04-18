@@ -118,7 +118,7 @@ export default function DashboardPage() {
       })
 
       // Add ERP Alerts
-      const erpAlerts = []
+      const erpAlerts: any[] = []
       if (baixos > 0) {
         erpAlerts.push({
           title: "Estoque em Alerta",
@@ -142,7 +142,7 @@ export default function DashboardPage() {
       setRecentOrders(pedidos.slice(0, 5))
 
       // Business Intelligence Alerts
-      const newAlerts = []
+      const newAlerts: any[] = []
       if (totalHoje > 500) {
         newAlerts.push({
           title: "Performance Ótima",

@@ -649,7 +649,7 @@ export async function processImportItems({
         // Atualizar estoque e custo médio
         const { data: ing } = await supabase
             .from('ingredientes')
-            .select('estoque_atual, custo_medio, unidade_base')
+            .select('estoque_atual, custo_medio, unidade_base, fator_rendimento')
             .eq('id', ingredientId)
             .single();
 
