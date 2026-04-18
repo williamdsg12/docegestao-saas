@@ -27,7 +27,8 @@ import {
   Menu,
   Award,
   Palette,
-  Monitor
+  Monitor,
+  FileText
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -57,19 +58,21 @@ const menuGroups = [
     name: "Produção",
     icon: UtensilsCrossed,
     items: [
-      { name: "Ingredientes", icon: UtensilsCrossed, path: "/dashboard/estoque", feature: "ingredientes" },
+      { name: "Insumos (Estoque)", icon: UtensilsCrossed, path: "/dashboard/estoque", feature: "ingredientes" },
+      { name: "Lista de Compras", icon: ShoppingCart, path: "/dashboard/lista-compras", feature: "pedidos" },
+      { name: "Compras (NF-e)", icon: FileText, path: "/dashboard/compras", feature: "pedidos" },
       { name: "Receitas", icon: BookOpen, path: "/dashboard/receitas", feature: "receitas" },
-      { name: "Produtos", icon: Package, path: "/dashboard/produtos", feature: "produtos" },
+      { name: "Sessões de Produção", icon: ClipboardList, path: "/dashboard/producao", feature: "produtos" },
     ]
   },
   {
     name: "Vendas",
     icon: ShoppingCart,
     items: [
+      { name: "Painel ERP (Lucro)", icon: BarChart3, path: "/dashboard/vendas", feature: "financeiro" },
       { name: "Pedidos", icon: ShoppingCart, path: "/dashboard/painel-pedidos", feature: "pedidos" },
       { name: "Orçamentos", icon: ClipboardList, path: "/dashboard/orcamentos", feature: "orcamentos" },
       { name: "Clientes", icon: Users, path: "/dashboard/clientes", feature: "clientes" },
-      { name: "Histórico de Vendas", icon: ClipboardList, path: "/dashboard/delivery-painel/historico", feature: "delivery-painel" },
       { name: "Cardápio Digital", icon: Coffee, path: "/dashboard/menu", feature: "menu" },
     ]
   },

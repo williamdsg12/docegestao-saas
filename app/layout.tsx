@@ -80,7 +80,6 @@ export default function RootLayout({
               })(window,document,'script','dataLayer','GTM-T73FGD9M');`}
             </Script>
 
-            {/* Meta Pixel Code */}
             <Script id="fb-pixel" strategy="afterInteractive">
               {`!function(f,b,e,v,n,t,s)
               {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
@@ -93,6 +92,9 @@ export default function RootLayout({
               fbq('init', '1940798166669273');
               fbq('track', 'PageView');`}
             </Script>
+
+            {/* Mercado Pago SDK v2 */}
+            <Script src="https://sdk.mercadopago.com/js/v2" strategy="beforeInteractive" />
           </>
         )}
       </head>
@@ -112,9 +114,6 @@ export default function RootLayout({
           </PageTransition>
         </Providers>
         <Analytics />
-        
-        {/* Mercado Pago SDK v2 */}
-        <Script src="https://sdk.mercadopago.com/js/v2" strategy="beforeInteractive" />
         
         {/* Registro do Service Worker para PWA */}
         <Script id="register-sw" strategy="afterInteractive">

@@ -20,6 +20,7 @@ import { Volume2, VolumeX } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { usePedidoStore } from "@/store/pedidoStore"
 
+import { usePathname } from "next/navigation"
 import { AuthGuard } from "@/components/auth/AuthGuard"
 import { initSound, requestNotificationPermission, startAlert, stopAlert } from "@/lib/notifications"
 
@@ -28,7 +29,14 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
+  const pathname = usePathname()
   const { user, subscription, isAdmin, loadingSubscription } = useAuth()
+  
+  // Routes that should NOT show the standard sidebar (Smart Gestão)
+  const isSmartGestao = pathname?.includes('/dashboard/gestao') || 
+                       pathname?.includes('/dashboard/estoque') || 
+                       pathname?.includes('/dashboard/lista-compras') || 
+                       pathname?.includes('/dashboard/producao')
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [commandOpen, setCommandOpen] = useState(false)
   const [soundEnabled, setSoundEnabled] = useState(true)
@@ -126,7 +134,10 @@ export default function DashboardLayout({
           <DashboardSidebar>
                 <div className="flex-1 overflow-y-auto w-full min-w-0 bg-[#F8FAFC]">
                   {/* Modern Header - Professional & Fluid */}
-                  <header className="h-[var(--min-tap-target)] md:h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 md:px-8 flex items-center justify-between shrink-0 relative z-20 sticky top-0">
+                  <header className={cn(
+                    "h-[var(--min-tap-target)] md:h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 md:px-8 flex items-center justify-between shrink-0 relative z-20 sticky top-0",
+                    isSmartGestao && "hidden md:flex"
+                  )}>
                     <div className="flex items-center gap-3 md:gap-6 flex-1 min-w-0">
                       <SidebarTrigger />
                       <button

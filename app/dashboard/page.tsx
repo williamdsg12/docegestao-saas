@@ -60,9 +60,81 @@ export default function DashboardPage() {
 
   const [recentOrders, setRecentOrders] = useState<any[]>([])
   const [alerts, setAlerts] = useState<any[]>([])
+  const [erpStats, setErpStats] = useState({
+    valorEstoque: 0,
+    itensBaixos: 0,
+    lucroReal: 0,
+    producaoMes: 0
+  })
 
   const META_MENSAL = business?.config?.monthly_goal || 10000 
   const progressoMeta = calcularMeta(totalMes, META_MENSAL)
+
+  useEffect(() => {
+    if (profile?.tenant_id || profile?.company_id) {
+      fetchErpStats()
+    }
+  }, [profile])
+
+  async function fetchErpStats() {
+    const tenantId = profile?.tenant_id || profile?.company_id
+    if (!tenantId) return
+
+    try {
+      // 1. Valor em Estoque
+      const { data: ingredients } = await supabase
+        .from('ingredientes')
+        .select('estoque_atual, custo_medio, estoque_minimo')
+        .eq('tenant_id', tenantId)
+      
+      const valorTotal = ingredients?.reduce((acc, i) => acc + (Number(i.estoque_atual) * Number(i.custo_medio || 0)), 0) || 0
+      const baixos = ingredients?.filter(i => i.estoque_atual <= i.estoque_minimo).length || 0
+
+      // 2. Lucro Real e Vendas do Mês (ERP)
+      const startOfMonth = new Date()
+      startOfMonth.setDate(1)
+      startOfMonth.setHours(0,0,0,0)
+
+      const { data: vendasExt } = await supabase
+        .from('vendas')
+        .select('lucro_total, valor_total')
+        .eq('tenant_id', tenantId)
+        .gte('data_venda', startOfMonth.toISOString())
+      
+      const lucroTotal = vendasExt?.reduce((acc, v) => acc + Number(v.lucro_total), 0) || 0
+
+      // 3. Produção do Mês
+      const { count: prodCount } = await supabase
+        .from('producoes')
+        .select('*', { count: 'exact', head: true })
+        .eq('tenant_id', tenantId)
+        .gte('data_producao', startOfMonth.toISOString())
+
+      setErpStats({
+        valorEstoque: valorTotal,
+        itensBaixos: baixos,
+        lucroReal: lucroTotal,
+        producaoMes: prodCount || 0
+      })
+
+      // Add ERP Alerts
+      const erpAlerts = []
+      if (baixos > 0) {
+        erpAlerts.push({
+          title: "Estoque em Alerta",
+          desc: `Existem ${baixos} itens com estoque baixo ou zerado.`,
+          icon: Package,
+          color: "text-rose-500",
+          bg: "bg-rose-50",
+          href: "/dashboard/estoque"
+        })
+      }
+      setAlerts(prev => [...prev, ...erpAlerts])
+
+    } catch (e) {
+      console.error("Erro dashboard ERP", e)
+    }
+  }
 
   useEffect(() => {
     if (pedidos.length > 0) {
@@ -89,7 +161,7 @@ export default function DashboardPage() {
           bg: "bg-blue-50"
         })
       }
-      setAlerts(newAlerts)
+      setAlerts(prev => [...prev, ...newAlerts])
     }
   }, [pedidos, totalHoje, progressoMeta])
 
@@ -114,9 +186,9 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
           { label: "Vendas Hoje", value: totalHoje, icon: DollarSign, color: "text-[#0070F3]", bg: "bg-blue-50", isCurrency: true },
-          { label: "Vendas no Mês", value: totalMes, icon: BarChart3, color: "text-[#2ECC71]", bg: "bg-green-50", isCurrency: true },
-          { label: "Receita Estimada", value: receitaEstimada, icon: TrendingUp, color: "text-amber-500", bg: "bg-amber-50", isCurrency: true },
-          { label: "Pedidos Ativos", value: pedidosAtivos, icon: ShoppingBag, color: "text-rose-500", bg: "bg-rose-50", isCurrency: false },
+          { label: "Lucro Real (Mês)", value: erpStats.lucroReal, icon: TrendingUp, color: "text-[#2ECC71]", bg: "bg-green-50", isCurrency: true },
+          { label: "Valor em Estoque", value: erpStats.valorEstoque, icon: Package, color: "text-amber-500", bg: "bg-amber-50", isCurrency: true },
+          { label: "Pedidos no Mês", value: pedidos.length, icon: ShoppingBag, color: "text-rose-500", bg: "bg-rose-50", isCurrency: false },
         ].map((kpi, idx) => (
           <motion.div
             key={idx}
@@ -129,12 +201,12 @@ export default function DashboardPage() {
               <div className={cn("size-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110", kpi.bg, kpi.color)}>
                 <kpi.icon size={24} />
               </div>
-              <Badge className="bg-slate-50 text-slate-400 border-none font-black text-[9px] uppercase px-2.5 py-1 tracking-widest group-hover:bg-slate-100 italic">Live</Badge>
+              <Badge className="bg-slate-50 text-slate-400 border-none font-black text-[9px] uppercase px-2.5 py-1 tracking-widest group-hover:bg-slate-100 italic">ERP Active</Badge>
             </div>
             <div>
               <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest block mb-1.5 italic group-hover:text-slate-900 transition-colors">{kpi.label}</p>
               <h3 className="text-3xl font-black italic tracking-tighter text-slate-900">
-                {kpi.isCurrency ? `R$ ${kpi.value.toFixed(2)}` : kpi.value}
+                {kpi.isCurrency ? `R$ ${kpi.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : kpi.value}
               </h3>
             </div>
           </motion.div>
