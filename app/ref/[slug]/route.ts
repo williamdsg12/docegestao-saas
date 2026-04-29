@@ -5,8 +5,8 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 const supabase = createClient(supabaseUrl, supabaseKey)
 
-export async function GET(request: Request, { params }: { params: { slug: string } }) {
-  const { slug } = params
+export async function GET(request: Request, context: { params: Promise<{ slug: string }> }) {
+  const { slug } = await context.params
   const url = new URL(request.url)
   const originUrl = request.headers.get('referer') || ''
   
