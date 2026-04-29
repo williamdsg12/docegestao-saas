@@ -64,3 +64,32 @@ export async function GET() {
         return NextResponse.json({ error: error.message }, { status: 500 })
     }
 }
+
+export async function PATCH(req: Request) {
+    try {
+        const user = await getServerUser()
+        if (!isSuperAdmin(user)) {
+            return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
+        }
+
+        const { paymentId, status } = await req.json()
+
+        if (!paymentId || !status) {
+            return NextResponse.json({ error: 'ID e Status são obrigatórios' }, { status: 400 })
+        }
+
+        const { data, error } = await supabaseAdmin
+            .from('payments')
+            .update({ status })
+            .eq('id', paymentId)
+            .select()
+            .single()
+
+        if (error) throw error
+
+        return NextResponse.json({ success: true, data })
+    } catch (error: any) {
+        console.error('PATCH Error [Admin Payments]:', error.message)
+        return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+}

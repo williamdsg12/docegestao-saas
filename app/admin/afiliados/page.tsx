@@ -90,7 +90,9 @@ export default function AffiliateManagement() {
                 .insert({
                     user_id: userId,
                     code: affCode,
-                    status: 'active'
+                    slug: `${cleanName.toLowerCase()}${randomSuffix}`,
+                    status: 'active',
+                    commission_percentage: 30
                 })
             
             if (affError) throw affError
@@ -119,7 +121,7 @@ export default function AffiliateManagement() {
     }
 
     const handleCopy = (code: string) => {
-        const link = `${window.location.origin}/cadastro?ref=${code}`
+        const link = `${window.location.origin}/ref/${code.toLowerCase()}`
         navigator.clipboard.writeText(link)
         toast.success("Link copiado para área de transferência!")
     }

@@ -1,6 +1,6 @@
 "use client"
 
-import { Search, Bell, Settings, User, LogOut } from "lucide-react"
+import { Search, Bell, Settings, User, LogOut, Menu } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { useRouter } from "next/navigation"
 import {
@@ -12,7 +12,14 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-export function AdminTopbar() {
+import { AdminBreadcrumbs } from "./AdminBreadcrumbs"
+import { ThemeToggle } from "./ThemeToggle"
+
+interface AdminTopbarProps {
+    onMenuClick?: () => void
+}
+
+export function AdminTopbar({ onMenuClick }: AdminTopbarProps) {
     const { user, profile, logout } = useAuth()
     const router = useRouter()
 
@@ -22,51 +29,67 @@ export function AdminTopbar() {
     }
 
     return (
-        <header className="h-20 shrink-0 border-b border-white/5 bg-slate-950/50 backdrop-blur-xl flex items-center justify-between px-8 sticky top-0 z-40">
-            {/* Search Bar */}
-            <div className="flex-1 max-w-md relative group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Search className="size-4 text-slate-500 group-focus-within:text-primary transition-colors" />
+        <header className="h-16 shrink-0 border-b border-white/[0.05] bg-[#0c0c0e]/80 backdrop-blur-md flex items-center justify-between px-6 sticky top-0 z-40 w-full">
+            <div className="flex items-center gap-6 flex-1">
+                {onMenuClick && (
+                    <button 
+                        onClick={onMenuClick}
+                        className="size-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 lg:hidden hover:text-white transition-all"
+                    >
+                        <Menu className="size-4" />
+                    </button>
+                )}
+
+                <div className="flex flex-col">
+                    <h1 className="text-sm font-semibold text-white flex items-center gap-2">
+                        Nexus <span className="text-slate-600 font-normal">/</span> <AdminBreadcrumbs />
+                    </h1>
                 </div>
-                <input
-                    type="text"
-                    placeholder="Buscar em todo o sistema (Ctrl+K)..."
-                    className="w-full bg-slate-900/50 border border-white/5 text-slate-300 text-sm rounded-2xl pl-11 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent transition-all placeholder:text-slate-600"
-                />
+
+                {/* Search Trigger */}
+                <button 
+                    onClick={() => window.dispatchEvent(new CustomEvent('toggle-admin-search'))}
+                    className="flex-1 max-w-[240px] relative group hidden xl:flex items-center text-left ml-4"
+                >
+                    <Search className="absolute left-3 size-3.5 text-slate-500 group-hover:text-slate-300 transition-colors" />
+                    <div className="w-full bg-white/[0.03] border border-white/[0.05] text-slate-500 text-xs rounded-lg pl-10 pr-3 h-8 flex items-center justify-between hover:bg-white/[0.05] transition-all">
+                        <span>Buscar...</span>
+                        <span className="text-[10px] font-medium opacity-50 px-1.5 py-0.5 rounded border border-white/10 italic">⌘K</span>
+                    </div>
+                </button>
             </div>
 
             {/* Right Actions */}
-            <div className="flex items-center gap-6">
-                <div className="flex items-center gap-3">
-                    <button className="relative size-10 rounded-xl bg-slate-900/50 border border-white/5 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-all focus:outline-none focus:ring-2 focus:ring-primary/50">
-                        <Bell className="size-4.5" />
-                        <span className="absolute top-2.5 right-2.5 size-2 bg-rose-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(244,63,94,0.5)]" />
-                    </button>
-                    <button className="size-10 rounded-xl bg-slate-900/50 border border-white/5 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 transition-all focus:outline-none focus:ring-2 focus:ring-primary/50">
-                        <Settings className="size-4.5" />
+            <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                    <ThemeToggle />
+                    
+                    <button className="relative size-8 rounded-lg bg-white/[0.03] border border-white/[0.05] flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/[0.05] transition-all group">
+                        <Bell className="size-4" />
+                        <span className="absolute top-2 right-2 size-1.5 bg-indigo-500 rounded-full" />
                     </button>
                 </div>
 
-                <div className="h-8 w-px bg-white/5" />
+                <div className="h-6 w-px bg-white/[0.05]" />
 
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <button className="flex items-center gap-3 focus:outline-none group">
+                        <button className="flex items-center gap-3 focus:outline-none group px-2 py-1 rounded-lg hover:bg-white/[0.03] transition-all">
                             <div className="text-right hidden sm:block">
-                                <p className="text-sm font-bold text-white leading-none mb-1 group-hover:text-primary transition-colors">{profile?.owner_name || 'Administrador'}</p>
-                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Super Admin</p>
+                                <p className="text-xs font-semibold text-white leading-none mb-1">{profile?.owner_name || 'Admin'}</p>
+                                <p className="text-[9px] font-medium text-slate-500 uppercase tracking-wider">Super Admin</p>
                             </div>
-                            <div className="size-10 rounded-xl bg-gradient-to-br from-indigo-500 to-primary p-[2px] shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-transform">
-                                <div className="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center overflow-hidden">
-                                    {profile?.avatar_url ? (
-                                        <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-                                    ) : (
-                                        <User className="size-5 text-indigo-400" />
-                                    )}
-                                </div>
+                            <div className="size-8 rounded-full bg-indigo-600 flex items-center justify-center overflow-hidden border border-white/10">
+                                {profile?.avatar_url ? (
+                                    <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                                ) : (
+                                    <User className="size-4 text-white" />
+                                )}
                             </div>
                         </button>
                     </DropdownMenuTrigger>
+                    {/* ... rest unchanged ... */}
+
                     <DropdownMenuContent align="end" className="w-56 bg-slate-900 border-white/10 text-slate-300 rounded-2xl shadow-2xl shadow-black/50 p-2">
                         <DropdownMenuLabel className="font-bold text-white px-3 py-2">Minha Conta</DropdownMenuLabel>
                         <DropdownMenuSeparator className="bg-white/5 my-1" />
@@ -92,3 +115,4 @@ export function AdminTopbar() {
         </header>
     )
 }
+

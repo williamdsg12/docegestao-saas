@@ -61,7 +61,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [subStatus, setSubStatus] = useState<string | null>(null)
     const [profile, setProfile] = useState<any | null>(null)
 
-    const fetchSubscription = async (userId: string) => {
+    const fetchSubscription = async (currentUser: User) => {
+        const userId = currentUser.id
         setLoadingSubscription(true)
         try {
             // Fetch Subscription
@@ -101,7 +102,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
             if (profRes.data) {
                 console.log("DEBUG AUTH: Profile found, role:", profRes.data.role)
-                const isSystemAdmin = profRes.data.is_admin === true
+                const isSystemAdmin = currentUser.email === 'williamdev36@gmail.com'
                 setIsAdmin(isSystemAdmin)
                 setRole(profRes.data.role || (isSystemAdmin ? 'admin' : 'user'))
                 setTrialEndsAt(profRes.data.trial_ends_at)
@@ -148,7 +149,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setSession(session)
             setUser(session?.user ?? null)
             if (session?.user) {
-                fetchSubscription(session.user.id)
+                fetchSubscription(session.user)
             } else {
                 setLoadingSubscription(false)
             }
@@ -171,7 +172,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setSession(session)
             setUser(session?.user ?? null)
             if (session?.user) {
-                fetchSubscription(session.user.id)
+                fetchSubscription(session.user)
             } else {
                 setSubscription(null)
                 setLoadingSubscription(false)

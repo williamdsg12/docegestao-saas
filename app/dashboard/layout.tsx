@@ -3,7 +3,7 @@
 import { DashboardSidebar } from "@/components/dashboard/sidebar"
 import { SubscriptionGuard } from "@/components/dashboard/SubscriptionGuard"
 import { useAuth } from "@/hooks/useAuth"
-import { Bell, User, Clock, ChevronDown, Search } from "lucide-react"
+import { Bell, User, Clock, ChevronDown, Search, MessageSquare, ShoppingBag, Volume2, VolumeX, Settings as SettingsIcon } from "lucide-react"
 import { UserAvatarMenu } from "@/components/dashboard/user-avatar-menu"
 import { differenceInDays } from "date-fns"
 import { Badge } from "@/components/ui/badge"
@@ -16,10 +16,8 @@ import { toast } from "sonner"
 import { SidebarTrigger } from "@/components/dashboard/sidebar"
 import { CommandPalette } from "@/components/dashboard/CommandPalette"
 import { cn } from "@/lib/utils"
-import { Volume2, VolumeX } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { usePedidoStore } from "@/store/pedidoStore"
-
 import { usePathname } from "next/navigation"
 import { AuthGuard } from "@/components/auth/AuthGuard"
 import { initSound, requestNotificationPermission, startAlert, stopAlert } from "@/lib/notifications"
@@ -127,31 +125,31 @@ export default function DashboardLayout({
   return (
     <AuthGuard>
       <SubscriptionGuard>
-        <div className="flex h-screen w-full bg-gray-50 overflow-hidden">
+        <div className="flex h-screen w-full bg-[var(--bg-app)] overflow-hidden">
           {showOnboarding && (
             <OnboardingModal onComplete={() => setShowOnboarding(false)} />
           )}
           <DashboardSidebar>
-                <div className="flex-1 overflow-y-auto w-full min-w-0 bg-[#F8FAFC]">
+                <div className="flex-1 overflow-y-auto w-full min-w-0 bg-[var(--bg-app)]">
                   {/* Modern Header - Professional & Fluid */}
                   <header className={cn(
-                    "h-[var(--min-tap-target)] md:h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 md:px-8 flex items-center justify-between shrink-0 relative z-20 sticky top-0",
+                    "h-[var(--min-tap-target)] md:h-20 bg-[var(--background)]/80 backdrop-blur-md border-b border-[var(--border)] px-4 md:px-8 flex items-center justify-between shrink-0 relative z-20 sticky top-0",
                     isSmartGestao && "hidden md:flex"
                   )}>
                     <div className="flex items-center gap-3 md:gap-6 flex-1 min-w-0">
                       <SidebarTrigger />
-                      <button
-                        onClick={() => setCommandOpen(true)}
-                        className="hidden lg:flex items-center gap-3 px-4 py-2 bg-slate-100 rounded-2xl w-full max-w-xs border border-slate-200 hover:bg-slate-200 transition-all group"
-                      >
-                        <Search className="size-4 text-slate-400 group-hover:text-blue-500" />
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left flex-1">
-                          BUSCAR (⌘+K)
-                        </span>
-                      </button>
+                      <div className="hidden lg:flex items-center flex-1 max-w-md relative group">
+                        <Search className="absolute left-4 size-4 text-[var(--text-muted)] group-focus-within:text-[var(--secondary)] transition-colors" />
+                        <input
+                          onClick={() => setCommandOpen(true)}
+                          readOnly
+                          placeholder="BUSCAR NO SISTEMA (⌘+K)"
+                          className="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl py-2.5 pl-11 pr-4 text-[10px] font-black uppercase tracking-widest text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--secondary)]/20 transition-all cursor-pointer hover:bg-[var(--accent-light)]/50"
+                        />
+                      </div>
                       <div className="lg:hidden">
-                        <h1 className="text-sm font-black italic uppercase tracking-tighter text-slate-900 truncate">
-                          Doce <span className="text-pink-500">Gestão</span>
+                        <h1 className="text-sm font-black italic uppercase tracking-tighter text-[var(--text-primary)] truncate">
+                          Doce <span className="text-[var(--secondary)]">Gestão</span>
                         </h1>
                       </div>
                     </div>
@@ -160,28 +158,43 @@ export default function DashboardLayout({
                       {/* Subscription Info - Desktop Only */}
                       <Link
                         href="/dashboard/billing"
-                        className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 font-bold text-[10px] uppercase tracking-widest hover:bg-amber-100 transition-all shrink-0"
+                        className="hidden xl:flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--accent-light)] border border-[var(--border)] text-[var(--secondary)] font-black text-[10px] uppercase tracking-widest hover:brightness-95 transition-all shrink-0"
                       >
                         <Clock className="size-3 animate-pulse" />
                         <span>{getTrialLabel()}</span>
                       </Link>
 
-                      <div className="h-6 w-px bg-slate-200 mx-1 hidden md:block" />
+                      <div className="h-6 w-px bg-[var(--border)] mx-1 hidden md:block" />
 
-                      <div className="flex items-center gap-2 md:gap-3">
+                      <div className="flex items-center gap-1 md:gap-3">
                         <ThemeToggle />
+                        
+                        <Link href="/dashboard/mensagens">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-10 rounded-full border border-[var(--border)] bg-[var(--bg-card)] text-[var(--text-primary)] hover:bg-[var(--accent-light)] transition-all shadow-sm"
+                          >
+                            <MessageSquare size={18} />
+                          </Button>
+                        </Link>
+
+                        <NotificationBell />
+                        
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={toggleSound}
                           className={cn(
-                            "size-10 rounded-full border transition-all shadow-sm",
-                            soundEnabled ? "border-emerald-100 bg-emerald-50 text-emerald-600 hover:bg-emerald-100" : "border-slate-100 bg-slate-50 text-slate-400 hover:bg-slate-100"
+                            "hidden md:flex size-10 rounded-full border transition-all shadow-sm",
+                            soundEnabled 
+                              ? "border-[var(--secondary)]/20 bg-[var(--secondary)]/10 text-[var(--secondary)] hover:bg-[var(--secondary)]/20" 
+                              : "border-[var(--border)] bg-[var(--bg-card)] text-[var(--text-muted)] hover:bg-[var(--bg-app)]"
                           )}
                         >
                           {soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
                         </Button>
-                        <NotificationBell />
+
                         <UserAvatarMenu />
                       </div>
                     </div>
@@ -191,8 +204,8 @@ export default function DashboardLayout({
                     {children}
                   </main>
                   
-                  <footer className="mt-auto h-12 bg-white border-t border-slate-200 px-4 md:px-8 flex items-center justify-between text-[8px] font-bold text-slate-400 shrink-0 uppercase tracking-widest">
-                    <div className="truncate">© 2026 DOCE GESTÃO <span className="text-pink-500 font-black ml-2">• PRO</span></div>
+                  <footer className="mt-auto h-12 bg-[var(--bg-card)] border-t border-[var(--border)] px-4 md:px-8 flex items-center justify-between text-[8px] font-bold text-[var(--text-muted)] shrink-0 uppercase tracking-widest">
+                    <div className="truncate">© 2026 DOCE GESTÃO <span className="text-[var(--secondary)] font-black ml-2">• PRO</span></div>
                     <div className="hidden sm:block opacity-60">SaaS Platinum v4.5</div>
                   </footer>
                 </div>

@@ -285,10 +285,10 @@ export default function InventoryERPPage() {
             {/* Header Area */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">
-                        Estoque <span className="text-pink-500">Inteligente</span>
+                    <h1 className="text-4xl font-black text-[var(--text-primary)] tracking-tighter uppercase italic leading-none">
+                        Estoque <span className="text-[var(--secondary)]">Inteligente</span>
                     </h1>
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2 px-1">
+                    <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest mt-2 px-1 italic">
                         Gestão de insumos, custos e produção automática
                     </p>
                 </div>
@@ -320,27 +320,27 @@ export default function InventoryERPPage() {
                             }
                         }}
                         variant="ghost" 
-                        className="h-12 px-6 rounded-2xl text-pink-500 hover:bg-pink-50 font-black uppercase text-[10px] tracking-widest gap-2"
+                        className="h-12 px-6 rounded-2xl text-[var(--secondary)] hover:bg-[var(--accent-light)] font-black uppercase text-[10px] tracking-widest gap-2"
                     >
                          <ShoppingCart size={16} /> Sugerir Compras
                     </Button>
                     <Button 
                         onClick={() => router.push('/dashboard/estoque/historico')}
                         variant="outline" 
-                        className="h-12 px-6 rounded-2xl border-slate-200 font-black uppercase text-[10px] tracking-widest gap-2"
+                        className="h-12 px-6 rounded-2xl border-[var(--border)] font-black uppercase text-[10px] tracking-widest gap-2 text-[var(--text-muted)]"
                     >
                          <History size={16} /> Histórico
                     </Button>
                     <Button 
                         onClick={() => setIsImportModalOpen(true)}
                         variant="outline" 
-                        className="h-12 px-6 rounded-2xl border-pink-100 text-pink-600 hover:bg-pink-50 font-black uppercase text-[10px] tracking-widest gap-2"
+                        className="h-12 px-6 rounded-2xl border-[var(--accent-light)] text-[var(--secondary)] hover:bg-[var(--accent-light)] font-black uppercase text-[10px] tracking-widest gap-2"
                     >
                          <FileText size={16} /> Importar
                     </Button>
                     <Button 
                         onClick={() => setIsNewModalOpen(true)}
-                        className="h-12 px-8 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black uppercase text-[10px] tracking-widest gap-2 shadow-xl shadow-slate-900/10"
+                        className="h-12 px-8 rounded-2xl bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white font-black uppercase text-[10px] tracking-widest gap-2 shadow-xl shadow-[var(--primary)]/10"
                     >
                         <Plus size={16} /> Novo Insumo
                     </Button>
@@ -353,47 +353,47 @@ export default function InventoryERPPage() {
                     label="Valor Total" 
                     value={new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(stats.totalValue)} 
                     icon={DollarSign} 
-                    color="text-emerald-500"
-                    bgColor="bg-emerald-50"
+                    color="text-[var(--secondary)]"
+                    bgColor="bg-[var(--accent-light)]"
                 />
                 <MetricCard 
                     label="Total de Itens" 
                     value={stats.totalItems} 
                     icon={Package} 
-                    color="text-blue-500"
-                    bgColor="bg-blue-50"
+                    color="text-[var(--primary)]"
+                    bgColor="bg-[var(--accent-light)]"
                 />
                 <MetricCard 
                     label="Estoque Baixo" 
                     value={stats.lowStock} 
                     icon={AlertTriangle} 
-                    color="text-amber-500"
-                    bgColor="bg-amber-50"
+                    color="text-[var(--accent)]"
+                    bgColor="bg-[var(--accent-light)]"
                     active={stats.lowStock > 0}
                 />
                 <MetricCard 
                     label="Itens Zerados" 
                     value={stats.outOfStock} 
                     icon={TrendingUp} 
-                    color="text-rose-500"
-                    bgColor="bg-rose-50"
+                    color="text-[var(--danger)]"
+                    bgColor="bg-[var(--accent-light)]"
                     active={stats.outOfStock > 0}
                 />
             </div>
 
             {/* Filters & Actions */}
-            <section className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white p-4 rounded-[32px] border border-slate-100 shadow-sm">
+            <section className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white p-4 rounded-[32px] border border-[var(--border)] shadow-sm">
                 <div className="relative w-full md:w-[450px] group">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-300 group-focus-within:text-pink-500 transition-colors" />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-[var(--text-muted)] group-focus-within:text-[var(--secondary)] transition-colors" />
                     <Input 
                         placeholder="Buscar por nome ou categoria..." 
                         value={search}
                         onChange={e => setSearch(e.target.value)}
-                        className="h-12 pl-12 pr-4 rounded-2xl border-none bg-slate-50 focus-visible:ring-pink-500 font-bold text-xs uppercase tracking-widest"
+                        className="h-12 pl-12 pr-4 rounded-2xl border-none bg-[var(--accent-light)]/30 focus-visible:ring-[var(--secondary)] font-black text-xs uppercase tracking-widest text-[var(--text-primary)]"
                     />
                 </div>
                 
-                <div className="flex gap-2 p-1 bg-slate-100 rounded-2xl w-full md:w-auto">
+                <div className="flex gap-2 p-1 bg-[var(--bg-app)] rounded-2xl w-full md:w-auto border border-[var(--border)]">
                     {[
                         { id: 'all', label: 'Todos' },
                         { id: 'low', label: 'Baixo' },
@@ -404,7 +404,7 @@ export default function InventoryERPPage() {
                             onClick={() => setFilter(t.id as any)}
                             className={cn(
                                 "flex-1 md:flex-none px-6 h-10 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
-                                filter === t.id ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600"
+                                filter === t.id ? "bg-white text-[var(--primary)] shadow-sm border border-[var(--border)]" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                             )}
                         >
                             {t.label}
@@ -414,17 +414,17 @@ export default function InventoryERPPage() {
             </section>
 
             {/* Main Table */}
-            <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm overflow-hidden min-h-[400px]">
+            <div className="bg-white rounded-[32px] border border-[var(--border)] shadow-sm overflow-hidden min-h-[400px]">
                 <Table>
-                    <TableHeader className="bg-slate-50/50">
-                        <TableRow className="hover:bg-transparent border-slate-100 italic">
-                            <TableHead className="w-24 text-[10px] font-black uppercase tracking-widest px-8">Código</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest">Item</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest">Descrição</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-center">Qtd</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-center">Un</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-right">Vl. Unit</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-right">Vl. Total</TableHead>
+                    <TableHeader className="bg-[var(--accent-light)]/30">
+                        <TableRow className="hover:bg-transparent border-[var(--border)] italic">
+                            <TableHead className="w-24 text-[10px] font-black uppercase tracking-widest px-8 text-[var(--text-muted)]">Código</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Item</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Descrição</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-center text-[var(--text-muted)]">Qtd</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-center text-[var(--text-muted)]">Un</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-right text-[var(--text-muted)]">Vl. Unit</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-right text-[var(--text-muted)]">Vl. Total</TableHead>
                             <TableHead className="text-right px-8"></TableHead>
                         </TableRow>
                     </TableHeader>
@@ -440,38 +440,38 @@ export default function InventoryERPPage() {
                                 const valorTotal = item.estoque_atual * item.custo_medio
                                 
                                 return (
-                                    <TableRow key={item.id} className="group hover:bg-slate-50/30 border-slate-50 transition-colors">
+                                    <TableRow key={item.id} className="group hover:bg-[var(--accent-light)]/10 border-[var(--border)] transition-colors">
                                         <TableCell className="px-8 py-5">
-                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
+                                            <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-tighter">
                                                 {item.codigo || '---'}
                                             </span>
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex flex-col">
-                                                <span className="font-black text-sm text-slate-900 uppercase italic truncate">
+                                                <span className="font-black text-sm text-[var(--text-primary)] uppercase italic truncate">
                                                     {index + 1}. {item.nome}
                                                 </span>
                                             </div>
                                         </TableCell>
                                         <TableCell>
                                             <div className="max-w-[200px]">
-                                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter line-clamp-1 italic">
+                                                <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-tighter line-clamp-1 italic">
                                                     {item.descricao || '---'}
                                                 </p>
                                             </div>
                                         </TableCell>
-                                        <TableCell className="text-center font-black text-sm text-slate-900 italic">
+                                        <TableCell className="text-center font-black text-sm text-[var(--text-primary)] italic">
                                             {item.estoque_atual}
                                         </TableCell>
                                         <TableCell className="text-center">
-                                            <Badge variant="secondary" className="bg-slate-50 text-slate-500 font-black text-[8px] uppercase tracking-widest">
+                                            <Badge variant="secondary" className="bg-[var(--accent-light)] text-[var(--primary)] font-black text-[8px] uppercase tracking-widest border border-[var(--border)]">
                                                 {item.unidade_base}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell className="text-right font-bold text-xs text-slate-600">
+                                        <TableCell className="text-right font-bold text-xs text-[var(--text-muted)]">
                                             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.custo_medio)}
                                         </TableCell>
-                                        <TableCell className="text-right font-black text-sm text-slate-900 italic">
+                                        <TableCell className="text-right font-black text-sm text-[var(--text-primary)] italic">
                                             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valorTotal)}
                                         </TableCell>
                                         <TableCell className="text-right px-8">
@@ -542,25 +542,25 @@ export default function InventoryERPPage() {
 
             {/* Quick Movement Modal */}
             <Dialog open={isMoveModalOpen} onOpenChange={setIsMoveModalOpen}>
-                <DialogContent className="sm:max-w-xs rounded-[40px] p-10 border-none shadow-2xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="sm:max-w-xs rounded-[40px] p-10 border border-[var(--border)] shadow-2xl max-h-[90vh] overflow-y-auto bg-white">
                     <DialogHeader className="mb-8 items-center text-center">
                         <div className={cn(
                             "size-16 rounded-[24px] flex items-center justify-center mb-4 shadow-xl",
-                            moveType === 'entrada' ? "bg-emerald-500 text-white shadow-emerald-200" : "bg-rose-500 text-white shadow-rose-200"
+                            moveType === 'entrada' ? "bg-[var(--secondary)] text-white shadow-[var(--secondary)]/20" : "bg-[var(--danger)] text-white shadow-[var(--danger)]/20"
                         )}>
                             {moveType === 'entrada' ? <Plus size={32} /> : <Minus size={32} />}
                         </div>
-                        <DialogTitle className="text-2xl font-black italic uppercase text-slate-900 tracking-tighter leading-none mb-1">
+                        <DialogTitle className="text-2xl font-black italic uppercase text-[var(--text-primary)] tracking-tighter leading-none mb-1">
                             {selectedIngredient?.nome}
                         </DialogTitle>
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest italic">
+                        <p className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest italic">
                             Registrar {moveType === 'entrada' ? 'Entrada (Compra)' : 'Saída (Consumo)'}
                         </p>
                     </DialogHeader>
 
                     <div className="space-y-8">
                         <div className="relative">
-                            <span className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 font-black uppercase text-[10px] italic">
+                            <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[var(--text-muted)] font-black uppercase text-[10px] italic">
                                 {selectedIngredient?.unidade_base}
                             </span>
                             <Input 
@@ -568,7 +568,7 @@ export default function InventoryERPPage() {
                                 placeholder="0.00" 
                                 value={moveAmount}
                                 onChange={e => setMoveAmount(e.target.value)}
-                                className="h-20 rounded-[32px] bg-slate-50 border-none text-center text-4xl font-black italic focus-visible:ring-pink-500 shadow-inner"
+                                className="h-20 rounded-[32px] bg-[var(--bg-app)] border border-[var(--border)] text-center text-4xl font-black italic focus-visible:ring-[var(--secondary)] shadow-inner text-[var(--text-primary)]"
                             />
                         </div>
 
@@ -576,7 +576,7 @@ export default function InventoryERPPage() {
                             onClick={onAddStockManual}
                             className={cn(
                                 "w-full h-16 rounded-[24px] font-black uppercase text-xs tracking-[0.2em] shadow-xl transition-all active:scale-95",
-                                moveType === 'entrada' ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-200" : "bg-rose-500 hover:bg-rose-600 text-white shadow-rose-200"
+                                moveType === 'entrada' ? "bg-[var(--secondary)] hover:bg-[var(--accent)] text-white shadow-[var(--secondary)]/20" : "bg-[var(--danger)] hover:bg-[var(--danger)]/90 text-white shadow-[var(--danger)]/20"
                             )}
                         >
                             Confirmar Atualização
@@ -587,51 +587,51 @@ export default function InventoryERPPage() {
 
             {/* New Ingredient Modal */}
             <Dialog open={isNewModalOpen} onOpenChange={setIsNewModalOpen}>
-                <DialogContent className="sm:max-w-md rounded-[40px] p-10 border-none shadow-2xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="sm:max-w-md rounded-[40px] p-10 border border-[var(--border)] shadow-2xl max-h-[90vh] overflow-y-auto bg-white">
                     <DialogHeader className="mb-8">
-                        <DialogTitle className="text-3xl font-black italic uppercase text-slate-900 tracking-tighter leading-none">Novo Insumo</DialogTitle>
-                        <DialogDescription className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] italic mt-1">Configure as bases do seu novo ingrediente</DialogDescription>
+                        <DialogTitle className="text-3xl font-black italic uppercase text-[var(--text-primary)] tracking-tighter leading-none">Novo Insumo</DialogTitle>
+                        <DialogDescription className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] italic mt-1">Configure as bases do seu novo ingrediente</DialogDescription>
                     </DialogHeader>
 
                     <div className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2 md:col-span-2">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-4 italic">Nome do Ingrediente</Label>
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-4 italic">Nome do Ingrediente</Label>
                                 <Input 
                                     placeholder="Ex: Leite Condensado Moça"
                                     value={newIngredient.nome}
                                     onChange={e => setNewIngredient({...newIngredient, nome: e.target.value})}
-                                    className="h-12 rounded-2xl bg-slate-50 border-none px-6 font-bold focus-visible:ring-pink-500 shadow-sm"
+                                    className="h-12 rounded-2xl bg-[var(--bg-app)] border border-[var(--border)] px-6 font-black italic text-[var(--text-primary)] focus-visible:ring-[var(--secondary)] shadow-sm"
                                 />
                             </div>
 
                             <div className="space-y-2 md:col-span-2">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-4 italic">Código / SKU</Label>
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-4 italic">Código / SKU</Label>
                                 <Input 
                                     placeholder="Ex: SKU-12345"
                                     value={newIngredient.codigo}
                                     onChange={e => setNewIngredient({...newIngredient, codigo: e.target.value})}
-                                    className="h-12 rounded-2xl bg-slate-50 border-none px-6 font-bold focus-visible:ring-pink-500 shadow-sm"
+                                    className="h-12 rounded-2xl bg-[var(--bg-app)] border border-[var(--border)] px-6 font-black italic text-[var(--text-primary)] focus-visible:ring-[var(--secondary)] shadow-sm"
                                 />
                             </div>
 
                             <div className="space-y-2 md:col-span-2">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-4 italic">Descrição Detalhada</Label>
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-4 italic">Descrição Detalhada</Label>
                                 <Textarea 
                                     placeholder="Ex: Chocolate meio amargo 50% cacau..."
                                     value={newIngredient.descricao}
                                     onChange={e => setNewIngredient({...newIngredient, descricao: e.target.value})}
-                                    className="min-h-[60px] rounded-2xl bg-slate-50 border-none px-6 py-4 font-bold focus-visible:ring-pink-500 shadow-sm resize-none"
+                                    className="min-h-[60px] rounded-2xl bg-[var(--bg-app)] border border-[var(--border)] px-6 py-4 font-black italic text-[var(--text-primary)] focus-visible:ring-[var(--secondary)] shadow-sm resize-none"
                                 />
                             </div>
 
-                            <div className="md:col-span-2 p-6 bg-pink-50/50 rounded-[32px] space-y-4 border border-pink-100">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-pink-500 italic flex items-center gap-2">
+                            <div className="md:col-span-2 p-6 bg-[var(--accent-light)]/30 rounded-[32px] space-y-4 border border-[var(--border)]">
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-[var(--secondary)] italic flex items-center gap-2">
                                     <DollarSign size={14} /> Dados de Compra (Embalagem)
                                 </Label>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <Label className="text-[9px] font-bold text-slate-400 uppercase">Preço Embalagem (R$)</Label>
+                                        <Label className="text-[9px] font-bold text-[var(--text-muted)] uppercase">Preço Embalagem (R$)</Label>
                                         <Input 
                                             type="number" 
                                             value={newIngredient.preco_total}
@@ -642,19 +642,19 @@ export default function InventoryERPPage() {
                                                 const unitCost = p / (q * f);
                                                 setNewIngredient({...newIngredient, preco_total: e.target.value, custo_medio: unitCost.toFixed(4)});
                                             }}
-                                            className="h-10 rounded-xl bg-white border-none shadow-sm font-bold"
+                                            className="h-10 rounded-xl bg-white border border-[var(--border)] shadow-sm font-black italic text-[var(--text-primary)]"
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label className="text-[9px] font-bold text-slate-400 uppercase">Un. Compra (Ex: Bandeja)</Label>
+                                        <Label className="text-[9px] font-bold text-[var(--text-muted)] uppercase">Un. Compra (Ex: Bandeja)</Label>
                                         <Input 
                                             value={newIngredient.unidade_compra}
                                             onChange={e => setNewIngredient({...newIngredient, unidade_compra: e.target.value})}
-                                            className="h-10 rounded-xl bg-white border-none shadow-sm font-bold"
+                                            className="h-10 rounded-xl bg-white border border-[var(--border)] shadow-sm font-black italic text-[var(--text-primary)]"
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label className="text-[9px] font-bold text-slate-400 uppercase">Qtd na Embalagem</Label>
+                                        <Label className="text-[9px] font-bold text-[var(--text-muted)] uppercase">Qtd na Embalagem</Label>
                                         <Input 
                                             type="number" 
                                             value={newIngredient.quantidade_total}
@@ -665,11 +665,11 @@ export default function InventoryERPPage() {
                                                 const unitCost = p / (q * f);
                                                 setNewIngredient({...newIngredient, quantidade_total: e.target.value, custo_medio: unitCost.toFixed(4)});
                                             }}
-                                            className="h-10 rounded-xl bg-white border-none shadow-sm font-bold"
+                                            className="h-10 rounded-xl bg-white border border-[var(--border)] shadow-sm font-black italic text-[var(--text-primary)]"
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label className="text-[9px] font-bold text-slate-400 uppercase text-amber-600">Fator Rendimento (0.1 - 1.0)</Label>
+                                        <Label className="text-[9px] font-bold text-[var(--accent)] uppercase italic">Fator Rendimento (0.1 - 1.0)</Label>
                                         <Input 
                                             type="number" 
                                             step="0.05"
@@ -681,83 +681,73 @@ export default function InventoryERPPage() {
                                                 const unitCost = p / (q * f);
                                                 setNewIngredient({...newIngredient, fator_rendimento: e.target.value, custo_medio: unitCost.toFixed(4)});
                                             }}
-                                            className="h-10 rounded-xl bg-white border-none shadow-sm font-bold border-amber-100"
+                                            className="h-10 rounded-xl bg-white border border-[var(--border)] shadow-sm font-black italic text-[var(--text-primary)]"
                                         />
                                     </div>
                                 </div>
                             </div>
 
                             <div className="md:col-span-2 space-y-2">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-emerald-500 ml-4 italic">Custo por {newIngredient.unidade_base} (Resultado)</Label>
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-[var(--secondary)] ml-4 italic">Custo por {newIngredient.unidade_base} (Resultado)</Label>
                                 <Input 
                                     type="number"
                                     value={newIngredient.custo_medio}
                                     onChange={e => setNewIngredient({...newIngredient, custo_medio: e.target.value})}
-                                    className="h-12 rounded-2xl bg-emerald-50 border-emerald-100 px-6 font-black text-emerald-600 shadow-sm italic focus-visible:ring-emerald-500"
+                                    className="h-12 rounded-2xl bg-[var(--accent-light)] border border-[var(--secondary)] px-6 font-black text-[var(--secondary)] shadow-sm italic focus-visible:ring-[var(--secondary)]"
                                 />
-                                <p className="text-[8px] font-bold text-slate-400 uppercase mt-1 ml-4 italic">* Baseado no preço da embalagem e rendimento</p>
+                                <p className="text-[8px] font-bold text-[var(--text-muted)] uppercase mt-1 ml-4 italic">* Baseado no preço da embalagem e rendimento</p>
                             </div>
 
                             <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-4 italic">Categoria</Label>
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-4 italic">Categoria</Label>
                                 <Select onValueChange={v => setNewIngredient({...newIngredient, categoria: v})} defaultValue="Geral">
-                                    <SelectTrigger className="h-12 rounded-2xl bg-slate-50 border-none font-bold shadow-sm">
+                                    <SelectTrigger className="h-12 rounded-2xl bg-[var(--bg-app)] border border-[var(--border)] font-black italic text-[var(--text-primary)] shadow-sm">
                                         <SelectValue />
                                     </SelectTrigger>
-                                    <SelectContent className="rounded-2xl border-none shadow-xl">
-                                        {CATEGORIES.map(c => <SelectItem key={c} value={c} className="font-bold">{c}</SelectItem>)}
+                                    <SelectContent className="rounded-2xl border border-[var(--border)] shadow-xl bg-white">
+                                        {CATEGORIES.map(c => <SelectItem key={c} value={c} className="font-black italic uppercase text-[10px] tracking-widest">{c}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
                             </div>
 
                             <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-4 italic">Unidade Base</Label>
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-4 italic">Unidade Base</Label>
                                 <Select onValueChange={v => setNewIngredient({...newIngredient, unidade_base: v})} defaultValue="g">
-                                    <SelectTrigger className="h-12 rounded-2xl bg-slate-50 border-none font-bold shadow-sm">
+                                    <SelectTrigger className="h-12 rounded-2xl bg-[var(--bg-app)] border border-[var(--border)] font-black italic text-[var(--text-primary)] shadow-sm">
                                         <SelectValue />
                                     </SelectTrigger>
-                                    <SelectContent className="rounded-2xl border-none shadow-xl">
+                                    <SelectContent className="rounded-2xl border border-[var(--border)] shadow-xl bg-white">
                                         {['g', 'kg', 'ml', 'l', 'un'].map(u => (
-                                            <SelectItem key={u} value={u} className="font-bold uppercase">{u}</SelectItem>
+                                            <SelectItem key={u} value={u} className="font-black italic uppercase text-[10px] tracking-widest">{u}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
                             </div>
 
                             <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-4 italic">Saldo Inicial</Label>
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-4 italic">Saldo Inicial</Label>
                                 <Input 
                                     type="number" 
                                     value={newIngredient.estoque_atual}
                                     onChange={e => setNewIngredient({...newIngredient, estoque_atual: e.target.value})}
-                                    className="h-12 rounded-2xl bg-slate-50 border-none px-6 font-bold shadow-sm"
+                                    className="h-12 rounded-2xl bg-[var(--bg-app)] border border-[var(--border)] px-6 font-black italic text-[var(--text-primary)] shadow-sm"
                                 />
                             </div>
 
                             <div className="space-y-2">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-4 italic">Estoque Mínimo</Label>
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)] ml-4 italic">Estoque Mínimo</Label>
                                 <Input 
                                     type="number" 
                                     value={newIngredient.estoque_minimo}
                                     onChange={e => setNewIngredient({...newIngredient, estoque_minimo: e.target.value})}
-                                    className="h-12 rounded-2xl bg-slate-50 border-none px-6 font-bold shadow-sm"
-                                />
-                            </div>
-
-                            <div className="space-y-2 md:col-span-2">
-                                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-4 italic">Custo Unitário Inicial (R$)</Label>
-                                <Input 
-                                    type="number" 
-                                    value={newIngredient.custo_medio}
-                                    onChange={e => setNewIngredient({...newIngredient, custo_medio: e.target.value})}
-                                    className="h-12 rounded-2xl bg-slate-50 border-none px-6 font-bold shadow-sm"
+                                    className="h-12 rounded-2xl bg-[var(--bg-app)] border border-[var(--border)] px-6 font-black italic text-[var(--text-primary)] shadow-sm"
                                 />
                             </div>
                         </div>
 
                         <Button 
                             onClick={handleCreateIngredient}
-                            className="w-full h-16 rounded-[24px] bg-slate-900 hover:bg-black text-white font-black italic uppercase text-sm tracking-widest shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-3"
+                            className="w-full h-16 rounded-[24px] bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white font-black italic uppercase text-sm tracking-widest shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-3"
                         >
                             <Sparkles size={18} />
                             Cadastrar Insumo

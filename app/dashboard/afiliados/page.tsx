@@ -30,6 +30,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { motion } from "framer-motion"
+import { AffiliateLinkCard } from "@/components/dashboard/afiliados/AffiliateLinkCard"
 
 // --- Sub-component: Affiliate Landing (For non-affiliates) ---
 function AffiliateLanding({ onSolicitar }: { onSolicitar: () => void }) {
@@ -276,23 +277,9 @@ function AffiliateDashboardView({ stats, referrals, onCopy }: { stats: any, refe
           </h1>
           <p className="text-slate-500 font-medium text-sm md:text-base">Acompanhe seu desempenho e gerencie seus lucros recorrentes.</p>
         </div>
-
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 bg-white p-2 sm:p-3 rounded-[32px] border border-white shadow-xl shadow-slate-100/50">
-          <div className="px-6 py-2">
-             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Link de Indicação</p>
-             <p className="text-xs font-bold text-slate-800 truncate max-w-[180px]">.../ref={stats.affiliateCode}</p>
-          </div>
-          <Button 
-            onClick={handleCopy}
-            className={cn(
-              "h-14 sm:h-auto sm:aspect-square sm:size-14 rounded-2xl transition-all font-black text-xs uppercase tracking-widest",
-              hasCopied ? "bg-green-500 hover:bg-green-600" : "bg-primary hover:bg-primary/90"
-            )}
-          >
-            {hasCopied ? <Check className="size-5" /> : <Copy className="size-5" />}
-          </Button>
-        </div>
       </div>
+
+      <AffiliateLinkCard affiliateCode={stats.affiliateCode} affiliateSlug={stats.affiliateSlug} />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -419,7 +406,8 @@ function AffiliateContent() {
     totalSales: 0,
     pendingCommissions: 0,
     totalReferrals: 0,
-    affiliateCode: ""
+    affiliateCode: "",
+    affiliateSlug: ""
   })
   const [referrals, setReferrals] = useState<any[]>([])
 
@@ -460,10 +448,17 @@ function AffiliateContent() {
             totalSales: sales?.length || 0,
             pendingCommissions: totalCommissions,
             totalReferrals: sales?.length || 0,
-            affiliateCode: affiliate.code
+            affiliateCode: affiliate.code || profData?.affiliate_code,
+            affiliateSlug: affiliate.slug
           })
           
           setReferrals(sales || [])
+        } else {
+          // Fallback if the user is active but doesn't have an affiliate record yet
+          setStats(prev => ({
+            ...prev,
+            affiliateCode: profData?.affiliate_code || ""
+          }))
         }
       }
 

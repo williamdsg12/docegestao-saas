@@ -115,9 +115,9 @@ export async function POST(req: Request) {
             .from('tuna_accounts')
             .upsert({
                 tenant_id,
-                tuna_account_id: tunaResponse.account_id,
+                account_id: tunaResponse.account_id,
                 status: tunaResponse.status,
-                connected: true,
+                conectado: true,
                 updated_at: new Date().toISOString()
             }, { onConflict: 'tenant_id' });
 
@@ -141,3 +141,4 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
+

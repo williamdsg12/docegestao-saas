@@ -1,21 +1,18 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { supabase } from "@/lib/supabase"
 import { useBusiness } from "@/hooks/useBusiness"
 import { useAuth } from "@/hooks/useAuth"
 import { 
     DollarSign, 
     Plus, 
-    Calendar, 
     TrendingUp,
     Search,
     Loader2,
-    History,
     Users,
     ArrowUpRight,
-    Calculator,
-    AlertCircle
+    Calculator
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
@@ -24,26 +21,20 @@ import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { registerSale, calculateRecipeCost } from "@/utils/inventory"
+import { useSales } from "@/hooks/useSales"
 
 export default function SalesERPPage() {
     const { profile } = useBusiness()
     const { user } = useAuth()
+    const tenantId = profile?.tenant_id || profile?.company_id
     
-    const [sales, setSales] = useState<any[]>([])
+    const { data: sales = [], isLoading, refresh } = useSales(tenantId)
     const [recipes, setRecipes] = useState<any[]>([])
-    const [loading, setLoading] = useState(true)
+    const [loadingRecipes, setLoadingRecipes] = useState(false)
     const [search, setSearch] = useState("")
     
     // New Sale Modal
@@ -57,62 +48,44 @@ export default function SalesERPPage() {
     })
     const [estimatedCost, setEstimatedCost] = useState(0)
 
+    // Fetch Recipes for selection
     useEffect(() => {
-        if (profile?.tenant_id || profile?.company_id) {
-            fetchData()
-        }
-    }, [profile])
-
-    async function fetchData() {
-        const tenantId = profile?.tenant_id || profile?.company_id
-        setLoading(true)
-        try {
-            // Fetch Sales History
-            const { data: salesData } = await supabase
-                .from('vendas')
-                .select('*, receitas(nome)')
-                .eq('tenant_id', tenantId)
-                .order('data_venda', { ascending: false })
-            
-            // Fetch Recipes for selection
-            const { data: recipesData } = await supabase
+        if (tenantId) {
+            setLoadingRecipes(true)
+            supabase
                 .from('receitas')
                 .select('id, nome')
                 .eq('tenant_id', tenantId)
                 .order('nome')
-
-            setSales(salesData || [])
-            setRecipes(recipesData || [])
-        } catch (e) {
-            toast.error("Erro ao carregar dados")
-        } finally {
-            setLoading(false)
+                .then(({ data }) => {
+                    setRecipes(data || [])
+                    setLoadingRecipes(false)
+                })
         }
-    }
+    }, [tenantId])
 
     // Update estimated cost when recipe changes
     useEffect(() => {
-        if (newSale.recipeId && profile?.tenant_id) {
-            calculateRecipeCost(newSale.recipeId, profile.tenant_id || profile.company_id || "")
+        if (newSale.recipeId && tenantId) {
+            calculateRecipeCost(newSale.recipeId, tenantId)
                 .then(setEstimatedCost)
         }
-    }, [newSale.recipeId, profile])
+    }, [newSale.recipeId, tenantId])
 
-    const filtered = sales.filter(s => 
-        s.receitas?.nome.toLowerCase().includes(search.toLowerCase()) ||
-        s.cliente?.toLowerCase().includes(search.toLowerCase())
-    )
+    const filtered = useMemo(() => 
+        sales.filter(s => 
+            (s.receitas?.nome?.toLowerCase() || "").includes(search.toLowerCase()) ||
+            (s.cliente?.toLowerCase() || "").includes(search.toLowerCase())
+        ), [sales, search])
 
-    const stats = {
-        totalRevenue: sales.reduce((acc, s) => acc + Number(s.valor_total), 0),
-        totalCMV: sales.reduce((acc, s) => acc + Number(s.custo_total), 0),
-        totalProfit: sales.reduce((acc, s) => acc + Number(s.lucro_total), 0)
-    }
+    const stats = useMemo(() => ({
+        totalRevenue: sales.reduce((acc, s) => acc + Number(s.valor_total || 0), 0),
+        totalCMV: sales.reduce((acc, s) => acc + Number(s.custo_total || 0), 0),
+        totalProfit: sales.reduce((acc, s) => acc + Number(s.lucro_total || 0), 0)
+    }), [sales])
 
     async function handleRegisterSale() {
         if (!newSale.recipeId || !newSale.priceUnit) return toast.error("Preencha todos os campos")
-        
-        const tenantId = profile?.tenant_id || profile?.company_id
         if (!tenantId || !user) return
 
         setIsRegistering(true)
@@ -129,7 +102,7 @@ export default function SalesERPPage() {
             toast.success("Venda registrada com sucesso! 💰")
             setIsSaleModalOpen(false)
             setNewSale({ recipeId: "", quantity: "1", priceUnit: "", customer: "" })
-            fetchData()
+            refresh()
         } catch (e) {
             toast.error("Erro ao registrar venda")
         } finally {
@@ -197,76 +170,80 @@ export default function SalesERPPage() {
 
             {/* Table */}
             <div className="bg-white rounded-[32px] border border-slate-100 shadow-sm overflow-hidden min-h-[400px]">
-                <Table>
-                    <TableHeader className="bg-slate-50/50">
-                        <TableRow className="hover:bg-transparent border-slate-100 italic">
-                            <TableHead className="w-[180px] text-[10px] font-black uppercase tracking-widest px-8">Data</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest">Produto</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-center">Cliente</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-center">Faturamento</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-center">CMV (Custo)</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-center">Lucro</TableHead>
-                            <TableHead className="text-right px-8"></TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        <AnimatePresence mode="popLayout">
-                            {loading ? (
-                                <TableRow>
-                                    <TableCell colSpan={7} className="h-60 text-center">
-                                        <Loader2 className="animate-spin mx-auto text-slate-300" />
-                                    </TableCell>
-                                </TableRow>
-                            ) : filtered.length > 0 ? filtered.map((item) => (
-                                <TableRow key={item.id} className="group hover:bg-slate-50/30 border-slate-50 transition-colors">
-                                    <TableCell className="px-8 py-5">
-                                        <div className="flex flex-col">
-                                            <span className="font-black text-xs text-slate-900 uppercase italic leading-none">{new Date(item.data_venda).toLocaleDateString()}</span>
-                                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">{new Date(item.data_venda).toLocaleTimeString()}</span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex flex-col">
-                                            <span className="font-black text-xs uppercase italic text-slate-700">{item.receitas?.nome}</span>
-                                            <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">{item.quantidade} unidade(s)</span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                        <div className="flex items-center justify-center gap-2">
-                                            <Users size={12} className="text-slate-300" />
-                                            <span className="font-bold text-[10px] uppercase text-slate-500">{item.cliente || 'Consumidor Final'}</span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-center font-black text-xs italic text-slate-900">
-                                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.valor_total)}
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                        <span className="text-[10px] font-bold italic text-rose-500">
+                <div className="w-full overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                        <thead className="bg-slate-50/50">
+                            <tr className="italic border-b border-slate-100">
+                                <th className="p-8 text-[10px] font-black uppercase tracking-widest">Data</th>
+                                <th className="p-4 text-[10px] font-black uppercase tracking-widest text-center">Produto</th>
+                                <th className="p-4 text-[10px] font-black uppercase tracking-widest text-center">Cliente</th>
+                                <th className="p-4 text-[10px] font-black uppercase tracking-widest text-center">Faturamento</th>
+                                <th className="p-4 text-[10px] font-black uppercase tracking-widest text-center">CMV (Custo)</th>
+                                <th className="p-4 text-[10px] font-black uppercase tracking-widest text-center">Lucro</th>
+                                <th className="p-8"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <AnimatePresence mode="popLayout">
+                                {isLoading ? (
+                                    <tr>
+                                        <td colSpan={7} className="h-60 text-center">
+                                            <Loader2 className="animate-spin mx-auto text-slate-300" />
+                                        </td>
+                                    </tr>
+                                ) : filtered.length > 0 ? filtered.map((item) => (
+                                    <motion.tr 
+                                        key={item.id}
+                                        layout
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        className="group hover:bg-slate-50/30 border-b border-slate-50 transition-colors"
+                                    >
+                                        <td className="p-8">
+                                            <div className="flex flex-col">
+                                                <span className="font-black text-xs text-slate-900 uppercase italic leading-none">{new Date(item.data_venda).toLocaleDateString('pt-BR')}</span>
+                                                <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-1">{new Date(item.data_venda).toLocaleTimeString()}</span>
+                                            </div>
+                                        </td>
+                                        <td className="p-4 text-center">
+                                            <div className="flex flex-col">
+                                                <span className="font-black text-xs uppercase italic text-slate-700">{item.receitas?.nome}</span>
+                                                <span className="text-[8px] font-bold text-slate-300 uppercase tracking-widest">{item.quantidade} unidade(s)</span>
+                                            </div>
+                                        </td>
+                                        <td className="p-4 text-center text-[10px] font-bold uppercase text-slate-500">
+                                            <div className="flex items-center justify-center gap-2">
+                                                <Users size={12} className="text-slate-300" />
+                                                {item.cliente || 'Consumidor Final'}
+                                            </div>
+                                        </td>
+                                        <td className="p-4 text-center font-black text-xs italic text-slate-900 text-emerald-600">
+                                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.valor_total)}
+                                        </td>
+                                        <td className="p-4 text-center text-[10px] font-bold italic text-rose-500">
                                             -{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.custo_total)}
-                                        </span>
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                        <Badge className="bg-emerald-50 text-emerald-500 border-none font-black text-[9px] uppercase tracking-widest italic h-6 px-4">
-                                            +{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.lucro_total)}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right px-8">
-                                        <ArrowUpRight size={16} className="text-slate-200 group-hover:text-emerald-500 transition-colors cursor-pointer" />
-                                    </TableCell>
-                                </TableRow>
-                            )) : (
-                                <TableRow>
-                                    <TableCell colSpan={7} className="h-60">
-                                        <div className="text-center opacity-40">
+                                        </td>
+                                        <td className="p-4 text-center">
+                                            <Badge className="bg-emerald-50 text-emerald-500 border-none font-black text-[9px] uppercase tracking-widest italic h-6 px-4">
+                                                +{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.lucro_total)}
+                                            </Badge>
+                                        </td>
+                                        <td className="p-8 text-right">
+                                            <ArrowUpRight size={16} className="text-slate-200 group-hover:text-emerald-500 transition-colors cursor-pointer ml-auto" />
+                                        </td>
+                                    </motion.tr>
+                                )) : (
+                                    <tr>
+                                        <td colSpan={7} className="h-60 text-center opacity-40">
                                             <TrendingUp size={40} className="mx-auto mb-4 text-slate-300" />
                                             <p className="text-[10px] font-black uppercase tracking-widest leading-none">Nenhuma venda registrada</p>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </AnimatePresence>
-                    </TableBody>
-                </Table>
+                                        </td>
+                                    </tr>
+                                )}
+                            </AnimatePresence>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             {/* Register Sale Modal */}
@@ -277,7 +254,7 @@ export default function SalesERPPage() {
                             <DollarSign size={32} />
                         </div>
                         <DialogTitle className="text-3xl font-black italic uppercase tracking-tighter">Registrar Venda</DialogTitle>
-                        <DialogDescription className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic mt-1">Lançamento de faturamento e furação de CMV</DialogDescription>
+                        <DialogDescription className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic mt-1">Lançamento de faturamento e apuração de CMV</DialogDescription>
                     </DialogHeader>
 
                     <div className="space-y-6">
@@ -285,7 +262,7 @@ export default function SalesERPPage() {
                             <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-4 italic">Produto / Receita</Label>
                             <Select onValueChange={v => setNewSale({...newSale, recipeId: v})}>
                                 <SelectTrigger className="h-12 rounded-2xl bg-slate-50 border-none font-bold shadow-sm">
-                                    <SelectValue placeholder="Selecione o produto vendido" />
+                                    <SelectValue placeholder={loadingRecipes ? "Carregando..." : "Selecione o produto vendido"} />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-2xl border-none shadow-xl">
                                     {recipes.map(r => (
@@ -347,7 +324,7 @@ export default function SalesERPPage() {
                         <Button 
                             disabled={isRegistering}
                             onClick={handleRegisterSale}
-                            className="w-full h-18 rounded-[24px] bg-slate-900 hover:bg-black text-white font-black italic uppercase text-sm tracking-widest shadow-2xl transition-all active:scale-95"
+                            className="w-full h-14 rounded-[24px] bg-slate-900 hover:bg-black text-white font-black italic uppercase text-sm tracking-widest shadow-2xl transition-all active:scale-95"
                         >
                             {isRegistering ? <Loader2 className="animate-spin" /> : "Registrar Venda ✨"}
                         </Button>

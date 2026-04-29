@@ -34,14 +34,20 @@ export async function GET() {
             .select('company_id, plans!plan_id(name)')
             .eq('status', 'active')
 
-        // 3. Buscar os perfis (owners) para vincular manualmente
+        // 3. Buscar os perfis (owners)
         const ownerIds = empresas.map(e => e.owner_id).filter(Boolean)
         const { data: profiles } = await supabaseAdmin
             .from('profiles')
             .select('id, owner_name, email')
             .in('id', ownerIds)
 
-        // 4. Mapear dados
+        // 4. Buscar receita (Total de pedidos concluídos)
+        const { data: revenueData } = await supabaseAdmin
+            .from('pedidos')
+            .select('empresa_id, valor_total')
+            .eq('status', 'concluido')
+
+        // 5. Mapear dados
         const planMap = new Map()
         subscriptions?.forEach(sub => {
             if (sub.company_id) planMap.set(sub.company_id, sub.plans)
@@ -50,16 +56,23 @@ export async function GET() {
         const profileMap = new Map()
         profiles?.forEach(p => profileMap.set(p.id, p))
 
+        const revenueMap = new Map()
+        revenueData?.forEach(order => {
+             const current = revenueMap.get(order.empresa_id) || 0
+             revenueMap.set(order.empresa_id, current + (order.valor_total || 0))
+        })
+
         const formattedData = empresas.map(emp => ({
             ...emp,
             plans: planMap.get(emp.id) || null,
-            profiles: profileMap.get(emp.owner_id) || null
+            profiles: profileMap.get(emp.owner_id) || null,
+            total_revenue: revenueMap.get(emp.id) || 0
         }))
 
         return NextResponse.json(formattedData || [])
 
     } catch (error: any) {
-        console.error('Critical Error [Admin Companies]:', error.message, error.details)
+        console.error('Critical Error [Admin Companies]:', error.message)
         return NextResponse.json({ 
             error: 'Erro ao carregar empresas reais',
             details: error.message 

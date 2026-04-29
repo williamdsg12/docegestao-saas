@@ -8,19 +8,29 @@ import {
     Clock,
     CheckCircle2,
     XCircle,
-    UserCircle,
     Building2,
     AlertCircle,
-    SearchX,
     Filter,
-    ArrowUpRight,
-    RefreshCw
+    RefreshCw,
+    MessageCircle,
+    Zap,
+    Send,
+    UserCircle,
+    MoreHorizontal
 } from "lucide-react"
-import { supabase } from "@/lib/supabase"
-import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
-import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
+import { format } from "date-fns"
+import { ptBR } from "date-fns/locale"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 interface SupportTicket {
     id: string
@@ -37,7 +47,6 @@ export default function SupportManagement() {
     const [tickets, setTickets] = useState<SupportTicket[]>([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState("")
-    const [statusFilter, setStatusFilter] = useState("all")
 
     useEffect(() => {
         fetchTickets()
@@ -49,14 +58,6 @@ export default function SupportManagement() {
             const response = await fetch('/api/admin/support')
             if (!response.ok) throw new Error('API Error')
             const data = await response.json()
-
-            if (!data || data.length === 0) {
-                setTickets([
-                    { id: 't1', company_name: 'Confeitaria Master', owner_name: 'Ana Silva', subject: 'Dúvida sobre faturamento', message: 'Como altero meu cartão de crédito?', status: 'open', priority: 'medium', created_at: new Date().toISOString() },
-                    { id: 't2', company_name: 'Doces do Céu', owner_name: 'Beto Costa', subject: 'Erro ao gerar relatório', message: 'O botão de exportar não funciona na minha conta.', status: 'in_progress', priority: 'high', created_at: new Date().toISOString() }
-                ])
-                return
-            }
 
             const formatted: SupportTicket[] = data.map((t: any) => ({
                 id: t.id,
@@ -71,192 +72,192 @@ export default function SupportManagement() {
 
             setTickets(formatted)
         } catch (error: any) {
-            console.warn("⚠️ API Support failed, using fallbacks:", error.message)
+            console.warn("⚠️ API Support failed, using fallbacks")
             setTickets([
-                { id: 'tk-1', company_name: 'Demo Confeitaria 1', owner_name: 'Suporte Teste', subject: 'Chamado de Demonstração', message: 'Esta é uma mensagem de fallback para visualização do painel.', status: 'open', priority: 'high', created_at: new Date().toISOString() },
-                { id: 'tk-2', company_name: 'Demo Confeitaria 2', owner_name: 'Sistema Admin', subject: 'Aviso de Atualização', message: 'O sistema passará por manutenção programada.', status: 'resolved', priority: 'low', created_at: new Date().toISOString() }
+                { id: 'tk-1', company_name: 'Confeitaria Master', owner_name: 'Ana Silva', subject: 'Problema no checkout', message: 'O cliente não consegue finalizar o pagamento via PIX.', status: 'open', priority: 'high', created_at: new Date().toISOString() },
+                { id: 'tk-2', company_name: 'Doces & Co', owner_name: 'Carlos Oliveira', subject: 'Aumento de limite', message: 'Gostaria de saber como mudo para o plano PRO.', status: 'in_progress', priority: 'medium', created_at: new Date().toISOString() }
             ])
         } finally {
             setLoading(false)
         }
     }
 
-    const handleAttend = (ticketId: string) => {
-        setTickets(prev => prev.map(t => 
-            t.id === ticketId ? { ...t, status: 'in_progress' } : t
-        ))
-        toast.success("Atendimento iniciado com sucesso!")
-    }
+    const filteredTickets = tickets.filter(t => 
+        t.subject.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        t.company_name.toLowerCase().includes(searchTerm.toLowerCase())
+    )
 
-    const filteredTickets = tickets.filter(t => {
-        const matchesSearch = t.subject.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                             t.company_name.toLowerCase().includes(searchTerm.toLowerCase())
-        const matchesStatus = statusFilter === "all" || t.status === statusFilter
-        return matchesSearch && matchesStatus
-    })
-
-    const getStatusColor = (status: string) => {
+    const getStatusStyle = (status: string) => {
         switch (status) {
-            case 'open': return 'bg-rose-50 text-rose-600 border-rose-100'
-            case 'in_progress': return 'bg-amber-50 text-amber-600 border-amber-100'
-            case 'resolved': return 'bg-emerald-50 text-emerald-600 border-emerald-100'
-            case 'closed': return 'bg-slate-100 text-slate-500 border-slate-200'
-            default: return 'bg-slate-50 text-slate-400'
-        }
-    }
-
-    const getPriorityColor = (priority: string) => {
-        switch (priority) {
-            case 'urgent': return 'text-rose-600 font-black underline'
-            case 'high': return 'text-orange-600 font-bold'
-            case 'medium': return 'text-amber-600 font-bold'
-            case 'low': return 'text-slate-400'
-            default: return ''
+            case 'open': return "bg-rose-500/10 text-rose-400 border-rose-500/20"
+            case 'in_progress': return "bg-amber-500/10 text-amber-400 border-amber-500/20"
+            case 'resolved': return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+            default: return "bg-slate-500/10 text-slate-400 border-slate-500/20"
         }
     }
 
     return (
-        <div className="space-y-10">
-            {/* Header */}
+        <div className="space-y-10 animate-in fade-in duration-500 pb-20">
+            {/* Header Area */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                    <h2 className="text-4xl font-black text-slate-900 italic uppercase tracking-tighter">Central de <span className="text-primary">Suporte</span></h2>
-                    <p className="text-slate-500 font-medium">Atendimento e resolução de chamados da plataforma</p>
+                    <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white tracking-tight leading-tight">
+                        Support <span className="text-rose-500">Sphere</span>
+                    </h2>
+                    <p className="text-sm text-slate-500 mt-2">Gestão de chamados, incidentes e sucesso do cliente.</p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <Button 
-                        variant="outline"
-                        onClick={fetchTickets}
-                        className="h-14 px-6 rounded-2xl border-slate-200 font-bold uppercase italic text-xs tracking-widest hover:bg-slate-50 transition-all flex items-center gap-2"
-                    >
-                        <RefreshCw className={cn("size-4", loading && "animate-spin")} /> Atualizar
-                    </Button>
-                </div>
-            </div>
-
-            {/* Filters */}
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-                <div className="lg:col-span-3 relative group">
-                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 size-5 text-slate-400 group-focus-within:text-primary transition-colors" />
-                    <input
-                        type="text"
-                        placeholder="Buscar por assunto ou empresa..."
-                        className="w-full h-16 pl-16 pr-6 bg-white border border-slate-100 rounded-[24px] text-sm font-bold shadow-sm focus:ring-4 focus:ring-primary/5 focus:border-primary outline-none transition-all"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
-                <div className="relative">
-                    <select 
-                        className="w-full h-16 px-6 bg-white border border-slate-100 rounded-[24px] text-sm font-bold shadow-sm focus:ring-4 focus:ring-primary/5 focus:border-primary outline-none transition-all appearance-none cursor-pointer text-slate-400 uppercase tracking-widest"
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                    >
-                        <option value="all">TODOS OS STATUS</option>
-                        <option value="open">ABERTOS</option>
-                        <option value="in_progress">EM ANDAMENTO</option>
-                        <option value="resolved">RESOLVIDOS</option>
-                        <option value="closed">FECHADOS</option>
-                    </select>
-                    <Filter className="absolute right-6 top-1/2 -translate-y-1/2 size-4 text-slate-400 pointer-events-none" />
+                
+                <div className="flex items-center gap-4">
+                    <div className="hidden sm:flex flex-col text-right pr-4 border-r border-white/[0.05]">
+                        <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest leading-none mb-1">Chamados Abertos</p>
+                        <p className="text-xl font-bold text-rose-500">
+                            {tickets.filter(t => t.status === 'open').length}
+                        </p>
+                    </div>
                 </div>
             </div>
 
-            {/* Table Area */}
-            <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
+            {/* List Section */}
+            <div className="bg-[#09090b] border border-white/[0.05] rounded-xl overflow-hidden shadow-sm relative">
+                {/* Search / Filters */}
+                <div className="p-8 border-b border-white/[0.05] flex flex-col md:flex-row gap-6 justify-between relative z-10">
+                    <div className="relative flex-1 max-w-sm">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-500" />
+                        <input
+                            type="text"
+                            placeholder="Buscar por assunto, empresa..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full bg-black/20 border border-white/[0.05] text-slate-300 text-sm rounded-xl pl-12 pr-4 h-11 focus:outline-none focus:ring-2 focus:ring-rose-500/30 transition-all placeholder:text-slate-600"
+                        />
+                    </div>
+                    <div className="flex gap-4">
+                        <button 
+                            onClick={fetchTickets}
+                            className="h-11 px-4 rounded-xl bg-white/[0.02] border border-white/[0.05] text-slate-400 hover:text-white transition-all flex items-center gap-2 text-xs"
+                        >
+                            <RefreshCw className={cn("size-4", loading && "animate-spin")} /> 
+                            Sincronizar
+                        </button>
+                    </div>
+                </div>
+
+                {/* Table */}
+                <div className="overflow-x-auto relative z-10 p-2">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="border-b border-slate-50 bg-slate-50/50">
-                                <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Ticket / Assunto</th>
-                                <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Empresa / Usuário</th>
-                                <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Prioridade</th>
-                                <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-                                <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Ações</th>
+                            <tr className="border-b border-white/5">
+                                <th className="px-10 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Ticket / Descrição</th>
+                                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Solicitante</th>
+                                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Prioridade</th>
+                                <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Status</th>
+                                <th className="px-10 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 text-right">Ação</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-50">
-                            <AnimatePresence mode="popLayout">
-                                {loading ? (
-                                    Array.from({ length: 3 }).map((_, i) => (
-                                        <tr key={i} className="animate-pulse">
-                                            <td colSpan={5} className="px-8 py-8"><div className="h-12 bg-slate-50 rounded-2xl w-full" /></td>
-                                        </tr>
-                                    ))
-                                ) : filteredTickets.length > 0 ? (
-                                    filteredTickets.map((t) => (
-                                        <motion.tr
-                                            layout
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            exit={{ opacity: 0 }}
-                                            key={t.id}
-                                            className="hover:bg-slate-50/50 transition-colors group"
-                                        >
-                                            <td className="px-8 py-6">
-                                                <div className="flex flex-col max-w-md">
-                                                    <span className="font-black text-slate-900 italic uppercase tracking-tighter leading-none mb-2 truncate">{t.subject}</span>
-                                                    <span className="text-[10px] text-slate-400 font-medium truncate">
-                                                        {t.message.substring(0, 100)}...
-                                                    </span>
+                        <tbody className="divide-y divide-white/5">
+                            {loading ? (
+                                Array.from({ length: 3 }).map((_, i) => (
+                                    <tr key={i}>
+                                        <td className="px-10 py-8"><Skeleton className="h-12 w-64 rounded-xl" /></td>
+                                        <td className="px-8 py-8"><Skeleton className="h-12 w-32 rounded-xl" /></td>
+                                        <td className="px-8 py-8"><Skeleton className="h-12 w-20 rounded-xl" /></td>
+                                        <td className="px-8 py-8"><Skeleton className="h-12 w-24 rounded-xl" /></td>
+                                        <td className="px-10 py-8 text-right"><Skeleton className="ml-auto h-12 w-12 rounded-xl" /></td>
+                                    </tr>
+                                ))
+                            ) : (
+                                filteredTickets.map((t) => (
+                                    <tr key={t.id} className="hover:bg-white/[0.02] transition-colors group">
+                                        <td className="px-10 py-8">
+                                            <div className="flex items-center gap-5">
+                                                <div className="size-14 rounded-2xl bg-slate-900 border border-white/5 flex items-center justify-center text-slate-500 group-hover:text-rose-400 group-hover:bg-rose-400/10 transition-all shadow-inner">
+                                                    <MessageSquare className="size-6" />
                                                 </div>
-                                            </td>
-                                            <td className="px-8 py-6">
-                                                <div className="flex flex-col">
-                                                    <span className="font-black text-slate-700 uppercase italic text-xs tracking-tight">{t.company_name}</span>
-                                                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">{t.owner_name}</span>
+                                                <div className="max-w-md">
+                                                    <p className="font-bold text-white text-base mb-1 tracking-tight truncate">{t.subject}</p>
+                                                    <p className="text-[11px] text-slate-500 font-medium truncate">{t.message}</p>
                                                 </div>
-                                            </td>
-                                            <td className="px-8 py-6">
-                                                <span className={cn("text-[10px] uppercase tracking-[0.2em]", getPriorityColor(t.priority))}>
-                                                    {t.priority}
-                                                </span>
-                                            </td>
-                                            <td className="px-8 py-6">
-                                                <div className={cn(
-                                                    "inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest italic border",
-                                                    getStatusColor(t.status)
-                                                )}>
-                                                    <div className="size-1.5 rounded-full bg-current" />
-                                                    {t.status === 'open' ? 'Aberto' : 
-                                                     t.status === 'in_progress' ? 'Atendimento' : 
-                                                     t.status === 'resolved' ? 'Resolvido' : 'Fechado'}
-                                                </div>
-                                            </td>
-                                            <td className="px-8 py-6 text-right">
-                                                {t.status === 'open' ? (
-                                                    <button 
-                                                        onClick={() => handleAttend(t.id)}
-                                                        className="h-10 px-4 rounded-xl bg-slate-900 text-white font-black uppercase italic text-[10px] tracking-widest hover:scale-105 transition-transform active:scale-95"
-                                                    >
-                                                        Atender
-                                                    </button>
-                                                ) : (
-                                                    <button 
-                                                        onClick={() => toast.info("Este chamado já está em atendimento ou resolvido.")}
-                                                        className="h-10 px-4 rounded-xl bg-slate-100 text-slate-400 font-black uppercase italic text-[10px] tracking-widest cursor-not-allowed"
-                                                    >
-                                                        Atendendo
-                                                    </button>
-                                                )}
-                                            </td>
-                                        </motion.tr>
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td colSpan={5} className="px-8 py-20 text-center">
-                                            <div className="flex flex-col items-center gap-4">
-                                                <div className="size-20 rounded-[32px] bg-slate-50 flex items-center justify-center text-slate-200">
-                                                    <MessageSquare className="size-10" />
-                                                </div>
-                                                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic">Nenhum chamado pendente</p>
                                             </div>
                                         </td>
+                                        <td className="px-8 py-8">
+                                            <div className="flex items-center gap-3">
+                                                <div className="size-10 rounded-xl bg-slate-950 flex items-center justify-center text-slate-500">
+                                                    <UserCircle className="size-5" />
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-slate-200 text-sm">{t.company_name}</p>
+                                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t.owner_name}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-8">
+                                            <span className={cn(
+                                                "text-[10px] font-black uppercase tracking-widest italic",
+                                                t.priority === 'urgent' ? "text-rose-500" : t.priority === 'high' ? "text-orange-500" : "text-slate-500"
+                                            )}>
+                                                {t.priority}
+                                            </span>
+                                        </td>
+                                        <td className="px-8 py-8">
+                                            <span className={cn(
+                                                "px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.15em] border inline-flex items-center gap-2",
+                                                getStatusStyle(t.status)
+                                            )}>
+                                                <div className={cn("size-1.5 rounded-full bg-current", t.status === 'open' && "animate-pulse")} />
+                                                {t.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-10 py-8 text-right">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <button className="p-3 rounded-xl hover:bg-white/5 text-slate-500 hover:text-white transition-all active:scale-90">
+                                                        <MoreHorizontal className="size-6" />
+                                                    </button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="w-56 bg-slate-900 border-white/10 text-slate-300 p-2 rounded-2xl shadow-2xl">
+                                                    <DropdownMenuItem className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-white/5 hover:text-white transition-all">
+                                                        <Zap className="size-4 text-amber-400" />
+                                                        <span className="font-bold text-xs uppercase italic">Atender Agora</span>
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-white/5 hover:text-white transition-all">
+                                                        <Send className="size-4 text-indigo-400" />
+                                                        <span className="font-bold text-xs uppercase italic">Responder Email</span>
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSeparator className="bg-white/5" />
+                                                    <DropdownMenuItem className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-emerald-500/10 hover:text-emerald-400 transition-all font-bold text-xs uppercase italic">
+                                                        <CheckCircle2 className="size-4" />
+                                                        Resolver Chamado
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </td>
                                     </tr>
-                                )}
-                            </AnimatePresence>
+                                ))
+                            )}
+                            {!loading && filteredTickets.length === 0 && (
+                                <tr>
+                                    <td colSpan={5} className="px-10 py-20 text-center text-slate-500 font-black uppercase tracking-widest italic text-sm">
+                                        Nenhum chamado aberto no radar. Tudo limpo!
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            {/* Advice Section */}
+            <div className="bg-[#09090b] border border-white/[0.05] rounded-xl p-8 flex flex-col md:flex-row items-center justify-between gap-8">
+                <div className="flex flex-col md:flex-row items-center gap-6">
+                    <div className="size-14 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-500 border border-rose-500/10">
+                        <AlertCircle className="size-6" />
+                    </div>
+                    <div className="text-center md:text-left">
+                        <h4 className="text-lg font-bold text-white tracking-tight">SLA sob Controle?</h4>
+                        <p className="text-sm text-slate-500 mt-1 max-w-xl">
+                            Mantenha o tempo de resposta abaixo de 2 horas. Chamados urgentes devem ser atendidos prioritariamente.
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>

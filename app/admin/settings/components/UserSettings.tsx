@@ -1,6 +1,6 @@
 "use client"
 
-import { UserPlus, ShieldCheck, Ban, Users } from "lucide-react"
+import { UserPlus, Shield, UserX, Lock } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 
 interface UserSettingsProps {
@@ -10,16 +10,16 @@ interface UserSettingsProps {
 
 export default function UserSettings({ data, onChange }: UserSettingsProps) {
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="grid grid-cols-1 gap-6">
-                <div className="flex items-center justify-between p-6 bg-slate-50 rounded-3xl border border-slate-100 hover:border-primary/20 transition-all group">
+                <div className="flex items-center justify-between p-5 bg-white/[0.02] border border-white/[0.05] rounded-xl">
                     <div className="flex items-center gap-4">
-                        <div className="size-12 rounded-2xl bg-white flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                            <UserPlus className="size-6 text-blue-600" />
+                        <div className="size-10 rounded-lg bg-indigo-500/10 flex items-center justify-center">
+                            <UserPlus className="size-5 text-indigo-500" />
                         </div>
                         <div>
-                            <p className="font-black text-slate-900 text-sm uppercase italic tracking-tight">Permitir Cadastro Público</p>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Habilita o formulário de registro para novos usuários</p>
+                            <p className="font-bold text-white text-xs uppercase tracking-tight">Registro Público</p>
+                            <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-1">Permitir novos cadastros via site</p>
                         </div>
                     </div>
                     <Switch 
@@ -28,14 +28,14 @@ export default function UserSettings({ data, onChange }: UserSettingsProps) {
                     />
                 </div>
 
-                <div className="flex items-center justify-between p-6 bg-slate-50 rounded-3xl border border-slate-100 hover:border-primary/20 transition-all group">
+                <div className="flex items-center justify-between p-5 bg-white/[0.02] border border-white/[0.05] rounded-xl">
                     <div className="flex items-center gap-4">
-                        <div className="size-12 rounded-2xl bg-white flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                            <ShieldCheck className="size-6 text-emerald-600" />
+                        <div className="size-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                            <Shield className="size-5 text-amber-500" />
                         </div>
                         <div>
-                            <p className="font-black text-slate-900 text-sm uppercase italic tracking-tight">Aprovação Manual</p>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Novos cadastros precisam de liberação do admin</p>
+                            <p className="font-bold text-white text-xs uppercase tracking-tight">Aprovação Manual</p>
+                            <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-1">Admin deve aprovar cada conta</p>
                         </div>
                     </div>
                     <Switch 
@@ -44,14 +44,14 @@ export default function UserSettings({ data, onChange }: UserSettingsProps) {
                     />
                 </div>
 
-                <div className="flex items-center justify-between p-6 bg-slate-50 rounded-3xl border border-slate-100 hover:border-primary/20 transition-all group">
+                <div className="flex items-center justify-between p-5 bg-rose-500/5 border border-rose-500/10 rounded-xl">
                     <div className="flex items-center gap-4">
-                        <div className="size-12 rounded-2xl bg-white flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform">
-                            <Ban className="size-6 text-rose-600" />
+                        <div className="size-10 rounded-lg bg-rose-500/10 flex items-center justify-center">
+                            <UserX className="size-5 text-rose-500" />
                         </div>
                         <div>
-                            <p className="font-black text-slate-900 text-sm uppercase italic tracking-tight">Bloqueio por Inadimplência</p>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Suspender acesso automaticamente em caso de atraso</p>
+                            <p className="font-bold text-white text-xs uppercase tracking-tight">Auto-Bloqueio</p>
+                            <p className="text-[9px] text-rose-500/70 font-bold uppercase tracking-widest mt-1">Bloquear em caso de inadimplência</p>
                         </div>
                     </div>
                     <Switch 
@@ -61,22 +61,17 @@ export default function UserSettings({ data, onChange }: UserSettingsProps) {
                 </div>
             </div>
 
-            <div className="p-10 bg-slate-900 rounded-[40px] text-white overflow-hidden relative">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -mr-32 -mt-32" />
-                <div className="relative z-10">
-                    <div className="flex items-center gap-4 mb-6">
-                        <Users className="size-8 text-primary" />
-                        <h4 className="text-xl font-black italic uppercase tracking-tighter">Limites de <span className="text-primary">Plano</span></h4>
-                    </div>
-                    <p className="text-slate-400 text-sm mb-8 leading-relaxed">Os limites de usuários individuais são definidos diretamente na configuração de cada plano. Verifique a aba <span className="text-white font-bold italic underline">Planos</span> para gerenciar cotas específicas.</p>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {[1, 5, 10, 'Ilimitado'].map((val, i) => (
-                            <div key={i} className="p-4 bg-slate-800/50 rounded-2xl border border-slate-700 text-center">
-                                <span className="block text-white font-black text-lg italic">{val}</span>
-                                <span className="text-[8px] text-slate-500 uppercase font-black tracking-widest">Usuários</span>
-                            </div>
-                        ))}
-                    </div>
+            <div className="p-6 bg-indigo-600/5 rounded-xl border border-indigo-600/10">
+                <div className="flex items-center gap-4 mb-4">
+                    <Lock className="size-4 text-indigo-400" />
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Acesso & Permissões</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {['Administrador', 'Gestor Público', 'Suporte Técnico'].map((level) => (
+                        <div key={level} className="p-4 bg-white/[0.02] border border-white/[0.05] rounded-lg text-center group cursor-pointer hover:border-indigo-500/30 transition-all">
+                            <p className="text-xs font-bold text-white group-hover:text-indigo-400 transition-colors uppercase tracking-tight">{level}</p>
+                        </div>
+                    ))}
                 </div>
             </div>
         </div>

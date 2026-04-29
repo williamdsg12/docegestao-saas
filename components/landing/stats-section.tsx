@@ -33,7 +33,7 @@ const stats = [
 
 export function StatsSection() {
     return (
-        <section className="relative py-24 lg:py-32 bg-background overflow-hidden border-y border-border">
+        <section className="relative py-24 lg:py-32 bg-[var(--bg-app)] overflow-hidden border-y border-[var(--border)]">
             {/* Ambient Background */}
             <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_center,var(--primary)_0%,transparent_10%)] opacity-5 blur-[100px]" />
 
@@ -48,16 +48,16 @@ export function StatsSection() {
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true, margin: "-100px" }}
                                 transition={{ duration: 0.6, delay: i * 0.1 }}
-                                className="relative flex flex-col items-center text-center group p-8 rounded-3xl bg-card border border-border/50 shadow-sm hover:shadow-lg transition-shadow duration-500 overflow-hidden"
+                                className="relative flex flex-col items-center text-center group p-8 rounded-3xl bg-white border border-[var(--border)] shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden"
                             >
-                                <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                <div className="absolute inset-0 bg-gradient-to-b from-[var(--primary)]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                                 
-                                <div className="mb-6 p-4 rounded-2xl bg-primary/10 text-primary">
+                                <div className="mb-6 p-4 rounded-2xl bg-[var(--accent-light)] text-[var(--secondary)]">
                                     <Icon className="w-8 h-8" />
                                 </div>
                                 
                                 <div className="mb-4">
-                                    <span className="font-sans text-5xl font-black tracking-tight text-foreground md:text-6xl">
+                                    <span className="font-sans text-5xl font-black tracking-tight text-[var(--text-primary)] md:text-6xl italic">
                                         {stat.prefix}
                                         <AnimatedNumber value={stat.value} />
                                         {stat.suffix}
@@ -65,10 +65,10 @@ export function StatsSection() {
                                 </div>
 
                                 <div className="space-y-2 relative z-10">
-                                    <h4 className="text-lg font-bold text-foreground">
+                                    <h4 className="text-lg font-black text-[var(--text-primary)] uppercase italic">
                                         {stat.label}
                                     </h4>
-                                    <p className="text-sm font-medium text-muted-foreground">
+                                    <p className="text-sm font-bold text-[var(--text-muted)] uppercase tracking-widest italic">
                                         {stat.subtext}
                                     </p>
                                 </div>

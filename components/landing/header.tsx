@@ -38,14 +38,15 @@ export function LandingHeader() {
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 lg:px-8">
         {/* Logo */}
-        <Link href="/" className="group flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-secondary text-xl font-bold text-white shadow-lg transition-all group-hover:scale-105 group-hover:shadow-primary/50 relative overflow-hidden">
-            <div className="absolute inset-0 bg-white/20 blur-sm translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
-            <span className="relative z-10">D</span>
-          </div>
-          <span className="text-xl font-bold tracking-tight text-slate-900 transition-colors group-hover:text-primary dark:text-white">
-            DoceGestão
-          </span>
+        <Link href="/" className="group flex items-center">
+          <Image 
+            src="/logo png.png" 
+            alt="Doce Gestão" 
+            width={240} 
+            height={80} 
+            className="h-16 md:h-20 w-auto object-contain transition-transform group-hover:scale-105" 
+            priority
+          />
         </Link>
 
         {/* Desktop Nav */}

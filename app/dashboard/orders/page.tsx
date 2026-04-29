@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/hooks/useAuth"
 import { useBusiness } from "@/hooks/useBusiness"
@@ -12,12 +12,8 @@ import {
   Truck, 
   XCircle, 
   ChevronRight, 
-  Phone, 
-  MapPin, 
   DollarSign,
   AlertCircle,
-  Eye,
-  Printer,
   Calendar,
   CreditCard
 } from "lucide-react"
@@ -35,12 +31,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { 
@@ -51,30 +41,9 @@ import {
   sendBrowserNotification, 
   vibrateDevice 
 } from "@/lib/notifications"
-import { criarEntregaSeNaoExistir } from "@/lib/services/delivery"
-
-interface OrderItem {
-  id: string
-  product_name: string
-  quantity: number
-  price: number
-}
-
-interface Order {
-  id: string
-  customer_name: string
-  customer_phone: string
-  customer_address: string
-  customer_cep: string
-  delivery_fee: number
-  total: number
-  payment_method: string
-  payment_status: string
-  status: string
-  notes: string
-  created_at: string
-  order_items?: OrderItem[]
-}
+import { useOrders } from "@/hooks/useOrders"
+import { OrderDetailsModal } from "@/components/dashboard/orders/OrderDetailsModal"
+import { useQueryClient } from "@tanstack/react-query"
 
 const statusConfig: Record<string, { label: string, color: string, icon: any }> = {
   novo: { label: "Novo", color: "bg-amber-50 text-amber-600 border-amber-100", icon: Clock },
@@ -88,153 +57,74 @@ const statusConfig: Record<string, { label: string, color: string, icon: any }> 
 }
 
 export default function OnlineOrdersPage() {
-  const { user } = useAuth()
   const { profile } = useBusiness()
-  const [orders, setOrders] = useState<Order[]>([])
-  const [loading, setLoading] = useState(true)
+  const companyId = profile?.company_id
+  const queryClient = useQueryClient()
+  
+  const { data: orders = [], isLoading: loading, updateStatus } = useOrders(companyId)
+  
   const [search, setSearch] = useState("")
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [selectedOrder, setSelectedOrder] = useState<any | null>(null)
   const [isDetailsOpen, setIsDetailsOpen] = useState(false)
   const [isAlertEnabled, setIsAlertEnabled] = useState(false)
   const [isFlashing, setIsFlashing] = useState(false)
 
-  // Register Service Worker
+  // Realtime subscription using TanStack Query Invalidation
   useEffect(() => {
-    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW registration failed:', err))
-    }
-  }, [])
+    if (!companyId) return
 
-  useEffect(() => {
-    if (profile?.company_id) {
-      fetchOrders()
-      const subscription = subscribeToOrders()
-      return () => {
-        subscription.unsubscribe()
-      }
-    }
-  }, [profile])
-
-  async function fetchOrders() {
-    if (!profile?.company_id) return
-    try {
-      setLoading(true)
-      const { data, error } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          customers!customer_id(nome, telefone),
-          addresses(rua, numero, bairro, cidade, cep),
-          order_items(*)
-        `)
-        .eq('company_id', profile.company_id)
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-      
-      const mappedOrders = data?.map((o: any) => ({
-        id: o.id,
-        customer_name: o.customers?.nome || 'Cliente',
-        customer_phone: o.customers?.telefone || '',
-        customer_address: o.addresses ? `${o.addresses.rua}, ${o.addresses.numero} - ${o.addresses.bairro}` : 'Retirada',
-        customer_cep: o.addresses?.cep || '',
-        delivery_fee: o.delivery_fee || 0,
-        total: o.total || 0,
-        payment_method: o.payment_method || 'Não inf.',
-        payment_status: o.payment_status || 'waiting_payment',
-        status: o.status || 'novo',
-        notes: o.notes || '',
-        created_at: o.created_at,
-        order_items: (o.order_items || []).map((i: any) => ({
-          id: i.id,
-          product_name: i.product_name || 'Produto',
-          quantity: i.quantidade || 0,
-          price: i.preco || 0
-        }))
-      })) || []
-
-      setOrders(mappedOrders)
-    } catch (error: any) {
-      console.error("Error fetching orders:", error.message)
-      toast.error("Erro ao carregar pedidos")
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  function subscribeToOrders() {
-    if (!profile?.company_id) return { unsubscribe: () => {} }
-    return supabase
-      .channel('orders_realtime')
+    const channel = supabase
+      .channel('orders_realtime_page')
       .on('postgres_changes', { 
-        event: '*', 
+        event: 'INSERT', 
         schema: 'public', 
         table: 'orders',
-        filter: `company_id=eq.${profile.company_id}`
+        filter: `company_id=eq.${companyId}`
       }, (payload: any) => {
-        if (payload.eventType === 'INSERT') {
-          const newOrder = payload.new
-          
-          if (isAlertEnabled) {
-            startAlert()
-            sendBrowserNotification(newOrder)
-            vibrateDevice()
-            setIsFlashing(true)
-
-            // Stop alert after 15 seconds
-            setTimeout(() => {
-              stopAlert()
-              setIsFlashing(false)
-            }, 15000)
-          }
-
-          fetchOrders() 
-          toast.success("Novo pedido recebido! 🚀", {
-            description: `Acompanhe no painel`,
-            duration: 10000,
-          })
-        } else {
-          fetchOrders()
+        const newOrder = payload.new
+        
+        if (isAlertEnabled) {
+          startAlert()
+          sendBrowserNotification(newOrder)
+          vibrateDevice()
+          setIsFlashing(true)
+          setTimeout(() => {
+            stopAlert()
+            setIsFlashing(false)
+          }, 15000)
         }
+
+        queryClient.invalidateQueries({ queryKey: ["orders", companyId] })
+        toast.success("Novo pedido recebido! 🚀")
+      })
+      .on('postgres_changes', { 
+        event: 'UPDATE', 
+        schema: 'public', 
+        table: 'orders',
+        filter: `company_id=eq.${companyId}`
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ["orders", companyId] })
       })
       .subscribe()
-  }
 
-  async function updateOrderStatus(orderId: string, newStatus: string) {
-    try {
-      console.log(`[DEBUG] Atualizando pedido online ${orderId} para status: ${newStatus}`);
-      
-      const { error: updateError } = await supabase
-        .from('orders')
-        .update({ status: newStatus })
-        .eq('id', orderId)
-      
-      // CRIAR ENTREGA AUTOMATICAMENTE SE O STATUS FOR 'pronto'
-      if (newStatus === "pronto") {
-        await criarEntregaSeNaoExistir(supabase, {
-          id: orderId,
-          empresa_id: profile?.company_id
-        });
-        
-        toast.info("Entrega criada automaticamente!");
-      }
-
-      toast.success("Status atualizado!")
-      if (selectedOrder?.id === orderId) {
-        setSelectedOrder(prev => prev ? { ...prev, status: newStatus } : null)
-      }
-      fetchOrders()
-    } catch (error: any) {
-      console.error("[ERRO] Erro ao atualizar status online:", error.message || error);
-      toast.error("Erro ao atualizar status");
+    return () => {
+      supabase.removeChannel(channel)
     }
-  }
+  }, [companyId, isAlertEnabled, queryClient])
 
+  const filteredOrders = useMemo(() => 
+    orders.filter((o: any) => 
+      o.customer_name.toLowerCase().includes(search.toLowerCase()) ||
+      o.id.includes(search)
+    ).slice(0, 50), // Performance: limit DOM elements
+  [orders, search])
 
-  const filteredOrders = orders.filter((o: Order) => 
-    o.customer_name.toLowerCase().includes(search.toLowerCase()) ||
-    o.id.includes(search)
-  )
+  const stats = useMemo(() => ([
+    { label: "Pendentes", value: orders.filter((o: any) => o.status === 'novo').length, color: "text-amber-500", bg: "bg-amber-50" },
+    { label: "Em Preparo", value: orders.filter((o: any) => o.status === 'em_preparo').length, color: "text-blue-500", bg: "bg-blue-50" },
+    { label: "Saiu p/ Entrega", value: orders.filter((o: any) => o.status === 'saiu_entrega').length, color: "text-primary", bg: "bg-pink-50" },
+    { label: "Total Receita", value: `R$ ${orders.reduce((acc: number, o: any) => acc + o.total, 0).toFixed(2)}`, color: "text-emerald-500", bg: "bg-emerald-50" },
+  ]), [orders])
 
   return (
     <div className="space-y-10 pb-20">
@@ -246,7 +136,6 @@ export default function OnlineOrdersPage() {
           <p className="text-slate-500 font-medium">Acompanhe em tempo real os pedidos vindos do seu cardápio digital.</p>
         </div>
         <div className="flex flex-wrap items-center gap-4">
-           {/* Enable Alerts Button */}
            <Button 
              variant={isAlertEnabled ? "outline" : "default"}
              className={cn(
@@ -270,12 +159,12 @@ export default function OnlineOrdersPage() {
             <Search className="absolute left-4 top-1/2 size-4 -translate-y-1/2 text-slate-400 group-focus-within:text-primary transition-colors" />
             <Input 
               placeholder="Buscar cliente ou ID..." 
-              className="h-12 w-64 rounded-xl border-slate-200 bg-white pl-12 font-medium shadow-sm"
+              className="h-12 w-64 rounded-xl border-slate-200 bg-white pl-12 font-medium shadow-sm transition-all focus:w-80"
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
           </div>
-          <Button variant="outline" onClick={fetchOrders} className="h-12 rounded-xl bg-white border-slate-200 font-bold">
+          <Button variant="outline" onClick={() => queryClient.invalidateQueries({ queryKey: ["orders", companyId] })} className="h-12 rounded-xl bg-white border-slate-200 font-bold">
             <Clock className="size-4 mr-2" /> Atualizar
           </Button>
         </div>
@@ -320,13 +209,8 @@ export default function OnlineOrdersPage() {
 
       {/* Stats Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-        {[
-          { label: "Pendentes", value: orders.filter((o: Order) => o.status === 'novo').length, color: "text-amber-500", bg: "bg-amber-50" },
-          { label: "Em Preparo", value: orders.filter((o: Order) => o.status === 'em_preparo').length, color: "text-blue-500", bg: "bg-blue-50" },
-          { label: "Saiu p/ Entrega", value: orders.filter((o: Order) => o.status === 'saiu_entrega').length, color: "text-primary", bg: "bg-pink-50" },
-          { label: "Total Hoje", value: `R$ ${orders.reduce((acc: number, o: Order) => acc + o.total, 0).toFixed(2)}`, color: "text-emerald-500", bg: "bg-emerald-50" },
-        ].map((stat, i) => (
-          <div key={i} className={cn("p-6 rounded-[32px] border border-slate-200 shadow-sm transition-all hover:scale-105", stat.bg)}>
+        {stats.map((stat, i) => (
+          <div key={i} className={cn("p-6 rounded-[32px] border border-slate-200 shadow-sm transition-all hover:translate-y-[-4px]", stat.bg)}>
             <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{stat.label}</p>
             <p className={cn("text-2xl font-black italic tracking-tighter", stat.color)}>{stat.value}</p>
           </div>
@@ -334,7 +218,8 @@ export default function OnlineOrdersPage() {
       </div>
 
       {/* Orders Table */}
-      <div className="rounded-[40px] border border-slate-200 bg-white overflow-hidden shadow-sm mt-8">
+      <div className="rounded-[40px] border border-slate-200 bg-white overflow-hidden shadow-sm mt-8 relative">
+        {loading && <div className="absolute inset-0 bg-white/50 backdrop-blur-sm z-10 flex items-center justify-center font-black uppercase text-xs italic tracking-widest text-slate-400 animate-pulse">Carregando Pedidos...</div>}
         <Table>
           <TableHeader className="bg-slate-50/50">
             <TableRow className="border-slate-100 italic">
@@ -348,15 +233,15 @@ export default function OnlineOrdersPage() {
           </TableHeader>
           <TableBody>
             <AnimatePresence mode="popLayout">
-              {filteredOrders.map((order: Order, i: number) => {
+              {filteredOrders.map((order: any, i: number) => {
                 const StatusIcon = statusConfig[order.status]?.icon || AlertCircle
                 return (
                   <motion.tr 
                     key={order.id}
                     layout
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.05 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
                     className="group border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer"
                     onClick={() => {
                       setSelectedOrder(order)
@@ -396,168 +281,24 @@ export default function OnlineOrdersPage() {
                 )
               })}
             </AnimatePresence>
+            {!loading && filteredOrders.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={6} className="py-20 text-center font-black uppercase italic text-slate-300 tracking-widest">Nenhum pedido encontrado</TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </div>
 
-      {/* Order Details Dialog */}
-      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-        <DialogContent className="sm:max-w-3xl rounded-[40px] p-0 overflow-hidden border-none shadow-2xl">
-          {selectedOrder && (
-            <div className="flex flex-col h-full max-h-[90vh]">
-              {/* Modal Header */}
-              <div className="p-8 bg-slate-900 text-white flex justify-between items-center relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_top_right,rgba(255,47,129,0.15),transparent)] pointer-events-none" />
-                <div>
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="px-3 py-1 rounded-full bg-white/10 text-[10px] font-black uppercase tracking-widest text-slate-400">ID: #{selectedOrder.id.slice(0, 8)}</span>
-                    <Badge className={cn("px-3 py-1 rounded-full text-[9px] font-black uppercase border-none", statusConfig[selectedOrder.status]?.color)}>
-                      {statusConfig[selectedOrder.status]?.label}
-                    </Badge>
-                  </div>
-                  <h2 className="text-3xl font-black italic uppercase tracking-tighter leading-none">{selectedOrder.customer_name}</h2>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="icon" className="size-12 rounded-2xl bg-white/5 border-white/10 text-white hover:bg-white/10">
-                    <Printer className="size-5" />
-                  </Button>
-                  <Button variant="outline" size="icon" className="size-12 rounded-2xl bg-white/5 border-white/10 text-white hover:bg-white/10">
-                    <Eye className="size-5" />
-                  </Button>
-                </div>
-              </div>
-
-              {/* Scrollable Content */}
-              <div className="flex-1 overflow-y-auto p-8 space-y-8 bg-slate-50">
-                <div className="grid md:grid-cols-2 gap-8">
-                  {/* Left Column: Items */}
-                  <div className="space-y-6">
-                    <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                      <ShoppingCart className="size-4" /> Itens do Pedido
-                    </h3>
-                    <div className="space-y-3">
-                      {selectedOrder.order_items?.map((item: OrderItem, idx: number) => (
-                        <div key={idx} className="p-4 bg-white rounded-2xl border border-slate-200 shadow-sm">
-                          <div className="flex justify-between mb-2">
-                            <span className="font-black text-slate-900 uppercase italic text-sm">{item.quantity}x {item.product_name}</span>
-                            <span className="font-black text-primary italic">R$ {(item.price * item.quantity).toFixed(2)}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    {/* Totals */}
-                    <div className="p-6 bg-white rounded-3xl border border-slate-200 shadow-sm space-y-3">
-                      <div className="flex justify-between text-xs font-bold text-slate-500 uppercase">
-                        <span>Taxa de Entrega</span>
-                        <span>R$ {selectedOrder.delivery_fee.toFixed(2)}</span>
-                      </div>
-                      <div className="pt-3 border-t border-slate-100 flex justify-between items-center">
-                        <span className="text-sm font-black uppercase tracking-widest text-slate-900">Total</span>
-                        <span className="text-2xl font-black text-primary italic">R$ {selectedOrder.total.toFixed(2)}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Right Column: Info */}
-                  <div className="space-y-6">
-                    <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 flex items-center gap-2">
-                      <MapPin className="size-4" /> Endereço e Contato
-                    </h3>
-                    <div className="p-6 bg-white rounded-3xl border border-slate-200 shadow-sm space-y-4">
-                      <div className="flex items-start gap-4">
-                        <div className="size-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400">
-                          <Phone className="size-5" />
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-black uppercase text-slate-400">Telefone</p>
-                          <p className="font-bold text-slate-900">{selectedOrder.customer_phone}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-4">
-                        <div className="size-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400">
-                          <MapPin className="size-5" />
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-black uppercase text-slate-400">Endereço</p>
-                          <p className="font-bold text-slate-900 leading-tight">{selectedOrder.customer_address || "Retirada no Local"}</p>
-                          <p className="text-xs text-slate-500 font-medium">CEP: {selectedOrder.customer_cep || "N/A"}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-4">
-                        <div className="size-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400">
-                          <DollarSign className="size-5" />
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-black uppercase text-slate-400">Pagamento</p>
-                          <div className="flex gap-2 items-center">
-                            <span className="font-bold text-slate-900 uppercase">{selectedOrder.payment_method}</span>
-                            <Badge className={cn("px-2 py-0.5 rounded-full text-[8px] font-black", 
-                              selectedOrder.payment_status === 'paid' ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600")}>
-                              {selectedOrder.payment_status === 'paid' ? "Pago" : "Pendente"}
-                            </Badge>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {selectedOrder.notes && (
-                      <div className="p-6 bg-amber-50 rounded-3xl border border-amber-100 italic text-sm text-amber-700 font-medium">
-                        <p className="text-[10px] font-black uppercase text-amber-500 mb-1 not-italic">Observações:</p>
-                        "{selectedOrder.notes}"
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Modal Footer: Action Buttons */}
-              <div className="p-8 bg-white border-t border-slate-200">
-                <div className="flex flex-wrap gap-3">
-                  {selectedOrder.status === 'novo' && (
-                    <Button 
-                      onClick={() => updateOrderStatus(selectedOrder.id, 'em_preparo')}
-                      className="flex-1 h-14 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black uppercase italic tracking-widest text-xs"
-                    >
-                      Aceitar & Preparar
-                    </Button>
-                  )}
-                  {selectedOrder.status === 'em_preparo' && (
-                    <Button 
-                      onClick={() => updateOrderStatus(selectedOrder.id, 'pronto')}
-                      className="flex-1 h-14 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white font-black uppercase italic tracking-widest text-xs"
-                    >
-                      Pedido Pronto
-                    </Button>
-                  )}
-                  {selectedOrder.status === 'pronto' && (
-                    <Button 
-                      onClick={() => updateOrderStatus(selectedOrder.id, 'saiu_entrega')}
-                      className="flex-1 h-14 rounded-2xl bg-pink-600 hover:bg-pink-700 text-white font-black uppercase italic tracking-widest text-xs"
-                    >
-                      Sair para Entrega
-                    </Button>
-                  )}
-                   {selectedOrder.status === 'saiu_entrega' && (
-                    <Button 
-                    onClick={() => updateOrderStatus(selectedOrder.id, 'entregue')}
-                    className="flex-1 h-14 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase italic tracking-widest text-xs"
-                    >
-                      Finalizar Entrega
-                    </Button>
-                  )}
-                  <Button 
-                    variant="outline" 
-                    onClick={() => updateOrderStatus(selectedOrder.id, 'cancelado')}
-                    className="h-14 px-8 rounded-2xl border-slate-200 text-slate-400 font-bold hover:bg-rose-50 hover:text-rose-500"
-                  >
-                    Cancelar
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <OrderDetailsModal 
+        order={selectedOrder}
+        isOpen={isDetailsOpen}
+        onOpenChange={setIsDetailsOpen}
+        onUpdateStatus={async (id, status) => {
+          await updateStatus({ orderId: id, newStatus: status })
+          // If the order being viewed is the one updated, we might need to sync if not using Query's direct data
+        }}
+      />
     </div>
   )
 }

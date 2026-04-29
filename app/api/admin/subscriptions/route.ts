@@ -59,3 +59,84 @@ export async function GET() {
         return NextResponse.json({ error: error.message }, { status: 500 })
     }
 }
+
+export async function POST(req: Request) {
+    try {
+        const user = await getServerUser()
+        if (!isSuperAdmin(user)) {
+            return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
+        }
+
+        const body = await req.json()
+        const { data, error } = await supabaseAdmin
+            .from('subscriptions')
+            .insert([body])
+            .select()
+            .single()
+
+        if (error) throw error
+
+        return NextResponse.json(data)
+    } catch (error: any) {
+        console.error('POST Error [Admin Subscriptions]:', error.message)
+        return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+}
+
+export async function PUT(req: Request) {
+    try {
+        const user = await getServerUser()
+        if (!isSuperAdmin(user)) {
+            return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
+        }
+
+        const body = await req.json()
+        const { id, ...updates } = body
+
+        if (!id) {
+            return NextResponse.json({ error: 'ID da assinatura é obrigatório' }, { status: 400 })
+        }
+
+        const { data, error } = await supabaseAdmin
+            .from('subscriptions')
+            .update(updates)
+            .eq('id', id)
+            .select()
+            .single()
+
+        if (error) throw error
+
+        return NextResponse.json(data)
+    } catch (error: any) {
+        console.error('PUT Error [Admin Subscriptions]:', error.message)
+        return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+}
+
+export async function DELETE(req: Request) {
+    try {
+        const user = await getServerUser()
+        if (!isSuperAdmin(user)) {
+            return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
+        }
+
+        const { searchParams } = new URL(req.url)
+        const id = searchParams.get('id')
+
+        if (!id) {
+            return NextResponse.json({ error: 'ID da assinatura é obrigatório' }, { status: 400 })
+        }
+
+        const { error } = await supabaseAdmin
+            .from('subscriptions')
+            .delete()
+            .eq('id', id)
+
+        if (error) throw error
+
+        return NextResponse.json({ success: true })
+    } catch (error: any) {
+        console.error('DELETE Error [Admin Subscriptions]:', error.message)
+        return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+}

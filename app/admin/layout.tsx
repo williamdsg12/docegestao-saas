@@ -1,7 +1,6 @@
-"use client"
-
 import { AdminSidebar } from "@/components/admin/AdminSidebar"
 import { AuthGuard } from "@/components/auth/AuthGuard"
+import { AdminCommandMenu } from "@/components/admin/AdminCommandMenu"
 
 export default function AdminLayout({ 
     children,
@@ -13,6 +12,8 @@ export default function AdminLayout({
             <AdminSidebar>
                 {children}
             </AdminSidebar>
+            <AdminCommandMenu />
         </AuthGuard>
     )
 }
+

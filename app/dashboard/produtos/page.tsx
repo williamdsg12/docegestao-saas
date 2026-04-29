@@ -1,8 +1,7 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useMemo } from "react"
 import { supabase } from "@/lib/supabase"
-import { useAuth } from "@/hooks/useAuth"
 import { useBusiness } from "@/hooks/useBusiness"
 import { usePlanLimits } from "@/hooks/usePlanLimits"
 import { toast } from "sonner"
@@ -11,18 +10,7 @@ import {
   Search,
   Sparkles,
   Smartphone,
-  Share2,
   PlusCircle,
-  Filter,
-  Grid as GridIcon,
-  ChevronRight,
-  ArrowRight,
-  Zap,
-  CheckCircle2,
-  AlertTriangle,
-  LayoutGrid,
-  Menu,
-  ChevronLeft,
   Package
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -33,27 +21,12 @@ import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import { FeatureGuard } from "@/components/dashboard/FeatureGuard"
+import { useProducts, type Product } from "@/hooks/useProducts"
 
 // Custom Components
 import { ProductCardV3 } from "@/components/dashboard/products/ProductCardV3"
 import { MobileSimulator } from "@/components/dashboard/products/MobileSimulator"
 import { AIOptimizerModal } from "@/components/dashboard/products/AIOptimizerModal"
-
-interface Product {
-  id: string
-  name: string
-  category: string
-  price: number
-  active: boolean
-  image_url?: string
-  description?: string
-  preparation_time?: number
-  order_position?: number
-  ai_score?: number
-  ai_optimized?: boolean
-  marketing_data?: any
-  original_data?: any
-}
 
 const CATEGORIES = ["Todos", "Bolos", "Doces", "Combos", "Bebidas", "Outros"]
 
@@ -67,11 +40,14 @@ export default function ProdutosPage() {
 
 function ProdutosContentV4() {
   const { business, profile } = useBusiness()
-  const { limits, canAddProduct, refreshLimits } = usePlanLimits()
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
+  const tenantId = profile?.tenant_id || profile?.company_id
+  const { canAddProduct, refreshLimits } = usePlanLimits()
+  
   const [search, setSearch] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("Todos")
+  
+  // Data Hook
+  const { data: products = [], isLoading, refetch, toggleStatus, deleteProduct } = useProducts(tenantId)
   
   // Modals & UI
   const [modalOpen, setModalOpen] = useState(false)
@@ -90,29 +66,9 @@ function ProdutosContentV4() {
   const [showWowPrompt, setShowWowPrompt] = useState(false)
   const [justCreatedProduct, setJustCreatedProduct] = useState<Product | null>(null)
 
-  useEffect(() => {
-    if (profile?.tenant_id || profile?.company_id) fetchProducts()
-  }, [profile])
-
-  async function fetchProducts() {
-    const tenantId = profile?.tenant_id || profile?.company_id
-    if (!tenantId) return
-    try {
-      setLoading(true)
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('tenant_id', tenantId)
-        .order('order_position', { ascending: true })
-      
-      if (error) throw error
-      setProducts(data || [])
-    } finally { setLoading(false) }
-  }
-
   const filteredProducts = useMemo(() => {
     return products.filter(p => {
-      const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase())
+      const matchesSearch = p.name?.toLowerCase().includes(search.toLowerCase())
       const matchesCategory = selectedCategory === "Todos" || p.category === selectedCategory
       return matchesSearch && matchesCategory
     })
@@ -135,7 +91,6 @@ function ProdutosContentV4() {
     if (!formData.name) return toast.error("Nome é obrigatório")
 
     try {
-      const tenantId = profile?.tenant_id || profile?.company_id
       const payload = { ...formData, tenant_id: tenantId }
 
       if (editingProduct) {
@@ -149,26 +104,19 @@ function ProdutosContentV4() {
         refreshLimits()
         toast.success("Produto cadastrado com sucesso!")
       }
-      fetchProducts()
+      refetch()
       setModalOpen(false)
     } catch (e) { toast.error("Erro ao salvar") }
   }
 
   const handleToggleStatus = async (id: string, current: boolean) => {
-    try {
-      setProducts(prev => prev.map(p => p.id === id ? { ...p, active: !current } : p))
-      await supabase.from('products').update({ active: !current }).eq('id', id)
-      toast.success(current ? "Produto ocultado" : "Produto visível", { duration: 1000 })
-    } catch (error) { toast.error("Erro ao atualizar status") }
+    toggleStatus.mutate({ id, active: !current })
   }
 
   const handleDelete = async (id: string) => {
     if (!confirm("Tem certeza que deseja excluir permanentemente este produto?")) return
-    try {
-      await supabase.from('products').delete().eq('id', id)
-      setProducts(prev => prev.filter(p => p.id !== id))
-      toast.success("Produto removido")
-    } catch (e) { toast.error("Erro ao excluir") }
+    deleteProduct.mutate(id)
+    toast.success("Produto removido")
   }
 
   const handleDuplicate = async (product: Product) => {
@@ -177,7 +125,7 @@ function ProdutosContentV4() {
       const { id, ...rest } = product
       const payload = { ...rest, name: `${product.name} (Cópia)`, order_position: products.length }
       await supabase.from('products').insert(payload)
-      fetchProducts()
+      refetch()
       toast.success("Produto duplicado")
       refreshLimits()
     } catch (e) { toast.error("Erro ao duplicar") }
@@ -185,8 +133,8 @@ function ProdutosContentV4() {
 
   const handleUpdateInline = async (id: string, updates: Partial<Product>) => {
     try {
-      setProducts(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p))
       await supabase.from('products').update(updates).eq('id', id)
+      refetch()
     } catch (error) { toast.error("Erro na atualização") }
   }
 
@@ -216,7 +164,7 @@ function ProdutosContentV4() {
            ai_score: data.score,
            ai_optimized: true
         }).eq('id', optimizingProduct.id)
-        fetchProducts()
+        refetch()
         setOptimizerOpen(false)
         toast.success("Produto otimizado com sucesso! ✨")
      } catch(e) { toast.error("Erro ao aplicar melhorias") }
@@ -230,15 +178,15 @@ function ProdutosContentV4() {
     try {
       for (const p of productsToFix) {
          const res = await fetch("/api/products/optimize", { 
-           method: "POST", 
-           body: JSON.stringify({ product: p, mode: "category_only" }) 
+            method: "POST", 
+            body: JSON.stringify({ product: p, mode: "category_only" }) 
          })
          const data = await res.json()
          if (data.category && data.category !== "Outros") {
            await supabase.from('products').update({ category: data.category }).eq('id', p.id)
          }
       }
-      fetchProducts()
+      refetch()
       toast.success("IA organizou seu estoque perfeitamente!", { id: "fix" })
     } catch(e) { toast.error("Falha na organização automática", { id: "fix" }) }
   }
@@ -246,7 +194,7 @@ function ProdutosContentV4() {
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-20">
       
-      {/* 🚀 HEADER PREMIUM (ESTILO IFOOD) */}
+      {/* 🚀 HEADER */}
       <div className="bg-white border-b border-slate-100 sticky top-0 z-30 shadow-sm">
          <div className="max-w-7xl mx-auto px-[var(--space-md)] h-auto py-4 md:h-24 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 md:gap-8">
             <div className="flex items-center gap-4 md:gap-6 flex-1">
@@ -260,7 +208,7 @@ function ProdutosContentV4() {
                   <Input 
                     placeholder="Buscar..." 
                     value={search} onChange={e => setSearch(e.target.value)}
-                    className="h-12 md:h-14 pl-12 rounded-2xl border-none bg-slate-50 font-bold text-slate-600 placeholder:text-slate-300 focus:ring-4 focus:ring-indigo-100 transition-all shadow-inner"
+                    className="h-12 md:h-14 pl-12 rounded-2xl border-none bg-slate-50 font-bold text-slate-600 focus:ring-4 focus:ring-indigo-100 transition-all shadow-inner"
                   />
                </div>
             </div>
@@ -285,7 +233,7 @@ function ProdutosContentV4() {
             </div>
          </div>
 
-         {/* CATEGORIES PILLS (SCROLL HORIZONTAL) */}
+         {/* CATEGORIES PILLS */}
          <div className="max-w-7xl mx-auto px-6 h-16 flex items-center border-t border-slate-50 overflow-x-auto no-scrollbar gap-2">
             {CATEGORIES.map(category => (
                <button
@@ -294,7 +242,7 @@ function ProdutosContentV4() {
                  className={cn(
                    "h-10 px-6 rounded-full text-[10px] font-black uppercase italic tracking-widest transition-all shrink-0 border-2",
                    selectedCategory === category 
-                     ? "bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-600/20" 
+                     ? "bg-indigo-600 text-white border-indigo-600 shadow-lg" 
                      : "bg-white text-slate-400 border-slate-100 hover:border-slate-300"
                  )}
                >
@@ -317,9 +265,9 @@ function ProdutosContentV4() {
          {/* GRID DE PRODUTOS */}
          <div className="flex-1">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-8">
-               {loading ? (
+               {isLoading ? (
                   Array.from({ length: 8 }).map((_, i) => (
-                     <div key={i} className="h-96 rounded-[32px] bg-slate-100 animate-pulse" />
+                     <div key={i} className="h-96 rounded-[32px] bg-slate-200/50 animate-pulse border border-slate-100" />
                   ))
                ) : filteredProducts.length > 0 ? (
                   <AnimatePresence mode="popLayout">
@@ -327,10 +275,9 @@ function ProdutosContentV4() {
                         <motion.div 
                           key={product.id}
                           layout
-                          initial={{ opacity: 0, scale: 0.9 }}
+                          initial={{ opacity: 0, scale: 0.95 }}
                           animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.9 }}
-                          transition={{ duration: 0.3 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
                         >
                            <ProductCardV3 
                              product={product}
@@ -359,23 +306,19 @@ function ProdutosContentV4() {
             </div>
          </div>
 
-         {/* SIMULADOR LATERAL (DRAWER PREMIUM) */}
+         {/* SIMULADOR LATERAL */}
          <AnimatePresence>
             {showPreview && business && (
                <motion.aside 
-                 initial={{ opacity: 0, scale: 0.9, y: 40 }}
-                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                 exit={{ opacity: 0, scale: 0.9, y: 40 }}
-                 transition={{ duration: 0.4, ease: "easeOut" }}
+                 initial={{ opacity: 0, x: 40 }}
+                 animate={{ opacity: 1, x: 0 }}
+                 exit={{ opacity: 0, x: 40 }}
                  className="hidden xl:block shrink-0 sticky top-28 h-[calc(100vh-140px)] w-[400px]"
                >
-                  <div className="bg-white/70 backdrop-blur-2xl rounded-[40px] border border-white shadow-2xl h-full flex flex-col overflow-hidden relative group">
-                     {/* Borda de brilho suave */}
-                     <div className="absolute inset-0 rounded-[40px] border-2 border-indigo-500/5 pointer-events-none" />
-                     
-                     <div className="p-6 border-b border-slate-50 flex items-center justify-between relative z-10">
+                  <div className="bg-white/70 backdrop-blur-2xl rounded-[40px] border border-white shadow-2xl h-full flex flex-col overflow-hidden relative">
+                     <div className="p-6 border-b border-slate-50 flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                           <div className="size-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/20">
+                           <div className="size-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-lg">
                               <Smartphone size={16} />
                            </div>
                            <div className="flex flex-col">
@@ -401,14 +344,11 @@ function ProdutosContentV4() {
 
       {/* --- MODAIS --- */}
 
-      {/* MODAL: OTIMIZADOR AI */}
       <AIOptimizerModal isOpen={optimizerOpen} onClose={() => setOptimizerOpen(false)} product={optimizingProduct} optimization={optimizationResult} onApply={handleApplyOptimization} />
 
-      {/* MODAL: EDIÇÃO/CADASTRO (SIMPLIFICADO) */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
          <DialogContent className="max-w-2xl p-0 overflow-hidden border-none rounded-[40px] shadow-4xl bg-white">
             <div className="p-10 bg-slate-900 text-white flex items-center justify-between relative overflow-hidden">
-               <div className="absolute top-0 right-0 h-full aspect-square bg-indigo-600/10 blur-[80px] rounded-full translate-x-1/2 -translate-y-1/2" />
                <div className="relative z-10 flex items-center gap-6">
                   <div className="size-14 rounded-2xl bg-indigo-600 flex items-center justify-center text-white"><Package size={28} /></div>
                   <div>
@@ -423,9 +363,9 @@ function ProdutosContentV4() {
                   <div className="space-y-2">
                      <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Nome Irresistível</Label>
                      <Input 
-                       placeholder="Ex: Bolo de Pote Gourmet..." 
-                       value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})}
-                       className="h-14 rounded-2xl border-2 border-slate-50 bg-slate-50/50 font-bold italic text-lg focus:border-indigo-400 transition-all"
+                        placeholder="Ex: Bolo de Pote Gourmet..." 
+                        value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})}
+                        className="h-14 rounded-2xl border-2 border-slate-50 bg-slate-50 font-bold italic text-lg"
                      />
                   </div>
                   <div className="space-y-2">
@@ -433,7 +373,7 @@ function ProdutosContentV4() {
                      <select 
                         value={formData.category} 
                         onChange={e => setFormData({...formData, category: e.target.value})}
-                        className="w-full h-14 px-5 rounded-2xl border-2 border-slate-50 bg-slate-50/50 font-bold italic text-slate-700 outline-none focus:border-indigo-400 transition-all"
+                        className="w-full h-14 px-5 rounded-2xl border-2 border-slate-50 bg-slate-50 font-bold italic text-slate-700 outline-none"
                      >
                         {CATEGORIES.filter(c => c !== "Todos").map(c => <option key={c} value={c}>{c}</option>)}
                      </select>
@@ -444,17 +384,17 @@ function ProdutosContentV4() {
                   <div className="space-y-2">
                      <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Preço Sugerido (R$)</Label>
                      <Input 
-                       type="number" step="0.01"
-                       value={formData.price} onChange={e => setFormData({...formData, price: parseFloat(e.target.value)})}
-                       className="h-14 rounded-2xl border-2 border-slate-50 bg-slate-50/50 font-black italic text-xl focus:border-indigo-400 transition-all"
+                        type="number" step="0.01"
+                        value={formData.price} onChange={e => setFormData({...formData, price: parseFloat(e.target.value)})}
+                        className="h-14 rounded-2xl border-2 border-slate-50 bg-slate-50 font-black italic text-xl"
                      />
                   </div>
                   <div className="space-y-2">
                      <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Tempo de Preparo (min)</Label>
                      <Input 
-                       type="number"
-                       value={formData.preparation_time} onChange={e => setFormData({...formData, preparation_time: parseInt(e.target.value)})}
-                       className="h-14 rounded-2xl border-2 border-slate-50 bg-slate-50/50 font-bold italic text-lg focus:border-indigo-400 transition-all"
+                        type="number"
+                        value={formData.preparation_time} onChange={e => setFormData({...formData, preparation_time: parseInt(e.target.value)})}
+                        className="h-14 rounded-2xl border-2 border-slate-50 bg-slate-50 font-bold italic text-lg"
                      />
                   </div>
                </div>
@@ -462,26 +402,24 @@ function ProdutosContentV4() {
                <div className="space-y-2">
                   <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Descrição Sensorial (Opcional)</Label>
                   <textarea 
-                    value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})}
-                    className="w-full h-32 p-6 rounded-3xl border-2 border-slate-50 bg-slate-50/50 font-bold italic text-sm outline-none focus:border-indigo-400 transition-all resize-none"
-                    placeholder="Descreva o sabor, os ingredientes e a experiência..."
+                     value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})}
+                     className="w-full h-32 p-6 rounded-3xl border-2 border-slate-50 bg-slate-50 font-bold italic text-sm outline-none resize-none"
+                     placeholder="Descreva o sabor, os ingredientes e a experiência..."
                   />
                </div>
             </div>
 
             <div className="p-10 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
-               <Button variant="ghost" onClick={() => setModalOpen(false)} className="h-12 px-6 rounded-xl font-bold uppercase text-[10px] text-slate-400 hover:text-slate-600">Cancelar</Button>
-               <Button onClick={handleSaveProduct} className="h-16 px-12 rounded-[24px] bg-slate-900 text-white font-black uppercase italic text-sm shadow-xl hover:shadow-2xl hover:bg-black active:scale-95 transition-all">SALVAR PRODUTO</Button>
+               <Button variant="ghost" onClick={() => setModalOpen(false)} className="h-12 px-6 rounded-xl font-bold uppercase text-[10px] text-slate-400">Cancelar</Button>
+               <Button onClick={handleSaveProduct} className="h-16 px-12 rounded-[24px] bg-slate-900 text-white font-black uppercase italic text-sm shadow-xl">SALVAR PRODUTO</Button>
             </div>
          </DialogContent>
       </Dialog>
       
-      {/* --- WOW PROMPT --- */}
       <AnimatePresence>
          {showWowPrompt && justCreatedProduct && (
             <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 50, opacity: 0 }} className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] w-full max-w-lg px-6">
                <div className="bg-[#0F172A] border-2 border-indigo-500/20 rounded-[32px] p-8 shadow-4xl text-white relative overflow-hidden">
-                  <div className="absolute top-0 right-0 size-40 bg-indigo-600/10 blur-[60px] translate-x-1/2 -translate-y-1/2" />
                   <div className="flex items-center gap-6 relative z-10">
                      <div className="size-16 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-xl shadow-indigo-600/20"><Sparkles size={32} /></div>
                      <div className="flex-1 space-y-1">
@@ -490,7 +428,7 @@ function ProdutosContentV4() {
                      </div>
                   </div>
                   <div className="flex gap-3 mt-8 relative z-10">
-                     <Button onClick={() => { setShowWowPrompt(false); handleOptimize(justCreatedProduct); }} className="flex-1 h-14 rounded-2xl bg-white text-slate-900 font-black italic uppercase text-[10px] hover:bg-emerald-400 hover:text-white transition-all">DEIXAR PROFISSIONAL COM IA ✨</Button>
+                     <Button onClick={() => { setShowWowPrompt(false); handleOptimize(justCreatedProduct); }} className="flex-1 h-14 rounded-2xl bg-white text-slate-900 font-black italic uppercase text-[10px]">DEIXAR PROFISSIONAL COM IA ✨</Button>
                      <Button variant="ghost" onClick={() => setShowWowPrompt(false)} className="h-14 px-6 rounded-2xl font-black uppercase italic text-[9px] text-slate-500 hover:text-white">AGORA NÃO</Button>
                   </div>
                </div>

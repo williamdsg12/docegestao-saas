@@ -145,85 +145,77 @@ export default function PlansManagement() {
     }
 
     return (
-        <div className="space-y-12 animate-in fade-in duration-700 pb-20">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 relative z-10 w-full xl:max-w-[70%]">
-                <div className="space-y-2">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="size-2 bg-purple-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(168,85,247,0.8)]" />
-                        <span className="text-[10px] font-black text-purple-500 uppercase tracking-[0.3em] italic">Pricing Engine</span>
-                    </div>
-                    <h2 className="text-5xl md:text-7xl font-black text-white italic uppercase tracking-tighter leading-[0.85]">
-                        Gestão de <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-indigo-400">Planos</span>
+        <div className="space-y-10 animate-in fade-in duration-500 pb-20">
+            {/* Header Area */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div>
+                    <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white tracking-tight leading-tight">
+                        Gestão de <span className="text-purple-500">Planos</span>
                     </h2>
-                    <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic mt-4">Defina os preços e limites do seu SaaS</p>
+                    <p className="text-sm text-slate-500 mt-2">Configuração de ofertas, limites e estratégias de precificação SaaS.</p>
                 </div>
                 
-                <div className="flex items-center gap-4 bg-slate-900 border border-white/5 px-6 py-4 rounded-2xl shadow-xl">
-                    <button 
+                <div className="flex items-center gap-3">
+                    <Button 
                         onClick={openNewPlan}
-                        className="flex items-center gap-2 h-12 px-6 rounded-xl bg-purple-600 text-white font-black uppercase italic text-xs tracking-widest shadow-[0_0_15px_rgba(168,85,247,0.4)] hover:scale-105 transition-all focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                        className="h-11 px-6 rounded-xl bg-purple-600 text-white font-semibold flex items-center gap-2 hover:bg-purple-700 transition-all text-xs"
                     >
                         <Plus className="size-4" /> Novo Plano
-                    </button>
+                    </Button>
                 </div>
             </div>
 
             {/* Quick Insights Section */}
-            <div className="bg-slate-900 border border-white/5 rounded-[40px] p-10 relative overflow-hidden shadow-2xl">
-                <div className="absolute top-0 right-0 w-1/3 h-full bg-purple-500/10 blur-[100px] rounded-full translate-x-1/2 pointer-events-none" />
+            <div className="bg-[#09090b] border border-white/[0.05] rounded-xl p-8 relative overflow-hidden shadow-sm">
                 <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-10">
-                    <div>
-                        <div className="size-14 rounded-2xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-400 mb-6 shadow-inner shadow-purple-500/20">
-                            <Zap className="size-6" />
+                    <div className="flex items-center gap-6">
+                        <div className="size-12 rounded-xl bg-purple-500/10 border border-purple-500/10 flex items-center justify-center text-purple-400 shadow-sm">
+                            <Zap className="size-5" />
                         </div>
-                        <h3 className="text-3xl font-black text-white italic uppercase tracking-tighter mb-4">Métricas de <span className="text-purple-400 italic">Conversão</span></h3>
-                        <p className="text-slate-400 font-bold text-sm max-w-lg">Acompanhe qual é o plano de maior adesão e o valor médio gerado por cada cliente no ecossistema.</p>
+                        <div>
+                            <h3 className="text-lg font-bold text-white tracking-tight">Métricas de Conversão</h3>
+                            <p className="text-sm text-slate-500 mt-1 max-w-sm">Destaque do plano de maior adesão e performance do ecossistema.</p>
+                        </div>
                     </div>
                     <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-12">
                         <div>
-                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">ARPU</p>
-                            <p className="text-3xl font-black text-white italic tracking-tighter">R$ 142.50</p>
+                            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-1">ARPU</p>
+                            <p className="text-xl font-bold text-white tracking-tight">R$ 142.50</p>
                         </div>
                         <div>
-                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Plano Popular</p>
-                            <p className="text-3xl font-black text-purple-400 italic tracking-tighter">Pro</p>
+                            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-1">Plano Popular</p>
+                            <p className="text-xl font-bold text-purple-400 tracking-tight">Pro</p>
                         </div>
-                        <div className="col-span-2 lg:col-span-1 border-t lg:border-t-0 lg:border-l border-white/10 pt-6 lg:pt-0 lg:pl-12">
-                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Receita ARR</p>
-                            <p className="text-3xl font-black text-emerald-400 italic tracking-tighter">R$ 1.7M</p>
+                        <div className="col-span-2 lg:col-span-1 border-t lg:border-t-0 lg:border-l border-white/10 pt-6 lg:pt-0 lg:pl-12 text-right">
+                            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-1 text-right">Receita ARR</p>
+                            <p className="text-xl font-bold text-emerald-500 tracking-tight">R$ 1.7M</p>
                         </div>
                     </div>
                 </div>
             </div>
 
             {/* Plans Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {plans.map((plan, idx) => (
                     <motion.div
-                        initial={{ opacity: 0, y: 20 }}
+                        initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: idx * 0.1 }}
+                        transition={{ delay: idx * 0.05 }}
                         key={plan.id}
-                        className="bg-slate-900 border border-white/5 rounded-[40px] p-10 relative overflow-hidden group hover:border-purple-500/30 hover:shadow-2xl hover:shadow-purple-500/10 transition-all"
+                        className="bg-[#09090b] border border-white/[0.05] rounded-xl p-8 relative overflow-hidden group hover:border-purple-500/30 transition-all"
                     >
                         {/* Status Badge */}
                         <div className={cn(
-                            "absolute top-8 right-8 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border",
-                            plan.active ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-slate-500/10 text-slate-400 border-slate-500/20"
+                            "absolute top-6 right-6 px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest border",
+                            plan.active ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/10" : "bg-slate-500/10 text-slate-500 border-slate-500/10"
                         )}>
                             {plan.active ? 'Ativo' : 'Inativo'}
                         </div>
 
-                        {/* Icon & Title */}
-                        <div className="size-16 rounded-2xl bg-slate-950 border border-white/5 flex items-center justify-center text-slate-400 group-hover:bg-purple-600 group-hover:text-white transition-all duration-500 mb-8 shadow-inner shadow-black/50 italic font-black text-2xl group-hover:scale-110">
-                            <Package className="size-8" />
-                        </div>
-
-                        <h3 className="text-2xl font-black text-white italic uppercase tracking-tighter mb-2">{plan.name}</h3>
-                        <div className="flex items-baseline gap-1 mb-10">
-                            <span className="text-5xl font-black text-white tracking-tighter italic">R$ {plan.price}</span>
-                            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">/ {plan.interval === 'month' ? 'mês' : plan.interval}</span>
+                        <h3 className="text-xl font-bold text-white tracking-tight mb-2">{plan.name}</h3>
+                        <div className="flex items-baseline gap-1 mb-8">
+                            <span className="text-4xl font-bold text-white tracking-tighter">R$ {plan.price}</span>
+                            <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">/ {plan.interval === 'month' ? 'mês' : plan.interval}</span>
                         </div>
 
                         {/* Limits Grid */}
@@ -259,18 +251,18 @@ export default function PlansManagement() {
                         </div>
 
                         {/* Actions */}
-                        <div className="flex gap-3 mt-auto">
+                        <div className="flex gap-2 mt-auto">
                             <button 
                                 onClick={() => openEditPlan(plan)}
-                                className="flex-1 h-14 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-white font-black uppercase italic text-xs tracking-widest transition-all focus:outline-none focus:ring-2 focus:ring-purple-500 flex items-center justify-center gap-2"
+                                className="flex-1 h-10 rounded-lg bg-white/[0.03] border border-white/[0.05] hover:bg-white/[0.06] text-white font-semibold text-xs tracking-tight transition-all flex items-center justify-center gap-2"
                             >
-                                <Edit3 className="size-4" /> Configurar
+                                <Edit3 className="size-3.5" /> Configurar
                             </button>
                             <button 
-                                onClick={() => toast.error("Ação de excluir não permitida em modo demonstração")}
-                                className="size-14 rounded-xl border border-rose-500/20 text-rose-500 hover:text-white hover:bg-rose-500 transition-all focus:outline-none flex items-center justify-center"
+                                onClick={() => toast.error("Ação não permitida em demonstração")}
+                                className="size-10 rounded-lg border border-rose-500/10 text-rose-500 hover:text-white hover:bg-rose-500 transition-all flex items-center justify-center"
                             >
-                                <Trash2 className="size-5" />
+                                <Trash2 className="size-4" />
                             </button>
                         </div>
                     </motion.div>
@@ -278,14 +270,13 @@ export default function PlansManagement() {
             </div>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="sm:max-w-[600px] border-white/10 bg-slate-900 text-white p-8 rounded-[40px] shadow-2xl overflow-hidden">
-                    <div className="absolute -top-40 -right-40 size-80 bg-purple-500/10 rounded-full blur-[80px] pointer-events-none" />
-                    <DialogHeader className="mb-6 relative z-10">
-                        <DialogTitle className="text-3xl font-black italic uppercase tracking-tighter">
-                            {selectedPlan ? 'Editar' : 'Novo'} <span className="text-purple-400">Plano</span>
+                <DialogContent className="sm:max-w-[500px] border-white/[0.05] bg-[#09090b] text-white p-8 rounded-xl shadow-2xl">
+                    <DialogHeader className="mb-6">
+                        <DialogTitle className="text-xl font-bold tracking-tight">
+                            {selectedPlan ? 'Editar' : 'Novo'} <span className="text-purple-500">Plano</span>
                         </DialogTitle>
-                        <DialogDescription className="font-bold uppercase tracking-widest text-[10px] text-slate-400 mt-2">
-                            Configure os limites e valores para os usuários do ecossistema.
+                        <DialogDescription className="text-sm text-slate-500 mt-1">
+                            Configure os limites e valores estratégicos da oferta.
                         </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleSavePlan} className="space-y-6 relative z-10">

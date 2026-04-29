@@ -19,7 +19,6 @@ import {
   Wallet,
   BarChart3,
   Coffee,
-  Globe,
   Crown,
   Calculator,
   Ticket,
@@ -27,9 +26,12 @@ import {
   Menu,
   Award,
   Palette,
-  Monitor,
-  FileText
+  FileText,
+  MessageSquare,
+  Megaphone,
+  ShoppingBag,
 } from "lucide-react"
+
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { motion, AnimatePresence } from "framer-motion"
@@ -47,60 +49,47 @@ import {
 
 const menuGroups = [
   {
-    name: "Dashboard",
+    name: "Principal",
     icon: LayoutDashboard,
     items: [
-      { name: "Visão Geral", icon: LayoutDashboard, path: "/dashboard", feature: "dashboard" },
-      { name: "Assinatura", icon: Crown, path: "/dashboard/assinatura", feature: "assinatura" },
+      { name: "Dashboard", icon: LayoutDashboard, path: "/dashboard", feature: "dashboard" },
+      { name: "Pedidos", icon: ShoppingBag, path: "/dashboard/painel-pedidos", feature: "pedidos" },
+      { name: "Mensagens", icon: MessageSquare, path: "/dashboard/mensagens", feature: "dashboard", badge: "2" },
     ]
   },
   {
-    name: "Produção",
-    icon: UtensilsCrossed,
+    name: "Gestão",
+    icon: Package,
     items: [
-      { name: "Insumos (Estoque)", icon: UtensilsCrossed, path: "/dashboard/estoque", feature: "ingredientes" },
-      { name: "Lista de Compras", icon: ShoppingCart, path: "/dashboard/lista-compras", feature: "pedidos" },
-      { name: "Compras (NF-e)", icon: FileText, path: "/dashboard/compras", feature: "pedidos" },
-      { name: "Receitas", icon: BookOpen, path: "/dashboard/receitas", feature: "receitas" },
-      { name: "Sessões de Produção", icon: ClipboardList, path: "/dashboard/producao", feature: "produtos" },
-    ]
-  },
-  {
-    name: "Vendas",
-    icon: ShoppingCart,
-    items: [
-      { name: "Painel ERP (Lucro)", icon: BarChart3, path: "/dashboard/vendas", feature: "financeiro" },
-      { name: "Pedidos", icon: ShoppingCart, path: "/dashboard/painel-pedidos", feature: "pedidos" },
-      { name: "Orçamentos", icon: ClipboardList, path: "/dashboard/orcamentos", feature: "orcamentos" },
       { name: "Clientes", icon: Users, path: "/dashboard/clientes", feature: "clientes" },
-      { name: "Cardápio Digital", icon: Coffee, path: "/dashboard/menu", feature: "menu" },
+      { name: "Produtos (Catálogo)", icon: Coffee, path: "/dashboard/menu", feature: "menu" },
+      { name: "Estoque (Insumos)", icon: UtensilsCrossed, path: "/dashboard/estoque", feature: "ingredientes" },
+      { name: "Receitas", icon: BookOpen, path: "/dashboard/receitas", feature: "receitas" },
     ]
   },
   {
-    name: "Marketing",
-    icon: Ticket,
+    name: "Crescimento",
+    icon: Megaphone,
     items: [
-      { name: "Promoções & VIP", icon: Ticket, path: "/dashboard/marketing", badge: "V3", feature: "marketing" },
+      { name: "Marketing & VIP", icon: Megaphone, path: "/dashboard/marketing", feature: "marketing" },
+      { name: "Relatórios", icon: BarChart3, path: "/dashboard/relatorios", feature: "relatorios" },
     ]
   },
   {
     name: "Financeiro",
-    icon: Calculator,
+    icon: Wallet,
     items: [
-      { name: "Precificação", icon: Calculator, path: "/dashboard/precificacao-inteligente", badge: "Novo", feature: "precificacao" },
-      { name: "Vendas Online", icon: ShoppingCart, path: "/dashboard/financeiro/vendas", badge: "Live", feature: "financeiro" },
-      { name: "Métodos de pagamento", icon: Wallet, path: "/dashboard/financeiro/pagamentos", feature: "financeiro" },
       { name: "Fluxo de Caixa", icon: Wallet, path: "/dashboard/financeiro", feature: "financeiro" },
-      { name: "Relatórios", icon: BarChart3, path: "/dashboard/relatorios", badge: "Beta", feature: "relatorios" },
+      { name: "Precificação", icon: Calculator, path: "/dashboard/precificacao-inteligente", badge: "Novo", feature: "precificacao" },
+      { name: "Assinatura", icon: Crown, path: "/dashboard/assinatura", feature: "assinatura" },
     ]
   },
   {
     name: "Configurações",
     icon: Settings,
     items: [
-      { name: "Visual do Sistema", icon: Palette, path: "/dashboard/configuracoes", badge: "NOVO", feature: "perfil" },
-      { name: "Meu Perfil", icon: Settings, path: "/dashboard/settings/profile", feature: "perfil" },
-      { name: "Afiliados", icon: Award, path: "/dashboard/afiliados", feature: "afiliados" },
+      { name: "Ajustes do Sistema", icon: Settings, path: "/dashboard/settings", feature: "perfil" },
+      { name: "Visual Premium", icon: Palette, path: "/dashboard/configuracoes", feature: "perfil" },
       { name: "Impressoras", icon: Printer, path: "/dashboard/settings/impressoras", badge: "PRO", feature: "pro_features" },
     ]
   }
@@ -181,17 +170,17 @@ function SidebarContent({
   }
 
   return (
-    <div className="flex flex-col h-full bg-[#0F172A] text-slate-300 overflow-hidden">
+    <div className="flex flex-col h-full bg-[var(--bg-sidebar)] text-[var(--text-primary)] overflow-hidden shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
       {/* Header / Logo */}
-      <div className="h-16 flex items-center px-6 border-b border-slate-800 shrink-0">
+      <div className="h-20 flex items-center px-6 border-b border-[var(--border)] shrink-0">
         <div className="flex items-center gap-3">
-          <div className="size-8 shrink-0 flex items-center justify-center p-1.5 bg-blue-600 rounded-lg shadow-lg shadow-blue-900/20">
-            <UtensilsCrossed className="size-full text-white" />
+          <div className="size-10 shrink-0 flex items-center justify-center rounded-xl overflow-hidden shadow-sm bg-white p-1">
+            <img src="/logo_cupcake.png" alt="Logo" className="size-full object-contain" />
           </div>
           {(!isCollapsed || isMobile) && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col min-w-0">
-              <span className="font-black text-white leading-none uppercase tracking-tighter text-sm italic">Doce Gestão</span>
-              <span className="text-[8px] text-blue-400 font-black uppercase tracking-[0.2em] leading-none mt-1">SaaS Platinum</span>
+              <span className="font-black text-[var(--text-primary)] leading-none uppercase tracking-tighter text-sm italic">Doce Gestão</span>
+              <span className="text-[8px] text-[var(--secondary)] font-black uppercase tracking-[0.2em] leading-none mt-1 italic">Intelligent Bakery</span>
             </motion.div>
           )}
         </div>
@@ -214,10 +203,10 @@ function SidebarContent({
                       onClick={() => (isCollapsed && !isMobile) ? onToggleCollapse?.() : toggleGroup(group.name)}
                       className={cn(
                         "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-300",
-                        (isOpen && !isCollapsed) || (hasActive && isCollapsed) ? "text-white" : "text-slate-500 hover:bg-white/5 hover:text-slate-300"
+                        (isOpen && !isCollapsed) || (hasActive && isCollapsed) ? "text-[var(--primary)] font-bold bg-[var(--bg-app)]/50" : "text-[var(--text-muted)] hover:bg-[var(--bg-app)] hover:text-[var(--text-primary)]"
                       )}
                     >
-                      <GroupIcon className={cn("size-4 shrink-0 transition-colors", hasActive && "text-blue-500")} />
+                      <GroupIcon className={cn("size-4 shrink-0 transition-colors", hasActive && "text-[var(--primary)]")} />
                       {(!isCollapsed || isMobile) && (
                         <>
                           <span className="flex-1 text-left font-black text-[9px] uppercase tracking-widest">{group.name}</span>
@@ -238,7 +227,7 @@ function SidebarContent({
                       exit={{ height: 0, opacity: 0 }}
                       className="overflow-hidden"
                     >
-                      <div className="ml-4 pl-4 border-l border-slate-800 space-y-1 mt-1">
+                      <div className="ml-4 pl-4 border-l border-[var(--border)] space-y-1 mt-1">
                         {group.items.map((item) => {
                           const isActive = pathname === item.path
                           if (!hasFeature(userAuth, item.feature)) return null
@@ -247,13 +236,13 @@ function SidebarContent({
                             <Link key={item.path} href={item.path}>
                               <div className={cn(
                                 "relative flex items-center justify-between px-3 py-1.5 rounded-lg transition-all group cursor-pointer",
-                                isActive ? "bg-blue-600/10 text-blue-400" : "hover:bg-white/5 text-slate-400 hover:text-white"
+                                isActive ? "bg-[var(--accent-light)] text-[var(--primary)]" : "hover:bg-[var(--bg-app)] text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                               )}>
                                 <span className={cn("font-bold text-xs tracking-tight truncate", isMobile && "text-sm")}>{item.name}</span>
                                 {item.badge && (
-                                  <span className="px-1.5 py-0.5 rounded-md bg-blue-500/10 text-blue-400 text-[8px] font-black uppercase shrink-0 border border-blue-500/20">
-                                    {item.badge}
-                                  </span>
+                                  <span className="px-1.5 py-0.5 rounded-md bg-[var(--secondary)]/10 text-[var(--secondary)] text-[8px] font-black uppercase shrink-0 border border-[var(--secondary)]/20">
+                                     {item.badge}
+                                   </span>
                                 )}
                               </div>
                             </Link>
@@ -270,7 +259,7 @@ function SidebarContent({
       </TooltipProvider>
 
       {/* Logout / Collapse Toggle */}
-      <div className="p-4 border-t border-slate-800 space-y-2 shrink-0 bg-[#0B1222]">
+      <div className="p-4 border-t border-[var(--border)] space-y-2 shrink-0 bg-[var(--bg-app)]/30">
         <button
           onClick={onLogout}
           className="w-full h-11 flex items-center gap-4 px-4 rounded-xl text-rose-400 hover:bg-rose-500/10 transition-all group"
@@ -282,7 +271,7 @@ function SidebarContent({
         {!isMobile && onToggleCollapse && (
           <button
             onClick={onToggleCollapse}
-            className="w-full h-8 flex items-center justify-center hover:bg-white/5 rounded-lg text-slate-600 transition-all"
+            className="w-full h-8 flex items-center justify-center hover:bg-[var(--bg-app)] rounded-lg text-[var(--text-muted)] transition-all"
           >
             {isCollapsed ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}
           </button>
@@ -325,7 +314,7 @@ export function DashboardSidebar({ children }: { children: React.ReactNode }) {
             initial={false}
             animate={{ width: isCollapsed ? 68 : 240 }}
             className={cn(
-              "relative flex flex-col bg-[#0F172A] border-r border-slate-800 transition-all duration-300 z-50 overflow-hidden shrink-0",
+              "relative flex flex-col bg-[var(--bg-sidebar)] border-r border-[var(--border)] transition-all duration-300 z-50 overflow-hidden shrink-0 shadow-[4px_0_24px_rgba(0,0,0,0.02)]",
               isCollapsed && "items-center"
             )}
           >
@@ -339,21 +328,13 @@ export function DashboardSidebar({ children }: { children: React.ReactNode }) {
 
         {isMobile && (
           <Sheet open={isOpenMobile} onOpenChange={setIsOpenMobile}>
-            <SheetContent side="left" className="p-0 border-none w-[280px] bg-[#0F172A]">
+            <SheetContent side="left" className="p-0 border-none w-[280px] bg-[var(--bg-sidebar)]">
               <SidebarContent isCollapsed={false} onLogout={handleLogout} isMobile />
             </SheetContent>
           </Sheet>
         )}
 
-        <main className="flex-1 flex flex-col h-full overflow-hidden relative min-w-0 bg-[#F8FAFC]">
-          <div className="flex-1 flex flex-col min-h-0">
-            {children}
-          </div>
-          <div className="h-12 bg-white border-t border-slate-200 px-8 flex items-center justify-between text-[10px] font-bold text-slate-400 shrink-0">
-            <div className="truncate uppercase tracking-tighter italic">Copyright © 2026 <span className="text-blue-600 font-black">Doce Gestão</span></div>
-            <div className="hidden sm:block uppercase tracking-widest text-[9px]">v4.5.0 Premium</div>
-          </div>
-        </main>
+        {children}
       </div>
     </SidebarContext.Provider>
   )

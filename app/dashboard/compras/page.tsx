@@ -1,7 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { supabase } from "@/lib/supabase"
+import { useState, useMemo } from "react"
 import { useBusiness } from "@/hooks/useBusiness"
 import { 
     FileText, 
@@ -12,8 +11,7 @@ import {
     ArrowLeft,
     ChevronRight,
     Loader2,
-    DollarSign,
-    Box
+    DollarSign
 } from "lucide-react"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
@@ -21,44 +19,27 @@ import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { useRouter } from "next/navigation"
+import { usePurchases } from "@/hooks/usePurchases"
 
 export default function ComprasHistoryPage() {
     const { profile } = useBusiness()
+    const tenantId = profile?.tenant_id || profile?.company_id
     const router = useRouter()
-    
-    const [compras, setCompras] = useState<any[]>([])
-    const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState("")
 
-    useEffect(() => {
-        if (profile?.tenant_id || profile?.company_id) {
-            fetchCompras()
-        }
-    }, [profile])
+    const { data: compras = [], isLoading } = usePurchases(tenantId)
 
-    async function fetchCompras() {
-        const tenantId = profile?.tenant_id || profile?.company_id
-        setLoading(true)
-        try {
-            const { data, error } = await supabase
-                .from('compras')
-                .select('*, profiles(full_name)')
-                .eq('tenant_id', tenantId)
-                .order('data_compra', { ascending: false })
-            
-            if (error) throw error
-            setCompras(data || [])
-        } catch (e) {
-            console.error(e)
-        } finally {
-            setLoading(false)
-        }
-    }
+    const filtered = useMemo(() => 
+        compras.filter(c => 
+            (c.fornecedor?.toLowerCase() || "").includes(search.toLowerCase()) ||
+            (c.numero_nota?.toLowerCase() || "").includes(search.toLowerCase())
+        ), [compras, search])
 
-    const filtered = compras.filter(c => 
-        c.fornecedor?.toLowerCase().includes(search.toLowerCase()) ||
-        c.numero_nota?.toLowerCase().includes(search.toLowerCase())
-    )
+    const stats = useMemo(() => ({
+        totalInvested: compras.reduce((acc, c) => acc + (c.valor_total || 0), 0),
+        totalNotes: compras.length,
+        uniqueSuppliers: new Set(compras.map(c => c.fornecedor)).size
+    }), [compras])
 
     return (
         <div className="space-y-8 pb-20">
@@ -90,7 +71,7 @@ export default function ComprasHistoryPage() {
                     </div>
                     <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1 italic">Investimento Mensal</p>
                     <h3 className="text-3xl font-black italic tracking-tighter text-slate-900">
-                        R$ {compras.reduce((acc, c) => acc + (c.valor_total || 0), 0).toFixed(2).replace('.', ',')}
+                        R$ {stats.totalInvested.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </h3>
                 </Card>
                 <Card className="p-8 rounded-[32px] border-none shadow-sm bg-white">
@@ -98,7 +79,7 @@ export default function ComprasHistoryPage() {
                         <FileText size={24} />
                     </div>
                     <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1 italic">Notas Processadas</p>
-                    <h3 className="text-3xl font-black italic tracking-tighter text-slate-900">{compras.length}</h3>
+                    <h3 className="text-3xl font-black italic tracking-tighter text-slate-900">{stats.totalNotes}</h3>
                 </Card>
                 <Card className="p-8 rounded-[32px] border-none shadow-sm bg-white">
                     <div className="size-12 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center mb-6">
@@ -106,7 +87,7 @@ export default function ComprasHistoryPage() {
                     </div>
                     <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-1 italic">Fornecedores Diferentes</p>
                     <h3 className="text-3xl font-black italic tracking-tighter text-slate-900">
-                        {new Set(compras.map(c => c.fornecedor)).size}
+                        {stats.uniqueSuppliers}
                     </h3>
                 </Card>
             </div>
@@ -123,13 +104,14 @@ export default function ComprasHistoryPage() {
             </div>
 
             {/* List */}
-            {loading ? (
-                <div className="h-[400px] flex items-center justify-center">
+            {isLoading ? (
+                <div className="h-[400px] flex items-center justify-center flex-col gap-4 text-slate-300 italic font-black uppercase text-[10px]">
                     <Loader2 className="animate-spin text-emerald-500" size={48} />
+                    Sincronizando Histórico...
                 </div>
             ) : (
                 <div className="space-y-4">
-                    {filtered.map((compra, idx) => (
+                    {filtered.length > 0 ? filtered.map((compra, idx) => (
                         <motion.div
                             key={compra.id}
                             initial={{ opacity: 0, y: 20 }}
@@ -149,7 +131,7 @@ export default function ComprasHistoryPage() {
                                         <div className="flex flex-wrap items-center gap-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest italic">
                                             <span className="flex items-center gap-1.5"><Store size={12} className="text-emerald-500" /> {compra.fornecedor}</span>
                                             <span className="flex items-center gap-1.5"><Calendar size={12} /> {new Date(compra.data_compra).toLocaleDateString('pt-BR')}</span>
-                                            <span className="flex items-center gap-1.5"><User size={12} /> {compra.profiles?.full_name || "Sistema"}</span>
+                                            <span className="flex items-center gap-1.5"><User size={12} /> {compra.usuario_nome || "Sistema"}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -158,7 +140,7 @@ export default function ComprasHistoryPage() {
                                     <div className="text-right">
                                         <p className="text-[9px] font-black uppercase text-slate-300 tracking-[0.2em] mb-1 italic">Valor Total</p>
                                         <p className="text-xl font-black italic text-emerald-500 tracking-tighter">
-                                            R$ {compra.valor_total?.toFixed(2).replace('.', ',')}
+                                            R$ {compra.valor_total?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                         </p>
                                     </div>
                                     <div className="size-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-emerald-500 group-hover:text-white transition-all">
@@ -167,7 +149,12 @@ export default function ComprasHistoryPage() {
                                 </div>
                             </Card>
                         </motion.div>
-                    ))}
+                    )) : (
+                        <div className="h-64 flex flex-col items-center justify-center text-slate-300 gap-4 opacity-40 italic font-black uppercase text-[10px]">
+                             <FileText size={48} />
+                             Nenhuma compra encontrada
+                        </div>
+                    )}
                 </div>
             )}
         </div>

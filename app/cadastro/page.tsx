@@ -67,16 +67,35 @@ export default function RegisterPage() {
         try {
             // Check for affiliate referral
             let affiliateId = null
-            const storedAffiliate = localStorage.getItem('affiliate_ref')
+            
+            // Try reading from Cookies first (new system), then LocalStorage (legacy)
+            const getCookie = (name: string) => {
+                const value = `; ${document.cookie}`;
+                const parts = value.split(`; ${name}=`);
+                if (parts.length === 2) return parts.pop()?.split(';').shift();
+                return null;
+            }
+            
+            let storedAffiliate = null;
+            const cookieRef = getCookie('affiliate_ref');
+            if (cookieRef) {
+                storedAffiliate = decodeURIComponent(cookieRef);
+            } else {
+                storedAffiliate = localStorage.getItem('affiliate_ref');
+            }
+
             if (storedAffiliate) {
               try {
-                const { code, expiry } = JSON.parse(storedAffiliate)
-                if (new Date().getTime() < expiry) {
-                  // Lookup affiliate ID by code
+                const parsedRef = JSON.parse(storedAffiliate)
+                // handle case where DB id might already be included from the cookie
+                if (parsedRef.id) {
+                    affiliateId = parsedRef.id;
+                } else if (parsedRef.code && new Date().getTime() < parsedRef.expiry) {
+                  // Legacy lookup
                   const { data: affData } = await supabase
                     .from('affiliates')
                     .select('id')
-                    .eq('code', code)
+                    .eq('code', parsedRef.code)
                     .single()
                   
                   if (affData) affiliateId = affData.id

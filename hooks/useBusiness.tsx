@@ -1,21 +1,23 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState } from "react"
+import { createContext, useContext, useMemo } from "react"
 import { supabase } from "@/lib/supabase"
 import { useAuth } from "@/hooks/useAuth"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 
 const slugify = (text: string) => {
     return text
         .toString()
         .toLowerCase()
         .trim()
-        .replace(/\s+/g, '-')           // Replace spaces with -
-        .replace(/[^\w\-]+/g, '')       // Remove all non-word chars
-        .replace(/\-\-+/g, '-')         // Replace multiple - with single -
-        .replace(/^-+/, '')             // Trim - from start of text
-        .replace(/-+$/, '');            // Trim - from end of text
+        .replace(/\s+/g, '-')
+        .replace(/[^\w\-]+/g, '')
+        .replace(/\-\-+/g, '-')
+        .replace(/^-+/, '')
+        .replace(/-+$/, '');
 }
 
+// ... interfaces remain the same
 interface Company {
     id: string
     nome: string
@@ -62,7 +64,7 @@ interface Profile {
     email: string
     plan: string
     tenant_id: string
-    company_id?: string // For legacy support
+    company_id?: string
     whatsapp?: string
     is_admin: boolean
 }
@@ -83,21 +85,13 @@ const BusinessContext = createContext<BusinessContextType>({
 
 export const BusinessProvider = ({ children }: { children: React.ReactNode }) => {
     const { user } = useAuth()
-    const [business, setBusiness] = useState<Company | null>(null)
-    const [profile, setProfile] = useState<Profile | null>(null)
-    const [loadingBusiness, setLoadingBusiness] = useState(true)
+    const queryClient = useQueryClient()
 
-    const fetchBusinessData = async () => {
-        if (!user) {
-            setBusiness(null)
-            setProfile(null)
-            setLoadingBusiness(false)
-            return
-        }
+    const { data, isLoading: loadingBusiness } = useQuery({
+        queryKey: ["business-content", user?.id],
+        queryFn: async () => {
+            if (!user) return null
 
-        try {
-            setLoadingBusiness(true)
-            
             // 1. Fetch Profile
             const { data: profileData, error: profileError } = await supabase
                 .from('profiles')
@@ -106,89 +100,66 @@ export const BusinessProvider = ({ children }: { children: React.ReactNode }) =>
                 .maybeSingle()
 
             if (profileError) throw profileError
-            
-            if (profileData) {
-                setProfile(profileData as Profile)
-                
-                const tenantId = profileData.tenant_id || profileData.company_id
-                
-                if (tenantId) {
-                    // Fetch all possible data sources in parallel for robustness
-                    const [resTenant, resEmpresa, resCompany, resDelivery, resMenu, resSettings] = await Promise.all([
-                        supabase.from('tenants').select('*').eq('id', tenantId).maybeSingle(),
-                        supabase.from('empresas').select('*').eq('id', tenantId).maybeSingle(),
-                        supabase.from('companies').select('*').eq('id', tenantId).maybeSingle(),
-                        supabase.from('delivery_settings').select('*').eq('tenant_id', tenantId).maybeSingle(),
-                        supabase.from('digital_menu_settings').select('*').eq('company_id', tenantId).maybeSingle(),
-                        supabase.from('store_settings').select('*').eq('store_id', tenantId).maybeSingle()
-                    ])
+            if (!profileData) return null
 
-                    // 3. Robust Data Merging (Cascading from most recent/specific to legacy)
-                    const combinedData: Company = {
-                        id: tenantId,
-                        // Name: Priority to 'tenants' (newest), then companies/empresas, then profile metadata
-                        nome: resTenant.data?.nome || resEmpresa.data?.nome || resCompany.data?.name || profileData?.business_name || "",
-                        
-                        // Contact: WhatsApp is primary for this business model
-                        whatsapp: resMenu.data?.whatsapp || profileData?.whatsapp || resEmpresa.data?.telefone || resCompany.data?.phone || "",
-                        telefone: resEmpresa.data?.telefone || resCompany.data?.phone || profileData?.phone || "",
-                        
-                        // Address: Merge single string field 'endereco' and component fields 'address_street'
-                        endereco: resEmpresa.data?.endereco || 
-                                 (resCompany.data?.address_street 
-                                    ? `${resCompany.data.address_street}, ${resCompany.data.address_number || ""}` 
-                                    : ""),
-                        
-                        // Logistics (Always prioritize dedicated 'delivery_settings' table)
-                        delivery_fee: resDelivery.data?.base_fee ?? resEmpresa.data?.delivery_fee ?? resCompany.data?.delivery_fee ?? 0,
-                        delivery_radius: resDelivery.data?.max_km ?? resEmpresa.data?.delivery_radius ?? resCompany.data?.delivery_radius ?? 0,
-                        min_order_value: resEmpresa.data?.min_order_value ?? resCompany.data?.min_order_value ?? 0,
-                        
-                        config: {
-                            primary_color: resMenu.data?.primary_color || resCompany.data?.primary_color || resSettings.data?.primary_color,
-                            instagram: resMenu.data?.instagram || profileData?.instagram || resCompany.data?.instagram,
-                            rate_per_km: resDelivery.data?.fee_per_km ?? 0,
-                            monthly_goal: 10000
-                        },
-                        
-                        opening_hours: resSettings.data?.opening_hours || resCompany.data?.opening_hours || resEmpresa.data?.opening_hours || {},
-                        
-                        // Store Status Fields (Single Source of Truth)
-                        is_manual_override: resSettings.data?.is_manual_override,
-                        manual_status: resSettings.data?.manual_status,
-                        
-                        logo_url: resMenu.data?.menu_logo || resEmpresa.data?.logo_url || resCompany.data?.logo_url || resSettings.data?.logo_url,
-                        
-                        // Legacy Metadata needed by some pages
-                        owner_id: resTenant.data?.owner_id || resCompany.data?.owner_id || user.id,
-                        slug: resTenant.data?.slug || resCompany.data?.menu_slug || slugify(resTenant.data?.nome || resEmpresa.data?.nome || resCompany.data?.name || profileData?.business_name || "convidado"),
-                        address_city: resEmpresa.data?.address_city || resCompany.data?.address_city,
-                        address_state: resEmpresa.data?.address_state || resCompany.data?.address_state
-                    } as any
+            const tenantId = profileData.tenant_id || profileData.company_id
+            if (!tenantId) return { profile: profileData, business: null }
 
-                    setBusiness(combinedData)
-                }
+            // 2. Fetch business sources in parallel
+            const [resTenant, resEmpresa, resCompany, resDelivery, resMenu, resSettings] = await Promise.all([
+                supabase.from('tenants').select('*').eq('id', tenantId).maybeSingle(),
+                supabase.from('empresas').select('*').eq('id', tenantId).maybeSingle(),
+                supabase.from('companies').select('*').eq('id', tenantId).maybeSingle(),
+                supabase.from('delivery_settings').select('*').eq('tenant_id', tenantId).maybeSingle(),
+                supabase.from('digital_menu_settings').select('*').eq('company_id', tenantId).maybeSingle(),
+                supabase.from('store_settings').select('*').eq('store_id', tenantId).maybeSingle()
+            ])
 
+            const combinedData: Company = {
+                id: tenantId,
+                nome: resTenant.data?.nome || resEmpresa.data?.nome || resCompany.data?.name || profileData?.business_name || "",
+                whatsapp: resMenu.data?.whatsapp || profileData?.whatsapp || resEmpresa.data?.telefone || resCompany.data?.phone || "",
+                telefone: resEmpresa.data?.telefone || resCompany.data?.phone || profileData?.phone || "",
+                endereco: resEmpresa.data?.endereco || (resCompany.data?.address_street ? `${resCompany.data.address_street}, ${resCompany.data.address_number || ""}` : ""),
+                delivery_fee: resDelivery.data?.base_fee ?? resEmpresa.data?.delivery_fee ?? resCompany.data?.delivery_fee ?? 0,
+                delivery_radius: resDelivery.data?.max_km ?? resEmpresa.data?.delivery_radius ?? resCompany.data?.delivery_radius ?? 0,
+                min_order_value: resEmpresa.data?.min_order_value ?? resCompany.data?.min_order_value ?? 0,
+                config: {
+                    primary_color: resMenu.data?.primary_color || resCompany.data?.primary_color || resSettings.data?.primary_color,
+                    instagram: resMenu.data?.instagram || profileData?.instagram || resCompany.data?.instagram,
+                    rate_per_km: resDelivery.data?.fee_per_km ?? 0,
+                    monthly_goal: 10000
+                },
+                opening_hours: resSettings.data?.opening_hours || resCompany.data?.opening_hours || resEmpresa.data?.opening_hours || {},
+                is_manual_override: resSettings.data?.is_manual_override,
+                manual_status: resSettings.data?.manual_status,
+                logo_url: resMenu.data?.menu_logo || resEmpresa.data?.logo_url || resCompany.data?.logo_url || resSettings.data?.logo_url,
+                owner_id: resTenant.data?.owner_id || resCompany.data?.owner_id || user.id,
+                slug: resTenant.data?.slug || resCompany.data?.menu_slug || slugify(resTenant.data?.nome || resEmpresa.data?.nome || resCompany.data?.name || profileData?.business_name || "convidado"),
+                address_city: resEmpresa.data?.address_city || resCompany.data?.address_city,
+                address_state: resEmpresa.data?.address_state || resCompany.data?.address_state
+            } as any
+
+            return {
+                profile: profileData as Profile,
+                business: combinedData
             }
-        } catch (error) {
-            console.error("Error fetching business context:", error)
-        } finally {
-            setLoadingBusiness(false)
+        },
+        enabled: !!user,
+        staleTime: 1000 * 60 * 30, // 30 minutes cache for business data
+    })
+
+    const value = useMemo(() => ({
+        business: data?.business || null,
+        profile: data?.profile || null,
+        loadingBusiness,
+        refreshBusiness: async () => {
+             await queryClient.invalidateQueries({ queryKey: ["business-content", user?.id] })
         }
-    }
-
-
-    useEffect(() => {
-        fetchBusinessData()
-    }, [user])
+    }), [data, loadingBusiness, queryClient, user?.id])
 
     return (
-        <BusinessContext.Provider value={{
-            business,
-            profile,
-            loadingBusiness,
-            refreshBusiness: fetchBusinessData
-        }}>
+        <BusinessContext.Provider value={value}>
             {children}
         </BusinessContext.Provider>
     )
