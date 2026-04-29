@@ -12,8 +12,8 @@ interface VipModalProps {
     isOpen: boolean
     onClose: () => void
     currentPlan: string
-    userId: string
-    tenantId: string
+    userId?: string
+    tenantId?: string
 }
 
 export function VipConsultationModal({ isOpen, onClose, currentPlan, userId, tenantId }: VipModalProps) {
@@ -23,12 +23,14 @@ export function VipConsultationModal({ isOpen, onClose, currentPlan, userId, ten
     const logInterest = async (actionUrl: string) => {
         setIsLogging(true)
         try {
-            await supabase.rpc('upsert_vip_interest', {
-                p_user_id: userId,
-                p_tenant_id: tenantId,
-                p_current_plan_slug: currentPlan || 'free',
-                p_page_origin: window.location.pathname
-            })
+            if (userId && tenantId) {
+                await supabase.rpc('upsert_vip_interest', {
+                    p_user_id: userId,
+                    p_tenant_id: tenantId,
+                    p_current_plan_slug: currentPlan || 'free',
+                    p_page_origin: window.location.pathname
+                })
+            }
 
             // Wait slightly for UI feedback before redirecting
             setTimeout(() => {

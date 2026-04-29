@@ -197,7 +197,7 @@ export default function AssinaturaPage() {
          isOpen={isVipModalOpen} 
          onClose={() => setIsVipModalOpen(false)} 
          currentPlan={subscription?.plans?.slug || 'free'} 
-         userId={profile?.user_id} 
+         userId={profile?.id} 
          tenantId={profile?.tenant_id || profile?.company_id} 
       />
 

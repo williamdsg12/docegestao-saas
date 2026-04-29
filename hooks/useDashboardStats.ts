@@ -18,7 +18,7 @@ export function useDashboardStats() {
         // Optimized query: Select only needed columns
         const { data: rawOrders, error } = await supabase
             .from("orders")
-            .select("id, total, valor_total, status, created_at")
+            .select("id, total, valor_total, status, created_at, customers(name)")
             .eq('tenant_id', tenantId)
             .gte("created_at", inicioMes.toISOString())
 

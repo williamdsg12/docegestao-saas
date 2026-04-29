@@ -396,7 +396,7 @@ export default function DashboardPage() {
               </Link>
             </div>
             <div className="space-y-6">
-              {pedidos.slice(0, 4).map((order, i) => (
+              {(pedidos as any[]).slice(0, 4).map((order, i) => (
                 <motion.div 
                   key={order.id} 
                   initial={{ opacity: 0, x: 10 }}
