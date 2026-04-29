@@ -29,7 +29,7 @@ export function AdminTopbar({ onMenuClick }: AdminTopbarProps) {
     }
 
     return (
-        <header className="h-16 shrink-0 border-b border-white/[0.05] bg-[#0c0c0e]/80 backdrop-blur-md flex items-center justify-between px-6 sticky top-0 z-40 w-full">
+        <header className="h-14 md:h-16 shrink-0 border-b border-white/[0.05] bg-[#0c0c0e]/80 backdrop-blur-md flex items-center justify-between px-4 md:px-6 sticky top-0 z-40 w-full">
             <div className="flex items-center gap-6 flex-1">
                 {onMenuClick && (
                     <button 

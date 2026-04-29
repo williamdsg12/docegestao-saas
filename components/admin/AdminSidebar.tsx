@@ -138,8 +138,9 @@ export function AdminSidebar({ children }: { children: React.ReactNode }) {
                     }}
                     transition={{ type: "spring", stiffness: 300, damping: 30 }}
                     className={cn(
-                        "fixed inset-y-0 left-0 z-[70] bg-[#09090b] border-r border-white/[0.05] flex flex-col lg:relative lg:translate-x-0 overflow-hidden shadow-2xl",
-                        !isMobileOpen && "translate-x-[-100%] lg:translate-x-0"
+                        "fixed inset-y-0 left-0 z-[70] bg-[#09090b] border-r border-white/[0.05] flex flex-col lg:relative overflow-hidden shadow-2xl transition-all duration-300",
+                        !isMobileOpen && "-translate-x-full lg:translate-x-0",
+                        isMobileOpen && "translate-x-0"
                     )}
                 >
                     {/* Logo Area */}

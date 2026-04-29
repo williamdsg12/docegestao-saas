@@ -114,10 +114,10 @@ export function SidebarTrigger({ className }: { className?: string }) {
     <Button
       variant="ghost"
       size="icon"
-      className={cn("md:hidden touch-target text-slate-600 hover:bg-slate-100", className)}
+      className={cn("lg:hidden touch-target text-slate-600 hover:bg-slate-100", className)}
       onClick={() => setIsOpenMobile(true)}
     >
-      <Menu className="size-6 md:hidden" />
+      <Menu className="size-6" />
     </Button>
   )
 }
@@ -309,30 +309,28 @@ export function DashboardSidebar({ children }: { children: React.ReactNode }) {
   return (
     <SidebarContext.Provider value={{ isOpenMobile, setIsOpenMobile }}>
       <div className="flex flex-1 h-full overflow-hidden">
-        {!isMobile && (
-          <motion.aside
-            initial={false}
-            animate={{ width: isCollapsed ? 68 : 240 }}
-            className={cn(
-              "relative flex flex-col bg-[var(--bg-sidebar)] border-r border-[var(--border)] transition-all duration-300 z-50 overflow-hidden shrink-0 shadow-[4px_0_24px_rgba(0,0,0,0.02)]",
-              isCollapsed && "items-center"
-            )}
-          >
-            <SidebarContent 
-              isCollapsed={isCollapsed} 
-              onLogout={handleLogout} 
-              onToggleCollapse={() => setIsCollapsed(!isCollapsed)} 
-            />
-          </motion.aside>
-        )}
+        {/* Desktop Sidebar (Laptops & Desktops) */}
+        <motion.aside
+          initial={false}
+          animate={{ width: isCollapsed ? 68 : 240 }}
+          className={cn(
+            "relative hidden lg:flex flex-col bg-[var(--bg-sidebar)] border-r border-[var(--border)] transition-all duration-300 z-50 overflow-hidden shrink-0 shadow-[4px_0_24px_rgba(0,0,0,0.02)]",
+            isCollapsed && "items-center"
+          )}
+        >
+          <SidebarContent 
+            isCollapsed={isCollapsed} 
+            onLogout={handleLogout} 
+            onToggleCollapse={() => setIsCollapsed(!isCollapsed)} 
+          />
+        </motion.aside>
 
-        {isMobile && (
-          <Sheet open={isOpenMobile} onOpenChange={setIsOpenMobile}>
-            <SheetContent side="left" className="p-0 border-none w-[280px] bg-[var(--bg-sidebar)]">
-              <SidebarContent isCollapsed={false} onLogout={handleLogout} isMobile />
-            </SheetContent>
-          </Sheet>
-        )}
+        {/* Mobile & Tablet Drawer (sm, md) */}
+        <Sheet open={isOpenMobile} onOpenChange={setIsOpenMobile}>
+          <SheetContent side="left" className="p-0 border-none w-[280px] bg-[var(--bg-sidebar)]">
+            <SidebarContent isCollapsed={false} onLogout={handleLogout} isMobile />
+          </SheetContent>
+        </Sheet>
 
         {children}
       </div>

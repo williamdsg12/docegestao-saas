@@ -413,131 +413,186 @@ export default function InventoryERPPage() {
                 </div>
             </section>
 
-            {/* Main Table */}
+            {/* Main Table - Responsive View */}
             <div className="bg-white rounded-[32px] border border-[var(--border)] shadow-sm overflow-hidden min-h-[400px]">
-                <Table>
-                    <TableHeader className="bg-[var(--accent-light)]/30">
-                        <TableRow className="hover:bg-transparent border-[var(--border)] italic">
-                            <TableHead className="w-24 text-[10px] font-black uppercase tracking-widest px-8 text-[var(--text-muted)]">Código</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Item</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Descrição</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-center text-[var(--text-muted)]">Qtd</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-center text-[var(--text-muted)]">Un</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-right text-[var(--text-muted)]">Vl. Unit</TableHead>
-                            <TableHead className="text-[10px] font-black uppercase tracking-widest text-right text-[var(--text-muted)]">Vl. Total</TableHead>
-                            <TableHead className="text-right px-8"></TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        <AnimatePresence mode="popLayout">
-                            {loading ? (
-                                <TableRow>
-                                    <TableCell colSpan={8} className="h-60 text-center">
-                                        <Loader2 className="animate-spin mx-auto text-slate-300" />
-                                    </TableCell>
-                                </TableRow>
-                            ) : filtered.length > 0 ? filtered.map((item, index) => {
-                                const valorTotal = item.estoque_atual * item.custo_medio
-                                
-                                return (
-                                    <TableRow key={item.id} className="group hover:bg-[var(--accent-light)]/10 border-[var(--border)] transition-colors">
-                                        <TableCell className="px-8 py-5">
-                                            <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-tighter">
-                                                {item.codigo || '---'}
-                                            </span>
+                {/* Desktop View */}
+                <div className="hidden lg:block">
+                    <Table>
+                        <TableHeader className="bg-[var(--accent-light)]/30">
+                            <TableRow className="hover:bg-transparent border-[var(--border)] italic">
+                                <TableHead className="w-24 text-[10px] font-black uppercase tracking-widest px-8 text-[var(--text-muted)]">Código</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Item</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Descrição</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-center text-[var(--text-muted)]">Qtd</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-center text-[var(--text-muted)]">Un</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-right text-[var(--text-muted)]">Vl. Unit</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase tracking-widest text-right text-[var(--text-muted)]">Vl. Total</TableHead>
+                                <TableHead className="text-right px-8"></TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            <AnimatePresence mode="popLayout">
+                                {loading ? (
+                                    <TableRow>
+                                        <TableCell colSpan={8} className="h-60 text-center">
+                                            <Loader2 className="animate-spin mx-auto text-slate-300" />
                                         </TableCell>
-                                        <TableCell>
-                                            <div className="flex flex-col">
-                                                <span className="font-black text-sm text-[var(--text-primary)] uppercase italic truncate">
-                                                    {index + 1}. {item.nome}
+                                    </TableRow>
+                                ) : filtered.length > 0 ? filtered.map((item, index) => {
+                                    const valorTotal = item.estoque_atual * item.custo_medio
+                                    
+                                    return (
+                                        <TableRow key={item.id} className="group hover:bg-[var(--accent-light)]/10 border-[var(--border)] transition-colors">
+                                            <TableCell className="px-8 py-5">
+                                                <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-tighter">
+                                                    {item.codigo || '---'}
                                                 </span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="max-w-[200px]">
-                                                <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-tighter line-clamp-1 italic">
-                                                    {item.descricao || '---'}
-                                                </p>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-center font-black text-sm text-[var(--text-primary)] italic">
-                                            {item.estoque_atual}
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            <Badge variant="secondary" className="bg-[var(--accent-light)] text-[var(--primary)] font-black text-[8px] uppercase tracking-widest border border-[var(--border)]">
-                                                {item.unidade_base}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="text-right font-bold text-xs text-[var(--text-muted)]">
-                                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.custo_medio)}
-                                        </TableCell>
-                                        <TableCell className="text-right font-black text-sm text-[var(--text-primary)] italic">
-                                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valorTotal)}
-                                        </TableCell>
-                                        <TableCell className="text-right px-8">
-                                            <div className="flex items-center justify-end gap-2">
-                                                <Button 
-                                                    onClick={() => { setSelectedIngredient(item); setMoveType('entrada'); setIsMoveModalOpen(true); }}
-                                                    variant="ghost" size="icon" className="size-9 rounded-xl text-emerald-500 hover:bg-emerald-50"
-                                                    title="Entrada de Estoque"
-                                                >
-                                                    <Plus size={18} />
-                                                </Button>
-                                                <Button 
-                                                    onClick={() => { setSelectedIngredient(item); setMoveType('saida'); setIsMoveModalOpen(true); }}
-                                                    variant="ghost" size="icon" className="size-9 rounded-xl text-rose-500 hover:bg-rose-50"
-                                                    title="Saída de Estoque"
-                                                >
-                                                    <Minus size={18} />
-                                                </Button>
-                                                
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <Button variant="ghost" size="icon" className="size-9 rounded-xl text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors">
-                                                            <MoreVertical size={18} />
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end" className="w-48 rounded-2xl border-none shadow-2xl p-2 bg-white">
-                                                        <DropdownMenuItem 
-                                                            onClick={() => { setIngredientToEdit(item); setIsEditModalOpen(true); }}
-                                                            className="flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors group"
-                                                        >
-                                                            <div className="size-8 rounded-lg bg-blue-50 text-blue-500 flex items-center justify-center group-hover:bg-blue-500 group-hover:text-white transition-all">
-                                                                <Edit2 size={14} />
-                                                            </div>
-                                                            <span className="font-black text-[10px] uppercase tracking-widest text-slate-600">Editar Insumo</span>
-                                                        </DropdownMenuItem>
-                                                        
-                                                        <DropdownMenuSeparator className="bg-slate-50 my-1" />
-                                                        
-                                                        <DropdownMenuItem 
-                                                            onClick={() => { setIngredientToDelete(item); setIsDeleteDialogOpen(true); }}
-                                                            className="flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer hover:bg-rose-50 transition-colors group"
-                                                        >
-                                                            <div className="size-8 rounded-lg bg-rose-50 text-rose-500 flex items-center justify-center group-hover:bg-rose-500 group-hover:text-white transition-all">
-                                                                <Trash2 size={14} />
-                                                            </div>
-                                                            <span className="font-black text-[10px] uppercase tracking-widest text-rose-600">Excluir Item</span>
-                                                        </DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex flex-col">
+                                                    <span className="font-black text-sm text-[var(--text-primary)] uppercase italic truncate">
+                                                        {index + 1}. {item.nome}
+                                                    </span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="max-w-[200px]">
+                                                    <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-tighter line-clamp-1 italic">
+                                                        {item.descricao || '---'}
+                                                    </p>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-center font-black text-sm text-[var(--text-primary)] italic">
+                                                {item.estoque_atual}
+                                            </TableCell>
+                                            <TableCell className="text-center">
+                                                <Badge variant="secondary" className="bg-[var(--accent-light)] text-[var(--primary)] font-black text-[8px] uppercase tracking-widest border border-[var(--border)]">
+                                                    {item.unidade_base}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-right font-bold text-xs text-[var(--text-muted)]">
+                                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.custo_medio)}
+                                            </TableCell>
+                                            <TableCell className="text-right font-black text-sm text-[var(--text-primary)] italic">
+                                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valorTotal)}
+                                            </TableCell>
+                                            <TableCell className="text-right px-8">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <Button 
+                                                        onClick={() => { setSelectedIngredient(item); setMoveType('entrada'); setIsMoveModalOpen(true); }}
+                                                        variant="ghost" size="icon" className="size-9 rounded-xl text-emerald-500 hover:bg-emerald-50"
+                                                        title="Entrada de Estoque"
+                                                    >
+                                                        <Plus size={18} />
+                                                    </Button>
+                                                    <Button 
+                                                        onClick={() => { setSelectedIngredient(item); setMoveType('saida'); setIsMoveModalOpen(true); }}
+                                                        variant="ghost" size="icon" className="size-9 rounded-xl text-rose-500 hover:bg-rose-50"
+                                                        title="Saída de Estoque"
+                                                    >
+                                                        <Minus size={18} />
+                                                    </Button>
+                                                    
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="size-9 rounded-xl text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors">
+                                                                <MoreVertical size={18} />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end" className="w-48 rounded-2xl border-none shadow-2xl p-2 bg-white">
+                                                            <DropdownMenuItem 
+                                                                onClick={() => { setIngredientToEdit(item); setIsEditModalOpen(true); }}
+                                                                className="flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors group"
+                                                            >
+                                                                <div className="size-8 rounded-lg bg-blue-50 text-blue-500 flex items-center justify-center group-hover:bg-blue-500 group-hover:text-white transition-all">
+                                                                    <Edit2 size={14} />
+                                                                </div>
+                                                                <span className="font-black text-[10px] uppercase tracking-widest text-slate-600">Editar Insumo</span>
+                                                            </DropdownMenuItem>
+                                                            
+                                                            <DropdownMenuSeparator className="bg-slate-50 my-1" />
+                                                            
+                                                            <DropdownMenuItem 
+                                                                onClick={() => { setIngredientToDelete(item); setIsDeleteDialogOpen(true); }}
+                                                                className="flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer hover:bg-rose-50 transition-colors group"
+                                                            >
+                                                                <div className="size-8 rounded-lg bg-rose-50 text-rose-500 flex items-center justify-center group-hover:bg-rose-500 group-hover:text-white transition-all">
+                                                                    <Trash2 size={14} />
+                                                                </div>
+                                                                <span className="font-black text-[10px] uppercase tracking-widest text-rose-600">Excluir Item</span>
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    )
+                                }) : (
+                                    <TableRow>
+                                        <TableCell colSpan={8} className="h-60">
+                                            <div className="text-center opacity-40">
+                                                <Package size={40} className="mx-auto mb-4 text-slate-300" />
+                                                <p className="text-[10px] font-black uppercase tracking-widest leading-none">Nenhum item encontrado</p>
                                             </div>
                                         </TableCell>
                                     </TableRow>
-                                )
-                            }) : (
-                                <TableRow>
-                                    <TableCell colSpan={8} className="h-60">
-                                        <div className="text-center opacity-40">
-                                            <Package size={40} className="mx-auto mb-4 text-slate-300" />
-                                            <p className="text-[10px] font-black uppercase tracking-widest leading-none">Nenhum item encontrado</p>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </AnimatePresence>
-                    </TableBody>
-                </Table>
+                                )}
+                            </AnimatePresence>
+                        </TableBody>
+                    </Table>
+                </div>
+
+                {/* Mobile View - Cards */}
+                <div className="lg:hidden p-4 space-y-4">
+                    {loading ? (
+                        <div className="h-60 flex items-center justify-center">
+                            <Loader2 className="animate-spin text-slate-300" />
+                        </div>
+                    ) : filtered.length > 0 ? filtered.map((item) => (
+                        <div key={item.id} className="bg-[var(--bg-app)] rounded-2xl border border-[var(--border)] p-4 space-y-4 shadow-sm">
+                            <div className="flex items-start justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="size-10 rounded-xl bg-[var(--accent-light)] flex items-center justify-center text-[var(--primary)] font-black text-xs uppercase italic">
+                                        {item.unidade_base}
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <h4 className="font-black text-sm text-[var(--text-primary)] uppercase italic leading-none mb-1">{item.nome}</h4>
+                                        <span className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-widest">{item.codigo || 'SEM CÓDIGO'}</span>
+                                    </div>
+                                </div>
+                                <div className="flex gap-1">
+                                    <Button variant="ghost" size="icon" className="size-8 rounded-lg text-emerald-500" onClick={() => { setSelectedIngredient(item); setMoveType('entrada'); setIsMoveModalOpen(true); }}>
+                                        <Plus size={16} />
+                                    </Button>
+                                    <Button variant="ghost" size="icon" className="size-8 rounded-lg text-rose-500" onClick={() => { setSelectedIngredient(item); setMoveType('saida'); setIsMoveModalOpen(true); }}>
+                                        <Minus size={16} />
+                                    </Button>
+                                    <Button variant="ghost" size="icon" className="size-8 rounded-lg text-slate-400" onClick={() => { setIngredientToEdit(item); setIsEditModalOpen(true); }}>
+                                        <Edit2 size={16} />
+                                    </Button>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="bg-[var(--bg-card)] p-3 rounded-xl border border-[var(--border)]">
+                                    <span className="text-[8px] font-black text-[var(--text-muted)] uppercase tracking-widest block mb-1">Estoque Atual</span>
+                                    <span className="text-sm font-black italic text-[var(--text-primary)]">{item.estoque_atual} <span className="text-[10px]">{item.unidade_base}</span></span>
+                                </div>
+                                <div className="bg-[var(--bg-card)] p-3 rounded-xl border border-[var(--border)]">
+                                    <span className="text-[8px] font-black text-[var(--text-muted)] uppercase tracking-widest block mb-1">Valor Total</span>
+                                    <span className="text-sm font-black italic text-[var(--text-primary)]">
+                                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.estoque_atual * item.custo_medio)}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    )) : (
+                        <div className="text-center py-12 opacity-40">
+                            <Package size={40} className="mx-auto mb-4 text-slate-300" />
+                            <p className="text-[10px] font-black uppercase tracking-widest">Nenhum item encontrado</p>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Quick Movement Modal */}

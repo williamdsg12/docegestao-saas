@@ -21,6 +21,7 @@ import { usePedidoStore } from "@/store/pedidoStore"
 import { usePathname } from "next/navigation"
 import { AuthGuard } from "@/components/auth/AuthGuard"
 import { initSound, requestNotificationPermission, startAlert, stopAlert } from "@/lib/notifications"
+import { BottomNav } from "@/components/dashboard/BottomNav"
 
 export default function DashboardLayout({
   children,
@@ -130,10 +131,10 @@ export default function DashboardLayout({
             <OnboardingModal onComplete={() => setShowOnboarding(false)} />
           )}
           <DashboardSidebar>
-                <div className="flex-1 overflow-y-auto w-full min-w-0 bg-[var(--bg-app)]">
+                <div className="flex-1 overflow-y-auto w-full min-w-0 bg-[var(--bg-app)] flex flex-col relative">
                   {/* Modern Header - Professional & Fluid */}
                   <header className={cn(
-                    "h-[var(--min-tap-target)] md:h-20 bg-[var(--background)]/80 backdrop-blur-md border-b border-[var(--border)] px-4 md:px-8 flex items-center justify-between shrink-0 relative z-20 sticky top-0",
+                    "h-14 md:h-20 bg-[var(--background)]/80 backdrop-blur-md border-b border-[var(--border)] px-4 md:px-8 flex items-center justify-between shrink-0 relative z-20 sticky top-0",
                     isSmartGestao && "hidden md:flex"
                   )}>
                     <div className="flex items-center gap-3 md:gap-6 flex-1 min-w-0">
@@ -147,18 +148,20 @@ export default function DashboardLayout({
                           className="w-full bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl py-2.5 pl-11 pr-4 text-[10px] font-black uppercase tracking-widest text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--secondary)]/20 transition-all cursor-pointer hover:bg-[var(--accent-light)]/50"
                         />
                       </div>
-                      <div className="lg:hidden">
-                        <h1 className="text-sm font-black italic uppercase tracking-tighter text-[var(--text-primary)] truncate">
+                      
+                      {/* Mobile Logo Title */}
+                      <div className="lg:hidden flex flex-col">
+                        <h1 className="text-xs sm:text-sm font-black italic uppercase tracking-tighter text-[var(--text-primary)] truncate">
                           Doce <span className="text-[var(--secondary)]">Gestão</span>
                         </h1>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2 md:gap-4 ml-auto">
-                      {/* Subscription Info - Desktop Only */}
+                      {/* Subscription Info - Large Desktop Only */}
                       <Link
                         href="/dashboard/billing"
-                        className="hidden xl:flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--accent-light)] border border-[var(--border)] text-[var(--secondary)] font-black text-[10px] uppercase tracking-widest hover:brightness-95 transition-all shrink-0"
+                        className="hidden 2xl:flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--accent-light)] border border-[var(--border)] text-[var(--secondary)] font-black text-[10px] uppercase tracking-widest hover:brightness-95 transition-all shrink-0"
                       >
                         <Clock className="size-3 animate-pulse" />
                         <span>{getTrialLabel()}</span>
@@ -167,17 +170,20 @@ export default function DashboardLayout({
                       <div className="h-6 w-px bg-[var(--border)] mx-1 hidden md:block" />
 
                       <div className="flex items-center gap-1 md:gap-3">
-                        <ThemeToggle />
-                        
-                        <Link href="/dashboard/mensagens">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-10 rounded-full border border-[var(--border)] bg-[var(--bg-card)] text-[var(--text-primary)] hover:bg-[var(--accent-light)] transition-all shadow-sm"
-                          >
-                            <MessageSquare size={18} />
-                          </Button>
-                        </Link>
+                        {/* Hidden on very small screens to avoid crowding */}
+                        <div className="hidden sm:flex items-center gap-1 md:gap-3">
+                          <ThemeToggle />
+                          
+                          <Link href="/dashboard/mensagens">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-9 md:size-10 rounded-full border border-[var(--border)] bg-[var(--bg-card)] text-[var(--text-primary)] hover:bg-[var(--accent-light)] transition-all shadow-sm"
+                            >
+                              <MessageSquare size={16} className="md:size-[18px]" />
+                            </Button>
+                          </Link>
+                        </div>
 
                         <NotificationBell />
                         
@@ -200,15 +206,16 @@ export default function DashboardLayout({
                     </div>
                   </header>
 
-                  <main className="max-w-[1600px] mx-auto p-[var(--space-sm)] md:p-[var(--space-lg)]">
+                  <main className="flex-1 w-full max-w-[1600px] mx-auto p-4 sm:p-6 md:p-8 lg:p-10 pb-24 md:pb-8">
                     {children}
                   </main>
                   
-                  <footer className="mt-auto h-12 bg-[var(--bg-card)] border-t border-[var(--border)] px-4 md:px-8 flex items-center justify-between text-[8px] font-bold text-[var(--text-muted)] shrink-0 uppercase tracking-widest">
+                  <footer className="hidden md:flex mt-auto h-12 bg-[var(--bg-card)] border-t border-[var(--border)] px-8 items-center justify-between text-[8px] font-bold text-[var(--text-muted)] shrink-0 uppercase tracking-widest">
                     <div className="truncate">© 2026 DOCE GESTÃO <span className="text-[var(--secondary)] font-black ml-2">• PRO</span></div>
-                    <div className="hidden sm:block opacity-60">SaaS Platinum v4.5</div>
+                    <div className="opacity-60">SaaS Platinum v4.5</div>
                   </footer>
                 </div>
+            <BottomNav />
           </DashboardSidebar>
           <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
         </div>

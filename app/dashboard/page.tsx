@@ -159,8 +159,8 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-10 pb-20 max-w-[1600px] mx-auto px-4 md:px-0">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+    <div className="space-y-6 md:space-y-10 pb-24 md:pb-20 max-w-[1600px] mx-auto px-0">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 px-4 md:px-0">
         <PageHeader
           title="Dashboard"
           highlight="Premium"
@@ -181,14 +181,14 @@ export default function DashboardPage() {
       </div>
 
       {/* KPI Section */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-6">
         {kpis.map((kpi, idx) => (
           <motion.div
             key={idx}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.1 }}
-            className="bg-[var(--bg-card)] rounded-[40px] border border-[var(--border)] p-8 shadow-sm hover:shadow-2xl hover:translate-y-[-6px] transition-all duration-500 flex flex-col justify-between group relative overflow-hidden"
+            className="bg-[var(--bg-card)] rounded-3xl md:rounded-[40px] border border-[var(--border)] p-5 md:p-8 shadow-sm hover:shadow-2xl hover:translate-y-[-6px] transition-all duration-500 flex flex-col justify-between group relative overflow-hidden"
           >
             <div className="relative z-10">
               <div className="flex justify-between items-start mb-8">
@@ -215,8 +215,8 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         {/* Main Chart Section */}
-        <div className="xl:col-span-2 space-y-8">
-          <Card className="rounded-[48px] border-[var(--border)] shadow-premium p-10 bg-[var(--bg-card)] relative overflow-hidden">
+        <div className="xl:col-span-2 space-y-8 px-4 md:px-0">
+          <Card className="rounded-3xl md:rounded-[48px] border-[var(--border)] shadow-premium p-6 md:p-10 bg-[var(--bg-card)] relative overflow-hidden">
             <div className="flex items-center justify-between mb-10 relative z-10">
               <div>
                 <h3 className="text-2xl font-black text-[var(--text-primary)] uppercase italic tracking-tighter">Fluxo <span className="text-[var(--secondary)]">Financeiro</span></h3>
@@ -231,7 +231,7 @@ export default function DashboardPage() {
               </div>
             </div>
             
-            <div className="h-[380px] w-full relative z-10">
+            <div className="h-[250px] md:h-[380px] w-full relative z-10">
               {isMounted && !loading ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={chartData}>
@@ -341,9 +341,9 @@ export default function DashboardPage() {
         </div>
 
         {/* Sidebar Column */}
-        <div className="space-y-8">
+        <div className="space-y-8 px-4 md:px-0">
           {/* Goals / Stats Pie */}
-          <Card className="rounded-[40px] border-[var(--border)] shadow-sm p-8 bg-[var(--bg-card)] text-center relative overflow-hidden group">
+          <Card className="rounded-3xl md:rounded-[40px] border-[var(--border)] shadow-sm p-6 md:p-8 bg-[var(--bg-card)] text-center relative overflow-hidden group">
             <h4 className="text-[11px] font-black uppercase text-[var(--text-primary)] italic tracking-widest mb-6 relative z-10">Performance por Status</h4>
             <div className="h-[280px] w-full relative z-10">
                {isMounted && !loading ? (
