@@ -177,7 +177,7 @@ function EstoqueContent() {
         <PageSearch value={search} onChange={setSearch} placeholder="Buscar por ingrediente ou categoria..." />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
         <AnimatePresence mode="popLayout">
           {filtered.map((item) => {
             const isCritical = item.current_quantity < item.min_stock
@@ -189,13 +189,13 @@ function EstoqueContent() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
                 className={cn(
-                  "group bg-white rounded-3xl border p-6 shadow-sm hover:shadow-xl transition-all duration-300 relative overflow-hidden",
+                  "group bg-white rounded-2xl sm:rounded-3xl border p-4 sm:p-5 lg:p-6 shadow-sm hover:shadow-xl transition-all duration-300 relative overflow-hidden",
                   isCritical ? "border-rose-100 shadow-rose-500/5 bg-rose-50/10" : "border-slate-100"
                 )}
               >
-                <div className="flex items-start justify-between mb-6">
-                  <div className={cn("size-12 rounded-2xl flex items-center justify-center text-white border", isCritical ? "bg-rose-500 border-rose-400" : "bg-primary border-rose-400")}>
-                    <Package className="size-6" />
+                <div className="flex items-start justify-between mb-4 sm:mb-6">
+                  <div className={cn("size-10 sm:size-12 rounded-xl sm:rounded-2xl flex items-center justify-center text-white border", isCritical ? "bg-rose-500 border-rose-400" : "bg-primary border-rose-400")}>
+                    <Package className="size-5 sm:size-6" />
                   </div>
                   <div className="flex gap-1">
                     <Button variant="ghost" size="icon" className="size-8 rounded-lg text-slate-400" onClick={() => { setEditingIngredient(item); setFormData({ name: item.name, category: item.category || "", current_quantity: item.current_quantity.toString(), unit: item.unit, min_stock: item.min_stock.toString(), purchase_price: item.purchase_price.toString(), package_quantity: item.package_quantity.toString() }); setNewIngredientOpen(true) }}>
@@ -207,23 +207,23 @@ function EstoqueContent() {
                   </div>
                 </div>
 
-                <div className="space-y-1 mb-6">
-                  <h3 className="text-lg font-black text-slate-900 uppercase italic leading-tight truncate">{item.name}</h3>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-[8px] font-black uppercase text-slate-400 border-slate-100 px-1.5 py-0">{item.category || "Insumo"}</Badge>
-                    {isCritical && <Badge className="bg-rose-500 text-white border-none font-black text-[8px] uppercase px-1.5 py-0 italic animate-pulse">Crítico</Badge>}
+                <div className="space-y-1 mb-4 sm:mb-6">
+                  <h3 className="text-base sm:text-lg font-black text-slate-900 uppercase italic leading-tight truncate">{item.name}</h3>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge variant="outline" className="text-[7px] sm:text-[8px] font-black uppercase text-slate-400 border-slate-100 px-1.5 py-0">{item.category || "Insumo"}</Badge>
+                    {isCritical && <Badge className="bg-rose-500 text-white border-none font-black text-[7px] sm:text-[8px] uppercase px-1.5 py-0 italic animate-pulse">Crítico</Badge>}
                   </div>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-3 mb-6">
+                <div className="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-slate-50 border border-slate-100 space-y-2 sm:space-y-3 mb-4 sm:mb-6">
                   <div className="flex items-center justify-between">
-                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest italic">Qtd Atual</span>
-                    <span className={cn("text-xl font-black italic", isCritical ? "text-rose-500" : "text-slate-900")}>
-                      {item.current_quantity} <span className="text-[10px] uppercase">{item.unit}</span>
+                    <span className="text-[7px] sm:text-[8px] font-black text-slate-400 uppercase tracking-wide sm:tracking-widest italic">Qtd Atual</span>
+                    <span className={cn("text-lg sm:text-xl font-black italic", isCritical ? "text-rose-500" : "text-slate-900")}>
+                      {item.current_quantity} <span className="text-[9px] sm:text-[10px] uppercase">{item.unit}</span>
                     </span>
                   </div>
-                  <div className="pt-3 border-t border-slate-200 flex items-center justify-between text-[10px] font-black uppercase text-slate-400">
-                    <span>Mínimo: {item.min_stock}{item.unit}</span>
+                  <div className="pt-2 sm:pt-3 border-t border-slate-200 flex items-center justify-between text-[9px] sm:text-[10px] font-black uppercase text-slate-400">
+                    <span>Mín: {item.min_stock}{item.unit}</span>
                     <span className="text-slate-900">R$ {item.purchase_price.toFixed(2)}</span>
                   </div>
                 </div>
@@ -231,9 +231,9 @@ function EstoqueContent() {
                 <Button 
                    onClick={() => handleQuickRestock(item.id, item.current_quantity)}
                    variant="outline" 
-                   className="w-full h-10 rounded-xl border-slate-100 text-slate-500 font-black uppercase text-[9px] hover:bg-slate-50 gap-2"
+                   className="w-full h-9 sm:h-10 rounded-lg sm:rounded-xl border-slate-100 text-slate-500 font-black uppercase text-[8px] sm:text-[9px] hover:bg-slate-50 gap-1.5 sm:gap-2"
                 >
-                  <Plus size={14} /> Reforçar Estoque (+10)
+                  <Plus className="size-3.5 sm:size-4" /> Reforçar (+10)
                 </Button>
               </motion.div>
             )
@@ -251,23 +251,23 @@ function EstoqueContent() {
       </div>
 
       <Dialog open={newIngredientOpen} onOpenChange={setNewIngredientOpen}>
-        <DialogContent className="sm:max-w-lg rounded-[32px] p-8">
-          <DialogHeader className="mb-6"><DialogTitle className="text-2xl font-black uppercase italic">{editingIngredient ? 'Editar' : 'Novo'} Insumo</DialogTitle></DialogHeader>
-          <div className="space-y-4 font-bold">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2"><Label className="text-[10px] uppercase text-slate-400">Nome</Label><Input className="h-12 rounded-xl" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} /></div>
-              <div className="space-y-2"><Label className="text-[10px] uppercase text-slate-400">Categoria</Label><Input className="h-12 rounded-xl" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} /></div>
+        <DialogContent className="w-[calc(100%-2rem)] max-w-lg rounded-2xl sm:rounded-[32px] p-4 sm:p-6 lg:p-8 mx-auto">
+          <DialogHeader className="mb-4 sm:mb-6"><DialogTitle className="text-lg sm:text-xl lg:text-2xl font-black uppercase italic">{editingIngredient ? 'Editar' : 'Novo'} Insumo</DialogTitle></DialogHeader>
+          <div className="space-y-3 sm:space-y-4 font-bold">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <div className="space-y-1.5 sm:space-y-2"><Label className="text-[9px] sm:text-[10px] uppercase text-slate-400">Nome</Label><Input className="h-11 sm:h-12 rounded-lg sm:rounded-xl text-base" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} /></div>
+              <div className="space-y-1.5 sm:space-y-2"><Label className="text-[9px] sm:text-[10px] uppercase text-slate-400">Categoria</Label><Input className="h-11 sm:h-12 rounded-lg sm:rounded-xl text-base" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} /></div>
             </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2"><Label className="text-[10px] uppercase text-slate-400">Qtd Atual</Label><Input type="number" className="h-12 rounded-xl" value={formData.current_quantity} onChange={e => setFormData({ ...formData, current_quantity: e.target.value })} /></div>
-              <div className="space-y-2"><Label className="text-[10px] uppercase text-slate-400">Mínimo</Label><Input type="number" className="h-12 rounded-xl" value={formData.min_stock} onChange={e => setFormData({ ...formData, min_stock: e.target.value })} /></div>
-              <div className="space-y-2"><Label className="text-[10px] uppercase text-slate-400">Unidade</Label><Input className="h-12 rounded-xl" value={formData.unit} onChange={e => setFormData({ ...formData, unit: e.target.value })} /></div>
+            <div className="grid grid-cols-3 gap-2 sm:gap-4">
+              <div className="space-y-1.5 sm:space-y-2"><Label className="text-[8px] sm:text-[10px] uppercase text-slate-400">Qtd Atual</Label><Input type="number" className="h-11 sm:h-12 rounded-lg sm:rounded-xl text-base" value={formData.current_quantity} onChange={e => setFormData({ ...formData, current_quantity: e.target.value })} /></div>
+              <div className="space-y-1.5 sm:space-y-2"><Label className="text-[8px] sm:text-[10px] uppercase text-slate-400">Mínimo</Label><Input type="number" className="h-11 sm:h-12 rounded-lg sm:rounded-xl text-base" value={formData.min_stock} onChange={e => setFormData({ ...formData, min_stock: e.target.value })} /></div>
+              <div className="space-y-1.5 sm:space-y-2"><Label className="text-[8px] sm:text-[10px] uppercase text-slate-400">Unidade</Label><Input className="h-11 sm:h-12 rounded-lg sm:rounded-xl text-base" value={formData.unit} onChange={e => setFormData({ ...formData, unit: e.target.value })} /></div>
             </div>
-            <div className="grid grid-cols-2 gap-4 text-slate-900">
-              <div className="space-y-2 font-bold"><Label className="text-[10px] uppercase text-slate-400">Preço Compra (R$)</Label><Input type="number" className="h-12 rounded-xl" value={formData.purchase_price} onChange={e => setFormData({ ...formData, purchase_price: e.target.value })} /></div>
-              <div className="space-y-2"><Label className="text-[10px] uppercase text-slate-400">Qtd no Pacote</Label><Input type="number" className="h-12 rounded-xl" value={formData.package_quantity} onChange={e => setFormData({ ...formData, package_quantity: e.target.value })} /></div>
+            <div className="grid grid-cols-2 gap-2 sm:gap-4 text-slate-900">
+              <div className="space-y-1.5 sm:space-y-2 font-bold"><Label className="text-[8px] sm:text-[10px] uppercase text-slate-400">Preço (R$)</Label><Input type="number" className="h-11 sm:h-12 rounded-lg sm:rounded-xl text-base" value={formData.purchase_price} onChange={e => setFormData({ ...formData, purchase_price: e.target.value })} /></div>
+              <div className="space-y-1.5 sm:space-y-2"><Label className="text-[8px] sm:text-[10px] uppercase text-slate-400">Qtd Pacote</Label><Input type="number" className="h-11 sm:h-12 rounded-lg sm:rounded-xl text-base" value={formData.package_quantity} onChange={e => setFormData({ ...formData, package_quantity: e.target.value })} /></div>
             </div>
-            <Button onClick={handleSaveIngredient} disabled={isSaving} className="w-full h-14 rounded-2xl bg-rose-500 font-black uppercase text-white shadow-lg mt-4">{isSaving ? "Gravando..." : "Confirmar Insumo"}</Button>
+            <Button onClick={handleSaveIngredient} disabled={isSaving} className="w-full h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-rose-500 font-black uppercase text-white shadow-lg mt-3 sm:mt-4 text-sm sm:text-base">{isSaving ? "Gravando..." : "Confirmar Insumo"}</Button>
           </div>
         </DialogContent>
       </Dialog>

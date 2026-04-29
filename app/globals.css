@@ -121,6 +121,21 @@
 }
 
 @layer utilities {
+  /* Safe Area for notch devices */
+  .safe-area-pb {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+  
+  .safe-area-pt {
+    padding-top: env(safe-area-inset-top, 0);
+  }
+  
+  /* Touch-friendly targets */
+  .touch-target-min {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
   .glass-card {
     background: var(--glass-background);
     backdrop-filter: blur(16px);

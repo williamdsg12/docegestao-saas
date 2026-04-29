@@ -246,53 +246,53 @@ function ProdutosContentV4() {
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-20">
       
-      {/* 🚀 HEADER PREMIUM (ESTILO IFOOD) */}
+      {/* HEADER PREMIUM - FULLY RESPONSIVE */}
       <div className="bg-white border-b border-slate-100 sticky top-0 z-30 shadow-sm">
-         <div className="max-w-7xl mx-auto px-6 h-24 flex items-center justify-between gap-8">
-            <div className="flex items-center gap-6 flex-1">
-               <div className="hidden lg:flex flex-col">
-                  <h1 className="text-xl font-black italic uppercase tracking-tighter text-slate-900 leading-none">Meus <span className="text-indigo-600">Produtos</span></h1>
-                  <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 whitespace-nowrap">Gestão de Cardápio</p>
+         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 h-16 sm:h-20 lg:h-24 flex items-center justify-between gap-2 sm:gap-4 lg:gap-8">
+            <div className="flex items-center gap-2 sm:gap-4 lg:gap-6 flex-1 min-w-0">
+               <div className="hidden md:flex flex-col shrink-0">
+                  <h1 className="text-base lg:text-xl font-black italic uppercase tracking-tighter text-slate-900 leading-none">Meus <span className="text-indigo-600">Produtos</span></h1>
+                  <p className="text-[8px] lg:text-[9px] font-bold text-slate-400 uppercase tracking-wide lg:tracking-widest mt-0.5 whitespace-nowrap">Gestão de Cardápio</p>
                </div>
                
-               <div className="relative max-w-xl w-full group">
-                  <Search className="absolute left-5 top-1/2 -translate-y-1/2 size-5 text-slate-300 group-focus-within:text-indigo-500 transition-colors" />
+               <div className="relative flex-1 max-w-xl group">
+                  <Search className="absolute left-3 sm:left-4 lg:left-5 top-1/2 -translate-y-1/2 size-4 sm:size-5 text-slate-300 group-focus-within:text-indigo-500 transition-colors" />
                   <Input 
-                    placeholder="Busque por nome, categoria ou descrição..." 
+                    placeholder="Buscar produtos..." 
                     value={search} onChange={e => setSearch(e.target.value)}
-                    className="h-14 pl-14 rounded-2xl border-none bg-slate-50 font-bold text-slate-600 placeholder:text-slate-300 focus:ring-4 focus:ring-indigo-100 transition-all shadow-inner"
+                    className="h-10 sm:h-12 lg:h-14 pl-10 sm:pl-12 lg:pl-14 rounded-xl sm:rounded-2xl border-none bg-slate-50 font-bold text-slate-600 placeholder:text-slate-300 focus:ring-4 focus:ring-indigo-100 transition-all shadow-inner text-sm sm:text-base"
                   />
                </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                <Button 
                 onClick={() => setShowPreview(!showPreview)}
                 variant={showPreview ? "default" : "outline"} 
                 className={cn(
-                  "h-12 px-6 rounded-2xl font-bold text-[10px] uppercase italic gap-2 transition-all shadow-sm",
+                  "hidden lg:flex h-10 lg:h-12 px-4 lg:px-6 rounded-xl lg:rounded-2xl font-bold text-[9px] lg:text-[10px] uppercase italic gap-2 transition-all shadow-sm",
                   showPreview ? "bg-indigo-600 text-white" : "border-slate-100 bg-white text-slate-500"
                 )}
                >
-                  <Smartphone size={16} /> {showPreview ? "Ocultar Preview" : "Ver Preview"}
+                  <Smartphone className="size-4" /> {showPreview ? "Ocultar" : "Preview"}
                </Button>
                <Button 
                 onClick={() => handleOpenModal()}
-                className="h-14 px-8 rounded-[24px] bg-slate-900 hover:bg-black text-white font-black italic uppercase text-[11px] gap-3 shadow-2xl shadow-slate-900/20 active:scale-95 transition-all"
+                className="h-10 sm:h-12 lg:h-14 px-4 sm:px-6 lg:px-8 rounded-xl sm:rounded-2xl lg:rounded-[24px] bg-slate-900 hover:bg-black text-white font-black italic uppercase text-[9px] sm:text-[10px] lg:text-[11px] gap-1.5 sm:gap-2 lg:gap-3 shadow-2xl shadow-slate-900/20 active:scale-95 transition-all"
                >
-                  <PlusCircle size={18} /> Novo Produto
+                  <PlusCircle className="size-4 sm:size-4.5 lg:size-5" /> <span className="hidden sm:inline">Novo</span> Produto
                </Button>
             </div>
          </div>
 
-         {/* CATEGORIES PILLS (SCROLL HORIZONTAL) */}
-         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center border-t border-slate-50 overflow-x-auto no-scrollbar gap-2">
+         {/* CATEGORIES PILLS - RESPONSIVE SCROLL */}
+         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 h-12 sm:h-14 lg:h-16 flex items-center border-t border-slate-50 overflow-x-auto no-scrollbar gap-1.5 sm:gap-2">
             {CATEGORIES.map(category => (
                <button
                  key={category}
                  onClick={() => setSelectedCategory(category)}
                  className={cn(
-                   "h-10 px-6 rounded-full text-[10px] font-black uppercase italic tracking-widest transition-all shrink-0 border-2",
+                   "h-8 sm:h-9 lg:h-10 px-3 sm:px-4 lg:px-6 rounded-full text-[8px] sm:text-[9px] lg:text-[10px] font-black uppercase italic tracking-wide lg:tracking-widest transition-all shrink-0 border-2",
                    selectedCategory === category 
                      ? "bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-600/20" 
                      : "bg-white text-slate-400 border-slate-100 hover:border-slate-300"
@@ -302,21 +302,21 @@ function ProdutosContentV4() {
                </button>
             ))}
             
-            <div className="h-6 w-px bg-slate-100 mx-2 shrink-0" />
+            <div className="h-5 sm:h-6 w-px bg-slate-100 mx-1 sm:mx-2 shrink-0" />
             
             <button
               onClick={handleFixCategories}
-              className="h-10 px-6 rounded-full bg-emerald-50 text-emerald-600 text-[9px] font-black uppercase italic tracking-widest gap-2 flex items-center hover:bg-emerald-100 transition-all shrink-0"
+              className="h-8 sm:h-9 lg:h-10 px-3 sm:px-4 lg:px-6 rounded-full bg-emerald-50 text-emerald-600 text-[8px] sm:text-[9px] font-black uppercase italic tracking-wide lg:tracking-widest gap-1.5 sm:gap-2 flex items-center hover:bg-emerald-100 transition-all shrink-0"
             >
-              <Sparkles size={12} /> Sugestão de IA
+              <Sparkles className="size-3 sm:size-3.5" /> <span className="hidden sm:inline">Sugestão</span> IA
             </button>
          </div>
       </div>
 
-      <main className="max-w-[1600px] mx-auto px-6 pt-10 flex gap-8">
+      <main className="max-w-[1600px] mx-auto px-3 sm:px-4 lg:px-6 pt-4 sm:pt-6 lg:pt-10 flex flex-col xl:flex-row gap-4 sm:gap-6 lg:gap-8">
          {/* GRID DE PRODUTOS */}
-         <div className="flex-1">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-8">
+         <div className="flex-1 min-w-0">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
                {loading ? (
                   Array.from({ length: 8 }).map((_, i) => (
                      <div key={i} className="h-96 rounded-[32px] bg-slate-100 animate-pulse" />

@@ -15,6 +15,7 @@ import { useState, useEffect } from "react"
 import { toast } from "sonner"
 import { SidebarTrigger } from "@/components/dashboard/sidebar"
 import { CommandPalette } from "@/components/dashboard/CommandPalette"
+import { BottomNav } from "@/components/dashboard/BottomNav"
 import { cn } from "@/lib/utils"
 import { Volume2, VolumeX } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -125,49 +126,59 @@ export default function DashboardLayout({
           )}
           <DashboardSidebar>
             <div className="flex-1 flex flex-col min-h-0 bg-[#F8FAFC]">
-              {/* Modern Header - Professional & Clean */}
-              <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 px-8 flex items-center justify-between shrink-0 relative z-20">
-                <div className="flex items-center gap-6 flex-1">
+              {/* Modern Header - Fully Responsive */}
+              <header className="h-14 sm:h-16 lg:h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 px-3 sm:px-4 md:px-6 lg:px-8 flex items-center justify-between shrink-0 relative z-20">
+                <div className="flex items-center gap-2 sm:gap-4 lg:gap-6 flex-1 min-w-0">
+                  <SidebarTrigger className="md:hidden shrink-0" />
+                  
+                  {/* Search - Desktop/Tablet */}
                   <button
                     onClick={() => setCommandOpen(true)}
-                    className="hidden md:flex items-center gap-3 px-4 py-2 bg-slate-100 rounded-2xl w-full max-w-md border border-slate-200 hover:bg-slate-200 transition-all group"
+                    className="hidden md:flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2 bg-slate-100 rounded-xl lg:rounded-2xl w-full max-w-xs lg:max-w-md border border-slate-200 hover:bg-slate-200 transition-all group"
                   >
-                    <Search className="size-4 text-slate-400 group-hover:text-blue-500" />
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-widest text-left flex-1">
-                      Pesquisa Inteligente (⌘+K)
+                    <Search className="size-4 text-slate-400 group-hover:text-blue-500 shrink-0" />
+                    <span className="text-[10px] lg:text-xs font-bold text-slate-400 uppercase tracking-wider lg:tracking-widest text-left flex-1 truncate">
+                      Pesquisar
                     </span>
-                    <kbd className="hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border border-slate-300 bg-white px-1.5 font-mono text-[10px] font-black text-slate-500">
+                    <kbd className="hidden lg:inline-flex h-5 select-none items-center gap-1 rounded border border-slate-300 bg-white px-1.5 font-mono text-[10px] font-black text-slate-500">
                       <span className="text-xs">⌘</span>K
                     </kbd>
                   </button>
-                  <SidebarTrigger className="md:hidden" />
+                  
+                  {/* Mobile Search Icon */}
+                  <button
+                    onClick={() => setCommandOpen(true)}
+                    className="md:hidden flex items-center justify-center size-9 bg-slate-100 rounded-xl border border-slate-200 hover:bg-slate-200 transition-all"
+                  >
+                    <Search className="size-4 text-slate-500" />
+                  </button>
                 </div>
 
-                <div className="flex items-center gap-4">
-                  {/* Trial Info - Professional Badge */}
+                <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-4">
+                  {/* Trial Info - Desktop only */}
                   <Link
                     href="/dashboard/billing"
-                    className="hidden lg:flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 font-bold text-[10px] uppercase tracking-widest hover:bg-amber-100 transition-all"
+                    className="hidden xl:flex items-center gap-2 px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg lg:rounded-xl bg-amber-50 border border-amber-200 text-amber-700 font-bold text-[9px] lg:text-[10px] uppercase tracking-wider lg:tracking-widest hover:bg-amber-100 transition-all"
                   >
-                    <Clock className="size-3 animate-pulse" />
-                    <span>{getTrialLabel()}</span>
+                    <Clock className="size-3 animate-pulse shrink-0" />
+                    <span className="truncate max-w-[140px] lg:max-w-none">{getTrialLabel()}</span>
                   </Link>
 
-                  <div className="h-8 w-px bg-slate-200 mx-2 hidden md:block" />
+                  <div className="h-6 lg:h-8 w-px bg-slate-200 mx-1 lg:mx-2 hidden lg:block" />
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1 sm:gap-1.5 lg:gap-3">
                     <ThemeToggle />
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={toggleSound}
                       className={cn(
-                        "size-10 rounded-full border transition-all shadow-sm",
+                        "size-8 sm:size-9 lg:size-10 rounded-full border transition-all shadow-sm",
                         soundEnabled ? "border-emerald-100 bg-emerald-50 text-emerald-600 hover:bg-emerald-100" : "border-slate-100 bg-slate-50 text-slate-400 hover:bg-slate-100"
                       )}
                       title={soundEnabled ? "Som Ativo" : "Som Mudo"}
                     >
-                      {soundEnabled ? <Volume2 size={20} strokeWidth={3} /> : <VolumeX size={20} />}
+                      {soundEnabled ? <Volume2 className="size-4 sm:size-5" strokeWidth={3} /> : <VolumeX className="size-4 sm:size-5" />}
                     </Button>
                     <NotificationBell />
                     <UserAvatarMenu />
@@ -175,12 +186,15 @@ export default function DashboardLayout({
                 </div>
               </header>
 
-              {/* Standardized Content Area */}
+              {/* Responsive Content Area */}
               <div className="flex-1 overflow-y-auto w-full min-w-0">
-                <main className="max-w-[1600px] mx-auto px-6 md:px-10 py-8 lg:py-12">
+                <main className="max-w-[1800px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 xl:px-10 py-4 sm:py-6 lg:py-8 xl:py-10 pb-20 md:pb-8">
                   {children}
                 </main>
               </div>
+              
+              {/* Bottom Navigation - Mobile Only */}
+              <BottomNav />
             </div>
           </DashboardSidebar>
           <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
