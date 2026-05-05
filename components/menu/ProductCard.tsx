@@ -23,49 +23,45 @@ export function ProductCard({ product, onClick, onAddClick }: ProductCardProps) 
   return (
     <div 
       onClick={() => onClick(product)}
-      className="bg-white p-[var(--space-sm)] md:p-[var(--space-md)] rounded-2xl border border-slate-100 flex gap-[var(--space-sm)] md:gap-[var(--space-md)] cursor-pointer hover-lift transition-all group relative overflow-hidden h-full shadow-sm"
+      className="bg-white p-4 rounded-xl border border-slate-100 flex gap-4 cursor-pointer hover:bg-slate-50 transition-all group relative overflow-hidden h-full shadow-sm"
     >
-      <div className="flex-1 flex flex-col justify-between py-1 min-w-0">
-        <div className="space-y-1.5 md:space-y-2">
-          {product.is_highlight && (
-             <span className="text-[var(--font-xs)] font-black uppercase tracking-widest text-red-500 bg-red-50 px-2 py-0.5 rounded-full mb-1 inline-block">
-               Destaque
-             </span>
-          )}
-          <h3 className="font-bold text-slate-800 uppercase italic leading-tight text-[var(--font-sm)] md:text-[var(--font-base)] truncate group-hover:text-red-600 transition-colors">
+      <div className="flex-1 flex flex-col justify-between py-0.5 min-w-0">
+        <div className="space-y-1">
+          <h3 className="font-bold text-slate-900 text-sm md:text-base leading-tight group-hover:text-[#1a56db] transition-colors">
             {product.name}
           </h3>
-          <p className="text-[var(--font-xs)] text-slate-500 font-medium line-clamp-2 md:line-clamp-3 leading-relaxed">
+          <p className="text-[11px] text-slate-500 font-medium line-clamp-2 leading-relaxed">
             {product.description || "Descrição em breve..."}
           </p>
         </div>
         
-        <div className="mt-4 flex items-center justify-between">
-          <span className="text-[var(--font-base)] md:text-[var(--font-lg)] font-black text-slate-900 italic tracking-tighter">
+        <div className="mt-3">
+          <span className="text-sm md:text-base font-black text-slate-900 italic">
             R$ {Number(product.price).toFixed(2)}
           </span>
-          <Button 
-            size="icon"
-            className="touch-target rounded-xl bg-red-500 hover:bg-red-600 text-white shadow-lg transition-all active:scale-90 group/btn shrink-0"
-            onClick={(e) => {
-              e.stopPropagation()
-              onAddClick(product)
-            }}
-          >
-            <Plus className="size-5 group-hover/btn:rotate-90 transition-transform" />
-          </Button>
         </div>
       </div>
 
-      <div className="size-24 md:size-32 rounded-2xl bg-slate-50 overflow-hidden shrink-0 border border-slate-100 relative group-hover:scale-105 transition-transform duration-500">
+      <div className="size-24 rounded-xl bg-slate-50 overflow-hidden shrink-0 border border-slate-100 relative">
         {product.image_url ? (
           <img src={product.image_url} alt={product.name} className="size-full object-cover" />
         ) : (
-          <div className="size-full flex items-center justify-center text-slate-300 italic font-black text-[var(--font-xs)] p-2 text-center leading-none">
+          <div className="size-full flex items-center justify-center text-slate-200 italic font-black text-[10px] p-2 text-center leading-none">
             DOCE GESTÃO
           </div>
         )}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
+        
+        {/* Floating Add Button OVER photo */}
+        <Button 
+          size="icon"
+          className="absolute bottom-1 right-1 size-7 rounded-full bg-[#1a56db] hover:bg-[#1e40af] text-white shadow-md transition-all active:scale-90 shrink-0 z-10"
+          onClick={(e) => {
+            e.stopPropagation()
+            onAddClick(product)
+          }}
+        >
+          <Plus className="size-4" />
+        </Button>
       </div>
     </div>
   )

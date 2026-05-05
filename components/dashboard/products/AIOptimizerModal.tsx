@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { motion, AnimatePresence } from "framer-motion"
 import { 
   X, 
@@ -86,8 +87,8 @@ export function AIOptimizerModal({
                    <Sparkles className="text-white" size={24} />
                 </div>
                 <div>
-                   <h2 className="text-2xl font-black uppercase italic tracking-tighter">Otimizador <span className="text-indigo-400">Inteligente</span></h2>
-                   <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Transformando seu produto em uma máquina de vendas</p>
+                   <DialogTitle className="text-2xl font-black uppercase italic tracking-tighter">Otimizador <span className="text-indigo-400">Inteligente</span></DialogTitle>
+                   <DialogDescription className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Transformando seu produto em uma máquina de vendas</DialogDescription>
                 </div>
              </div>
              
@@ -335,5 +336,3 @@ export function AIOptimizerModal({
   )
 }
 
-// Ensure Dialog is imported from @/components/ui/dialog or relevant path
-import { Dialog, DialogContent } from "@/components/ui/dialog"

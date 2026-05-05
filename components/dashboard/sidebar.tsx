@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, createContext, useContext } from "react"
+import { useState, useEffect, createContext, useContext, useCallback } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
@@ -40,6 +40,7 @@ import { useRouter } from "next/navigation"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
 import { hasFeature } from "@/lib/access-control"
+import { supabase } from "@/lib/supabase"
 import {
   Tooltip,
   TooltipContent,
@@ -53,7 +54,7 @@ const menuGroups = [
     icon: LayoutDashboard,
     items: [
       { name: "Dashboard", icon: LayoutDashboard, path: "/dashboard", feature: "dashboard" },
-      { name: "Pedidos", icon: ShoppingBag, path: "/dashboard/painel-pedidos", feature: "pedidos" },
+      { name: "Pedidos", icon: ShoppingBag, path: "/dashboard/pedidos", feature: "pedidos" },
       { name: "Mensagens", icon: MessageSquare, path: "/dashboard/mensagens", feature: "dashboard", badge: "2" },
     ]
   },
@@ -156,6 +157,62 @@ function SidebarContent({
     setIsLoaded(true)
   }, [pathname])
 
+  const [unreadSupportCount, setUnreadSupportCount] = useState(0)
+
+  // Fetch unread support messages count
+  const fetchUnreadSupport = useCallback(async () => {
+    if (!userAuth.user) return
+    
+    // Check if user is admin
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('is_admin, tenant_id')
+      .eq('id', userAuth.user.id)
+      .single()
+
+    let query = supabase
+      .from('mensagens_suporte')
+      .select(`
+        id,
+        tickets!inner(tenant_id)
+      `)
+      .eq('lido', false)
+      .eq('remetente', profile?.is_admin ? 'usuario' : 'admin')
+
+    if (!profile?.is_admin) {
+      query = query.eq('tickets.tenant_id', profile?.tenant_id)
+    }
+
+    const { count, error } = await query.range(0, 0, { count: 'exact' })
+    if (!error && count !== null) {
+      setUnreadSupportCount(count)
+    }
+  }, [userAuth.user])
+
+  useEffect(() => {
+    fetchUnreadSupport()
+
+    const channel = supabase
+      .channel('sidebar-support-badges')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'mensagens_suporte' }, () => fetchUnreadSupport())
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [fetchUnreadSupport])
+
+  // Update menu groups with dynamic badge
+  const updatedMenuGroups = menuGroups.map(group => ({
+    ...group,
+    items: group.items.map(item => {
+      if (item.name === "Mensagens") {
+        return { ...item, badge: unreadSupportCount > 0 ? unreadSupportCount.toString() : undefined }
+      }
+      return item
+    })
+  }))
+
   // Save changes to localStorage
   useEffect(() => {
     if (isLoaded) {
@@ -189,7 +246,7 @@ function SidebarContent({
       {/* Nav Content */}
       <TooltipProvider delayDuration={0}>
         <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1 scrollbar-none">
-          {menuGroups.map((group) => {
+          {updatedMenuGroups.map((group) => {
             const isOpen = openGroups.includes(group.name)
             const hasActive = group.items.some(i => i.path === pathname)
             const GroupIcon = group.icon

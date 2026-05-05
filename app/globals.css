@@ -46,6 +46,13 @@
   --radius: 1rem; 
   --shadow-premium: 0 10px 30px -5px rgba(0, 0, 0, 0.04);
   --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.03);
+  
+  /* OlaClick Palette */
+  --olaclick-blue: #1a56db;
+  --olaclick-green: #16a34a;
+  --olaclick-orange: #f97316;
+  --olaclick-bg-light: #eff6ff;
+  --shadow-olaclick: 0 4px 12px rgba(26, 86, 219, 0.08);
 
   /* Fluid Spacing Scale */
   --space-xs: 0.25rem;   /* 4px */
@@ -316,4 +323,48 @@
   font-size: 14px;
   color: var(--text-primary);
   font-weight: 600;
+}
+
+/* 📄 SISTEMA DE IMPRESSÃO - PRINT STYLES */
+@media print {
+  /* Oculta tudo exceto o ticket ao imprimir */
+  body * { 
+    visibility: hidden; 
+  }
+  
+  #ticket-print, 
+  #ticket-print *,
+  #ticket-cliente-print,
+  #ticket-cliente-print * { 
+    visibility: visible; 
+  }
+  
+  /* Layout para ticket de cozinha (80mm térmico) */
+  #ticket-print {
+    position: fixed;
+    top: 0; 
+    left: 0;
+    width: 80mm;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    background: white;
+    padding: 10px;
+  }
+  
+  /* Layout para ticket cliente (A4 ou largura total) */
+  #ticket-cliente-print {
+    position: fixed;
+    top: 0; 
+    left: 0;
+    width: 100%;
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+    background: white;
+    padding: 20px;
+  }
+
+  /* Ajustes de página */
+  @page {
+    margin: 0;
+  }
 }

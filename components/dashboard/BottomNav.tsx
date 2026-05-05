@@ -12,7 +12,7 @@ export function BottomNav() {
 
   const navItems = [
     { name: "Painel", icon: LayoutDashboard, path: "/dashboard" },
-    { name: "Pedidos", icon: ShoppingBag, path: "/dashboard/painel-pedidos" },
+    { name: "Pedidos", icon: ShoppingBag, path: "/dashboard/pedidos" },
     { name: "Clientes", icon: Users, path: "/dashboard/clientes" },
     { name: "Financeiro", icon: Wallet, path: "/dashboard/financeiro" },
   ]

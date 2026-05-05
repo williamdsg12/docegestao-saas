@@ -172,119 +172,70 @@ export default function CheckoutPage() {
     try {
       setIsSubmitting(true)
 
-      // 1. Save or Update Customer
       const effectiveTenantId = businessFromMenu?.id || business?.id || profile?.tenant_id
-      console.log("Saving customer with tenant_id:", effectiveTenantId)
+      if (!effectiveTenantId) {
+        throw new Error("ID da loja não encontrado. Recarregue a página.")
+      }
 
-      const { data: customerData, error: customerError } = await supabase
-        .from('customers')
-        .upsert({
-          tenant_id: effectiveTenantId,
+      // 1. Prepare data for the Transactional RPC (Relational Model v12)
+      const rpcParams = {
+        p_tenant_id: effectiveTenantId,
+        p_customer: {
           name: customerInfo.name,
           phone: customerInfo.phone,
-          email: customerInfo.email,
-          last_order_at: new Date().toISOString()
-        }, { onConflict: 'tenant_id,phone' })
-        .select()
-        .single()
-      
-      if (customerError) {
-        console.error("Customer Error Details:", {
-          message: customerError.message,
-          details: customerError.details,
-          code: customerError.code
-        })
-        throw new Error(`Erro ao salvar cliente: ${customerError.message}`)
-      }
-      const customerId = customerData.id
-
-      // 2. Save Address
-      let addressId = null
-      const { data: addrData, error: addrError } = await supabase
-        .from('addresses')
-        .insert({
-          tenant_id: businessFromMenu?.id || business?.id,
-          customer_id: customerId,
+          email: customerInfo.email
+        },
+        p_address: {
           street: address.street,
           number: address.number,
           neighborhood: address.neighborhood,
           city: address.city,
-          state: address.state,
-          zip: address.zip,
-          lat: address.lat,
-          lng: address.lng
-        })
-        .select()
-        .single()
-      
-      if (addrError) {
-        console.error("Address Error:", addrError)
-        throw new Error(`Erro ao salvar endereço: ${addrError.message}`)
-      }
-      addressId = addrData.id
-
-      // 3. Save Order in Supabase ('orders' table)
-      const orderPayload: any = {
-        tenant_id: businessFromMenu?.id || business?.id,
-        customer_id: customerId,
-        address_id: addressId,
-        order_type: (distance || 0) > 0 ? 'delivery' : 'pickup',
-        status: 'pending',
-        total: total,
-        delivery_fee: deliveryFee,
-        discount: 0, 
-        payment_status: 'pending',
-        payment_method: customerInfo.payment_method,
-        delivery_address: address.street,
-        delivery_number: address.number,
-        delivery_neighborhood: address.neighborhood,
-        delivery_city: address.city,
-        delivery_complement: customerInfo.complement,
-        change_for: customerInfo.payment_method === 'money' ? Number(customerInfo.change_for) : null,
-        notes: customerInfo.notes,
-        // iFood Pro Persistence
-        distance_km: distance,
-        estimated_time: estimatedTime,
-        duration_minutes: durationMinutes
-      }
-
-      const { data: order, error: orderError } = await supabase.from('orders').insert(orderPayload).select().single()
-
-      if (orderError) {
-        // Log detalhado para o usuário ver no console exatamente qual é a falha
-        console.error("Erro Supabase Detalhado:", {
-          message: orderError.message,
-          code: orderError.code,
-          details: orderError.details,
-          hint: orderError.hint
-        });
-
-        // Verificação específica para colunas faltando
-        if (orderError.message?.includes("column") || orderError.code === "42703") {
-          toast.error("Banco de Dados Desatualizado!", {
-            duration: 15000,
-            description: "Esquema incompatível. Você PRECISA rodar o script 'migration_v5_pro_saas.sql' no Supabase."
-          })
-        } else {
-          toast.error(`Falha ao salvar pedido: ${orderError.message || "Erro desconhecido"}`)
-        }
-        throw orderError
-      }
-
-      // 4. Save Order Items ('order_items' table)
-      const { error: itemsError } = await supabase.from('order_items').insert(
-        cart.map(item => ({
-          order_id: order.id,
+          complement: customerInfo.complement,
+          zip: address.zip
+        },
+        p_order: {
+          total: total,
+          status: 'pending',
+          order_type: (distance || 0) > 0 ? 'delivery' : 'pickup',
+          notes: customerInfo.notes,
+          delivery_fee: deliveryFee,
+          discount: 0
+        },
+        p_items: cart.map(item => ({
           product_id: item.id,
+          name: item.name,
           quantity: item.quantity,
-          price: item.price
-        }))
-      )
-
-      if (itemsError) {
-        console.error("Items Error:", itemsError)
-        throw new Error(`Erro ao salvar itens do pedido: ${itemsError.message}`)
+          unit_price: item.price,
+          variation: item.variation,
+          extras: item.extras,
+          observation: item.observation
+        })),
+        p_payment: {
+          amount: total,
+          method: customerInfo.payment_method,
+          status: 'pending',
+          needs_change: customerInfo.payment_method === 'money' && Number(customerInfo.change_for || 0) > total,
+          change_for: customerInfo.payment_method === 'money' ? Number(customerInfo.change_for || 0) : 0
+        }
       }
+
+      // Address is now handled by RPC
+
+      // 2. Call Transactional RPC
+      const { data: result, error: rpcError } = await supabase.rpc('create_complete_order', rpcParams)
+
+      if (rpcError) {
+        console.error("RPC Error calling create_complete_order:", rpcError)
+        throw new Error(`Erro ao criar pedido (RPC): ${rpcError.message}`)
+      }
+
+      if (!result.success) {
+        console.error("Transactional Error in create_complete_order:", result.error, result.detail)
+        throw new Error(`Erro transacional ao processar pedido: ${result.error}`)
+      }
+
+      const newOrderId = result.order_id
+      const order = { id: newOrderId, ...rpcParams.p_order } // Mock order object for webhook
 
       // 5. External Actions (n8n Webhook)
       const n8nUrl = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL

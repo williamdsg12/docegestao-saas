@@ -186,8 +186,8 @@ function MetricCard({ label, value, icon: Icon, color, bgColor }: any) {
                     <Icon size={24} />
                 </div>
                 <div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic leading-none mb-1">{label}</p>
-                    <h3 className={cn("text-xl font-black italic uppercase tracking-tighter leading-none truncate")}>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic leading-normal mb-1">{label}</p>
+                    <h3 className={cn("text-xl font-black italic uppercase tracking-tighter leading-normal pr-4")}>
                         {value}
                     </h3>
                 </div>

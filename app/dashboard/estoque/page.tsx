@@ -185,21 +185,29 @@ export default function InventoryERPPage() {
         if (!newIngredient.nome) return toast.error("Nome é obrigatório")
         
         const tenantId = profile?.tenant_id || profile?.company_id
-        if (!tenantId) return
+        if (!tenantId || !user?.id) return
+        
+        const costoUnitario = parseFloat(newIngredient.custo_medio || "0")
 
         try {
             const { error } = await supabase
                 .from('ingredientes')
                 .insert({
                     ...newIngredient,
+                    user_id: user.id,
                     tenant_id: tenantId,
                     company_id: tenantId,
                     estoque_atual: parseFloat(newIngredient.estoque_atual || "0"),
                     estoque_minimo: parseFloat(newIngredient.estoque_minimo || "0"),
                     preco_total: parseFloat(newIngredient.preco_total || "0"),
+                    valor_pago: parseFloat(newIngredient.preco_total || "0"),
                     quantidade_total: parseFloat(newIngredient.quantidade_total || "1"),
+                    quantidade_embalagem: parseFloat(newIngredient.quantidade_total || "1"),
                     fator_rendimento: parseFloat(newIngredient.fator_rendimento || "1"),
-                    custo_medio: parseFloat(newIngredient.custo_medio || "0")
+                    custo_medio: costoUnitario,
+                    custo_unitario: costoUnitario,
+                    unidade: newIngredient.unidade_base,
+                    unidade_compra: newIngredient.unidade_compra || 'un'
                 })
 
             if (error) throw error
@@ -229,6 +237,7 @@ export default function InventoryERPPage() {
         if (!ingredientToEdit?.nome) return toast.error("Nome é obrigatório")
         
         setLoading(true)
+        const costoUnitario = parseFloat(ingredientToEdit.custo_medio)
         try {
             const { error } = await supabase
                 .from('ingredientes')
@@ -238,13 +247,17 @@ export default function InventoryERPPage() {
                     descricao: ingredientToEdit.descricao,
                     categoria: ingredientToEdit.categoria,
                     unidade_base: ingredientToEdit.unidade_base,
+                    unidade: ingredientToEdit.unidade_base, // Sync V1
                     unidade_compra: ingredientToEdit.unidade_compra,
                     estoque_atual: parseFloat(ingredientToEdit.estoque_atual),
                     estoque_minimo: parseFloat(ingredientToEdit.estoque_minimo),
                     preco_total: parseFloat(ingredientToEdit.preco_total),
+                    valor_pago: parseFloat(ingredientToEdit.preco_total), // Sync V2
                     quantidade_total: parseFloat(ingredientToEdit.quantidade_total),
+                    quantidade_embalagem: parseFloat(ingredientToEdit.quantidade_total), // Sync V2
                     fator_rendimento: parseFloat(ingredientToEdit.fator_rendimento),
-                    custo_medio: parseFloat(ingredientToEdit.custo_medio)
+                    custo_medio: costoUnitario,
+                    custo_unitario: costoUnitario // Sync V2
                 })
                 .eq('id', ingredientToEdit.id)
 
@@ -1045,8 +1058,8 @@ function MetricCard({ label, value, icon: Icon, color, bgColor, active }: any) {
                     <Icon size={24} />
                 </div>
                 <div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic leading-none mb-1">{label}</p>
-                    <h3 className={cn("text-xl font-black italic uppercase tracking-tighter leading-none truncate", active ? color : "text-slate-900")}>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic leading-normal mb-1">{label}</p>
+                    <h3 className={cn("text-xl font-black italic uppercase tracking-tighter leading-normal pr-4", active ? color : "text-slate-900")}>
                         {value}
                     </h3>
                 </div>

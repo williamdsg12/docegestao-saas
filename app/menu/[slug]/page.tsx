@@ -14,7 +14,8 @@ import {
   Share2, 
   Heart,
   MessageCircle,
-  AlertCircle
+  AlertCircle,
+  Globe
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -420,91 +421,80 @@ function MenuContent({ params }: { params: { slug: string } }) {
   )
 
   return (
-    <div className="min-h-screen bg-[#F7F7F7] pb-32 font-sans">
-      {/* Dynamic Header */}
-      <div className="relative h-48 md:h-64 w-full overflow-hidden">
+    <div className="min-h-screen bg-white pb-32 font-sans">
+      {/* 🔝 TOP BAR (FIDELITY) */}
+      <div className="bg-[#1a56db] text-white py-2 px-4 flex items-center justify-between sticky top-0 z-[60] shadow-md">
+        <div className="flex items-center gap-2">
+          <div className="size-6 rounded-full bg-blue-900 flex items-center justify-center text-[10px] font-bold">W</div>
+          <span className="text-[11px] font-bold uppercase tracking-wider">4 Pontos — Ganhe pontos e recompensas!</span>
+        </div>
+        {cart.length > 0 && (
+          <button 
+            onClick={() => setIsCartOpen(true)}
+            className="text-[11px] font-black uppercase italic flex items-center gap-1 hover:underline"
+          >
+            Ver meu pedido ›
+          </button>
+        )}
+      </div>
+
+      {/* 🖼️ BANNER & LOGO */}
+      <div className="relative h-40 md:h-48 w-full">
         <img 
           src={company.cover_url || "https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&q=80&w=1000"} 
           className="size-full object-cover" 
           alt={company.name}
         />
-        <div className="absolute inset-0 bg-black/40" />
-        <div className="absolute top-6 left-6 flex gap-2">
-           <Button variant="ghost" size="icon" className="bg-white/20 backdrop-blur-md text-white rounded-full hover:bg-white/40" onClick={() => router.back()}>
-             <ChevronLeft className="size-5" />
+        
+        {/* Social & Info Icons */}
+        <div className="absolute top-4 right-4 flex items-center gap-2">
+           <div className="flex items-center gap-1 bg-white/20 backdrop-blur-md rounded-full px-2 py-1">
+             <Button variant="ghost" size="icon" className="size-8 text-white rounded-full hover:bg-white/20">
+               <MessageCircle className="size-4" />
+             </Button>
+             <Button variant="ghost" size="icon" className="size-8 text-white rounded-full hover:bg-white/20">
+               <Share2 className="size-4" />
+             </Button>
+             <Button variant="ghost" size="icon" className="size-8 text-white rounded-full hover:bg-white/20">
+               <Globe className="size-4" />
+             </Button>
+           </div>
+           <Button variant="ghost" size="icon" className="size-10 bg-white/20 backdrop-blur-md text-white rounded-full hover:bg-white/20">
+             <AlertCircle className="size-5" />
            </Button>
         </div>
-        <div className="absolute top-6 right-6 flex gap-2">
-           <Button variant="ghost" size="icon" className="bg-white/20 backdrop-blur-md text-white rounded-full hover:bg-white/40">
-             <Share2 className="size-5" />
-           </Button>
+
+        {/* Logo Circular over banner */}
+        <div className="absolute -bottom-10 left-6 z-20">
+          <div className="size-24 rounded-full border-4 border-white shadow-xl bg-white overflow-hidden p-0.5">
+             <img src={company.logo_url || "https://api.dicebear.com/7.x/initials/svg?seed=" + company.name} className="size-full object-cover rounded-full" alt="Logo" />
+          </div>
         </div>
       </div>
 
-      {/* Profile Card */}
-      <div className="max-w-4xl mx-auto px-4 -mt-16 relative z-10">
-        <div className="bg-white rounded-[32px] p-6 md:p-8 shadow-ifood flex flex-col md:flex-row items-center gap-6 text-center md:text-left border border-white">
-          <div className="size-24 md:size-28 rounded-[24px] bg-white p-1 shadow-lg -mt-16 md:-mt-20 border border-slate-50 shrink-0">
-             <div className="size-full rounded-[20px] overflow-hidden bg-slate-50 flex items-center justify-center">
-               <img src={company.logo_url || "https://api.dicebear.com/7.x/initials/svg?seed=" + company.name} className="size-full object-cover" alt="Logo" />
-             </div>
-          </div>
-          <div className="flex-1 space-y-2">
-             <div className="flex flex-col md:flex-row items-center gap-3">
-               <h1 className="text-2xl md:text-3xl font-black italic uppercase tracking-tighter text-slate-800">{company.name}</h1>
-               {storeStatus?.status === 'OPEN' ? (
-                  <Badge className="bg-emerald-50 text-emerald-600 border-none px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest leading-none">● Aberto</Badge>
-               ) : storeStatus?.status === 'PAUSED' ? (
-                  <Badge className="bg-amber-50 text-amber-600 border-none px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest leading-none animate-pulse">● Pausado</Badge>
-               ) : (
-                  <Badge className="bg-rose-50 text-rose-600 border-none px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest leading-none">● Fechado</Badge>
-               )}
-             </div>
-             <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 md:gap-6 text-xs font-bold text-slate-500 uppercase tracking-widest">
-                <div className="flex items-center gap-1.5"><Star className="size-3.5 text-amber-400 fill-amber-400" /> 4.9 <span className="opacity-40">(100+)</span></div>
-                <div className="flex items-center gap-1.5"><Clock className="size-3.5 text-red-500" /> 30-45 min</div>
-                <div className="flex items-center gap-1.5"><MapPin className="size-3.5 text-red-500" /> {company.address_city || "Entrega"}</div>
-             </div>
-          </div>
-        </div>
-
-        {/* Store Status Banner */}
-        <AnimatePresence>
-          {storeStatus && !storeStatus.isOpen && (
-             <motion.div 
-               initial={{ height: 0, opacity: 0 }}
-               animate={{ height: "auto", opacity: 1 }}
-               exit={{ height: 0, opacity: 0 }}
-               className="mt-6 overflow-hidden"
-             >
-               <div className={cn(
-                 "p-4 rounded-2xl flex items-center gap-4 border",
-                 storeStatus.isPaused 
-                  ? "bg-amber-50 border-amber-100 text-amber-900" 
-                  : "bg-rose-50 border-rose-100 text-rose-900"
-               )}>
-                 <div className={cn(
-                   "size-10 rounded-xl flex items-center justify-center shrink-0",
-                   storeStatus.isPaused ? "bg-amber-500 text-white" : "bg-rose-500 text-white"
-                 )}>
-                   <Clock className="size-5" />
-                 </div>
-                 <div className="flex-1">
-                   <p className="font-black uppercase italic tracking-tighter text-sm leading-tight">{storeStatus.message}</p>
-                   <p className="text-[10px] uppercase font-bold tracking-widest opacity-60 mt-1">{storeStatus.reason}</p>
-                 </div>
-               </div>
-             </motion.div>
+      {/* 🏪 STORE INFO */}
+      <div className="max-w-4xl mx-auto px-6 pt-12">
+        <div className="flex items-center gap-3">
+          <h1 className="text-xl font-bold text-slate-900">{company.name}</h1>
+          {storeStatus?.isOpen ? (
+            <div className="flex items-center gap-1 px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-md text-[10px] font-bold">
+               <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+               Aberto
+            </div>
+          ) : (
+            <div className="flex items-center gap-1 px-2 py-0.5 bg-rose-50 text-rose-600 rounded-md text-[10px] font-bold">
+               <span className="size-1.5 rounded-full bg-rose-500" />
+               Fechado
+            </div>
           )}
-        </AnimatePresence>
-
-        {/* Search Bar */}
-        <div className="mt-8">
+        </div>
+        
+        <div className="mt-4">
            <div className="relative group">
-              <Search className="absolute left-6 top-1/2 -translate-y-1/2 size-5 text-slate-400 group-focus-within:text-red-500 transition-colors" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
               <Input 
                 placeholder="Buscar no cardápio..."
-                className="h-14 md:h-16 pl-14 pr-6 rounded-2xl bg-white border-white shadow-ifood text-sm md:text-base font-medium focus-visible:ring-red-500/20 transition-all"
+                className="h-11 pl-11 pr-4 rounded-xl bg-slate-100 border-none text-sm font-medium focus-visible:ring-blue-500/20"
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
               />

@@ -127,7 +127,7 @@ export function AddPaymentMethodDrawer({ isOpen, onClose, tenantId, existingMeth
             <SheetTitle className="text-2xl font-black text-slate-900 tracking-tighter uppercase italic">
                Novo <span className="text-blue-600">Método</span>
             </SheetTitle>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] italic leading-none">Selecione para ativar instantaneamente no seu painel</p>
+            <SheetDescription className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] italic leading-none">Selecione para ativar instantaneamente no seu painel</SheetDescription>
           </div>
           <button onClick={onClose} className="size-12 flex items-center justify-center bg-white border border-slate-200 hover:bg-slate-100 rounded-2xl transition-all text-slate-400">
             <X size={24} />

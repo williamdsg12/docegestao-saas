@@ -15,18 +15,36 @@ export function useDashboardStats() {
         hoje.setHours(0, 0, 0, 0)
         const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1)
 
-        // Optimized query: Select only needed columns
-        const { data: rawOrders, error } = await supabase
+        // Optimized query: Select only needed columns (Standardized order_status)
+        const { data: rawOrders, error: orderError } = await supabase
             .from("orders")
-            .select("id, total, valor_total, status, created_at, customers(name)")
+            .select(`
+                id, 
+                total, 
+                valor_total, 
+                status, 
+                order_status, 
+                created_at, 
+                customers(name),
+                order_items(id, name, quantity, unit_price)
+            `)
             .eq('tenant_id', tenantId)
             .gte("created_at", inicioMes.toISOString())
 
-        if (error) throw error
+        if (orderError) throw orderError
+
+        // NEW: Fetch total unique customers for the tenant
+        const { count: customerCount, error: customerError } = await supabase
+            .from("customers")
+            .select("*", { count: 'exact', head: true })
+            .eq('tenant_id', tenantId)
+
+        if (customerError) throw customerError
 
         const orders = (rawOrders || []).map(o => ({
             ...o,
-            total: Number(o.total || o.valor_total || 0)
+            total: Number(o.total || o.valor_total || 0),
+            status: o.order_status || o.status || 'pending'
         }))
 
         const sales = orders.filter(o => o.status === 'delivered' || o.status === 'finalizado')
@@ -36,6 +54,27 @@ export function useDashboardStats() {
         const totalHoje = hojeSales.reduce((acc, p) => acc + p.total, 0)
         const totalMes = sales.reduce((acc, p) => acc + p.total, 0)
         const ticketMedio = sales.length > 0 ? totalMes / sales.length : 0
+
+        // Calculate Star Products (Top 3)
+        const productStats: Record<string, { name: string, sales: number, revenue: number }> = {}
+        orders.forEach(o => {
+            (o.order_items || []).forEach((item: any) => {
+                if (!productStats[item.name]) {
+                    productStats[item.name] = { name: item.name, sales: 0, revenue: 0 }
+                }
+                productStats[item.name].sales += item.quantity || 1
+                productStats[item.name].revenue += (item.quantity || 1) * (item.unit_price || 0)
+            })
+        })
+
+        const topProducts = Object.values(productStats)
+            .sort((a, b) => b.sales - a.sales)
+            .slice(0, 3)
+            .map((p, i) => ({
+                ...p,
+                rank: i + 1,
+                margin: '---' // Margin would need product cost data
+            }))
 
         const diasPassados = hoje.getDate()
         const diasNoMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate()
@@ -48,6 +87,8 @@ export function useDashboardStats() {
             pedidosAtivos: ativos,
             ticketMedio,
             receitaEstimada,
+            totalClientes: customerCount || 0,
+            topProducts,
             pedidos: orders
         }
     }
@@ -90,6 +131,8 @@ export function useDashboardStats() {
         pedidosAtivos: data?.pedidosAtivos || 0,
         ticketMedio: data?.ticketMedio || 0,
         receitaEstimada: data?.receitaEstimada || 0,
+        totalClientes: data?.totalClientes || 0,
+        topProducts: data?.topProducts || [],
         pedidos: data?.pedidos || [],
         loading,
         refresh: () => queryClient.invalidateQueries({ queryKey: ["dashboard-stats", tenantId] })

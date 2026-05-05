@@ -44,57 +44,50 @@ export const formatPhone = (phone: string): string => {
 export const formatAddress = (order: any): string => {
     if (!order) return 'Endereço não informado'
 
-    const type = order.delivery_type || order.order_type || 'delivery'
-    const isPickup = ['retirada', 'pickup', 'balcao', 'balcão'].includes(type.toLowerCase())
+    const type = (order.delivery_type || order.order_type || 'delivery').toLowerCase()
+    const isPickup = ['retirada', 'pickup', 'balcao', 'balcão', 'mesa'].includes(type)
     
     if (isPickup) return 'Retirada no Local'
     
-    // 1. Try flat columns (delivery_address, etc)
-    let addr = order.delivery_address || order.address || order.endereco
-    let num = order.delivery_number || order.numero || order.number
-    let neigh = order.delivery_neighborhood || order.bairro || order.neighborhood
+    // Extratct address parts from multiple possible sources
+    let street = order.delivery_address || order.address || order.endereco
+    let number = order.delivery_number || order.numero || order.number
+    let neighborhood = order.delivery_neighborhood || order.bairro || order.neighborhood
     let city = order.delivery_city || order.cidade || order.city
+    let complement = order.delivery_complement || order.complement
+    let reference = order.delivery_reference || order.reference || order.ponto_referencia
 
-    // 2. Fallback to joined 'addresses' table (legacy or different structure)
-    if (!addr && order.addresses) {
-        addr = order.addresses.street || order.addresses.address
-        num = order.addresses.number
-        neigh = order.addresses.neighborhood
+    // Fallback logic for nested objects
+    if (!street && order.addresses) {
+        street = order.addresses.street || order.addresses.address
+        number = order.addresses.number
+        neighborhood = order.addresses.neighborhood
         city = order.addresses.city
     }
 
-    // 3. Fallback to order.customers.address (if customer has address in profile)
-    if (!addr && order.customers) {
+    if (!street && order.customers?.address) {
         const cAddr = order.customers.address
-        if (typeof cAddr === 'object' && cAddr !== null) {
-            addr = cAddr.street || cAddr.address || cAddr.endereco || cAddr.formatted_address
-            num = cAddr.number || cAddr.numero
-            neigh = cAddr.neighborhood || cAddr.bairro
+        if (typeof cAddr === 'object') {
+            street = cAddr.street || cAddr.address || cAddr.formatted_address
+            number = cAddr.number || cAddr.numero
+            neighborhood = cAddr.neighborhood || cAddr.bairro
             city = cAddr.city || cAddr.cidade
-        } else if (typeof cAddr === 'string') {
-            addr = cAddr
+            complement = cAddr.complement || cAddr.complemento
+            reference = cAddr.reference || cAddr.ponto_referencia
         }
     }
 
-    // 4. Handle Case where addr is an object (JSONB column)
-    if (typeof addr === 'object' && addr !== null) {
-        num = addr.number || addr.numero || num
-        neigh = addr.neighborhood || addr.bairro || neigh
-        city = addr.city || addr.cidade || city
-        addr = addr.street || addr.address || addr.endereco || addr.formatted_address
-    }
-    
-    if (!addr && (!order.delivery_address && !order.address)) return 'Endereço não informado'
+    if (!street) return 'Endereço não informado'
 
-    const parts = [
-        addr, 
-        num ? `nº ${num}` : null, 
-        order.delivery_complement || order.complement ? `${order.delivery_complement || order.complement}` : null,
-        neigh ? `(${neigh})` : null, 
-        city
-    ].filter(Boolean)
-    
-    return parts.length > 0 ? parts.join(' - ') : 'Endereço não informado'
+    // Professional formatting
+    const mainLine = `${street}${number ? `, ${number}` : ''}`
+    const subLine = [neighborhood, city].filter(Boolean).join(' - ')
+    const extraInfo = [
+        complement ? `Complemento: ${complement}` : null,
+        reference ? `Ref: ${reference}` : null
+    ].filter(Boolean).join(' | ')
+
+    return [mainLine, subLine, extraInfo].filter(Boolean).join('\n')
 }
 
 /**
@@ -115,6 +108,19 @@ export const STATUS_CONFIG: Record<string, { label: string, className: string, v
     'done': { label: 'Concluído', className: 'bg-slate-400 text-white border-none', variant: 'secondary' },
     'cancelado': { label: 'Cancelado', className: 'bg-rose-500 text-white border-none', variant: 'destructive' },
     'cancelled': { label: 'Cancelado', className: 'bg-rose-500 text-white border-none', variant: 'destructive' },
+}
+
+export const formatPaymentMethod = (method: string): string => {
+    const methods: Record<string, string> = {
+        'money': 'Dinheiro',
+        'pix': 'PIX',
+        'card_on_delivery': 'Cartão na Entrega',
+        'credit_card': 'Cartão de Crédito',
+        'debit_card': 'Cartão de Débito',
+        'mercadopago_card': 'Cartão Online',
+        'stripe': 'Cartão Online',
+    }
+    return methods[method] || method || 'Não definido'
 }
 
 export const getStatusConfig = (status: string) => {

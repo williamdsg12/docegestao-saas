@@ -173,6 +173,8 @@ export function MultiStepQuoteModal({ open, onOpenChange, onSuccess }: MultiStep
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-[1100px] w-[95vw] p-0 overflow-hidden bg-white rounded-[24px] border-none shadow-2xl">
+                <DialogTitle className="sr-only">Gerador de Orçamentos Multi-etapas</DialogTitle>
+                <DialogDescription className="sr-only">Crie orçamentos detalhados para seus clientes com cálculo automático de custos e lucros.</DialogDescription>
                 <div className="flex flex-col md:flex-row h-[85vh]">
                     
                     {/* COLUNA ESQUERDA (PROGRESSO) - 260px fixa no desktop */}
@@ -250,9 +252,11 @@ export function MultiStepQuoteModal({ open, onOpenChange, onSuccess }: MultiStep
                                         PASSO {step} DE {STEPS.length}
                                     </div>
                                 </div>
-                                <h2 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter mt-2 leading-none">
-                                    {STEPS[step - 1].title}
-                                </h2>
+                                <DialogTitle asChild>
+                                    <h2 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter mt-2 leading-none">
+                                        {STEPS[step - 1].title}
+                                    </h2>
+                                </DialogTitle>
                             </div>
                             <Button 
                                 variant="ghost" 

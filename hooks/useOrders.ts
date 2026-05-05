@@ -8,39 +8,46 @@ export function useOrders(companyId: string | undefined) {
 
     const fetchOrders = async () => {
         if (!companyId) return []
-        
+
         const { data, error } = await supabase
             .from('orders')
             .select(`
                 *,
-                customers!customer_id(nome, telefone),
-                addresses(rua, numero, bairro, cidade, cep),
+                customers!customer_id(name, phone),
                 order_items(*)
             `)
-            .eq('company_id', companyId)
+            .eq('tenant_id', companyId)
             .order('created_at', { ascending: false })
-            .limit(100) // Initial sanity limit for performance
+            .limit(100)
 
-        if (error) throw error
-        
+        if (error) {
+            console.error("❌ [useOrders] Error fetching orders:", error)
+            throw error
+        }
+
         return data?.map((o: any) => ({
+            ...o,
             id: o.id,
-            customer_name: o.customers?.nome || 'Cliente',
-            customer_phone: o.customers?.telefone || '',
-            customer_address: o.addresses ? `${o.addresses.rua}, ${o.addresses.numero} - ${o.addresses.bairro}` : 'Retirada',
-            customer_cep: o.addresses?.cep || '',
-            delivery_fee: o.delivery_fee || 0,
-            total: o.total || 0,
+            customer_name: o.customers?.name || 'Cliente',
+            customer_phone: o.customers?.phone || '',
+            address: o.address || 'Retirada',
+            customer_cep: '',
+            delivery_fee: Number(o.delivery_fee || 0),
+            total: Number(o.total || 0),
             payment_method: o.payment_method || 'Não inf.',
             payment_status: o.payment_status || 'waiting_payment',
-            status: o.status || 'novo',
+            status: o.order_status || 'novo',
+            order_type: o.order_type || 'balcao',
             notes: o.notes || '',
             created_at: o.created_at,
-            order_items: (o.order_items || []).map((i: any) => ({
+            items: (o.order_items || []).map((i: any) => ({
                 id: i.id,
-                product_name: i.product_name || 'Produto',
-                quantity: i.quantidade || 0,
-                price: i.preco || 0
+                name: i.name || 'Produto',
+                quantity: i.quantity || 0,
+                price: i.unit_price || 0,
+                variation: i.variation,
+                extras: i.extras,
+                observation: i.observation
             }))
         })) || []
     }
@@ -56,9 +63,9 @@ export function useOrders(companyId: string | undefined) {
         mutationFn: async ({ orderId, newStatus }: { orderId: string, newStatus: string }) => {
             const { error: updateError } = await supabase
                 .from('orders')
-                .update({ status: newStatus })
+                .update({ order_status: newStatus })
                 .eq('id', orderId)
-            
+
             if (updateError) throw updateError
 
             if (newStatus === "pronto") {

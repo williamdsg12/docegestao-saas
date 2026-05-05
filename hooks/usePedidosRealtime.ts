@@ -15,7 +15,7 @@ export function usePedidosRealtime() {
         if (!tenantId) return
 
         const channel = supabase
-            .channel("pedidos-realtime-global")
+            .channel(`pedidos-realtime-${tenantId}`)
             .on(
                 "postgres_changes",
                 {
@@ -25,8 +25,15 @@ export function usePedidosRealtime() {
                     filter: `tenant_id=eq.${tenantId}`
                 },
                 (payload) => {
-                    const newOrder = payload.new as any
+                    const rawOrder = payload.new as any
+                    // Normalize order_status to status for frontend consistency
+                    const newOrder = {
+                        ...rawOrder,
+                        status: rawOrder.order_status || rawOrder.status || 'pending'
+                    }
+                    
                     addPedido(newOrder)
+                    
                     if (newOrder.status === 'novo' || newOrder.status === 'pending') {
                         startAlert()
                         sendBrowserNotification(newOrder)
@@ -46,7 +53,12 @@ export function usePedidosRealtime() {
                     filter: `tenant_id=eq.${tenantId}`
                 },
                 (payload) => {
-                    updatePedido(payload.new.id, payload.new as any)
+                    const rawOrder = payload.new as any
+                    const updatedOrder = {
+                        ...rawOrder,
+                        status: rawOrder.order_status || rawOrder.status
+                    }
+                    updatePedido(updatedOrder.id, updatedOrder)
                 }
             )
             .subscribe()

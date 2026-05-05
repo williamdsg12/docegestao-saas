@@ -42,7 +42,7 @@ import {
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { usePedidoStore } from "@/store/pedidoStore"
-import { formatCurrency, formatPhone, formatAddress, getStatusConfig } from "@/lib/formatters"
+import { formatCurrency, formatPhone, formatAddress, getStatusConfig, formatPaymentMethod } from "@/lib/formatters"
 import { printOrder } from "@/lib/printer"
 import {
     Popover,
@@ -118,7 +118,7 @@ export function PedidoDrawer({ onUpdateStatus, onUpdatePaymentStatus }: PedidoDr
         try {
             const { data, error } = await supabase
                 .from('order_items')
-                .select('*, products(name, price)')
+                .select('*')
                 .eq('order_id', pedido.id)
 
             if (error) throw error
@@ -281,120 +281,184 @@ export function PedidoDrawer({ onUpdateStatus, onUpdatePaymentStatus }: PedidoDr
                     </div>
 
                     <div className="px-4 space-y-4 pb-8">
-                        {/* 3. Cliente Section */}
-                        <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 flex items-center justify-between group">
-                            <div className="flex items-center gap-3">
-                                <div className="size-10 rounded-xl bg-[#F1F5F9] flex items-center justify-center text-slate-400">
-                                    <User className="size-6" />
+                        {/* 👤 SEÇÃO CLIENTE */}
+                        <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-3">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <User className="size-4 text-slate-400" />
+                                    <h4 className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Cliente</h4>
                                 </div>
-                                <div className="max-w-[150px]">
-                                    <h4 className="font-black text-slate-900 text-sm leading-tight truncate">{pedido.customers?.name || "Cliente Final"}</h4>
-                                    <p className="text-xs text-slate-400 font-bold">{formatPhone(pedido.customers?.phone || "")}</p>
-                                </div>
-                                <Badge variant="secondary" className="bg-[#EDF2F7] text-[#4A5568] border-none rounded-md px-2 py-0 text-[9px] font-bold uppercase shrink-0">Vip</Badge>
+                                <Badge variant="secondary" className="bg-slate-100 text-slate-500 border-none text-[9px] font-bold">ID: {pedido.customer_id?.slice(0, 8)}</Badge>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <Button
-                                    size="icon"
-                                    className="h-10 w-10 bg-[#25D366] hover:bg-[#128C7E] text-white rounded-xl shadow-lg shadow-green-100 transition-all hover:scale-111 active:scale-95"
-                                    onClick={() => window.open(`https://wa.me/55${pedido.customers?.phone?.replace(/\D/g, '')}`, '_blank')}
-                                >
-                                    <MessageCircle className="size-5 fill-current" />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300">
-                                    <ChevronDown className="size-5" />
-                                </Button>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="size-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 border border-slate-100">
+                                        <User className="size-7" />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-black text-slate-900 text-base leading-tight">{pedido.customers?.name || "Cliente Final"}</h4>
+                                        <p className="text-sm text-slate-500 font-bold">{formatPhone(pedido.customers?.phone || "")}</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        size="icon"
+                                        className="h-11 w-11 bg-[#25D366] hover:bg-[#128C7E] text-white rounded-2xl shadow-lg shadow-green-100 transition-all hover:scale-105"
+                                        onClick={() => window.open(`https://wa.me/55${pedido.customers?.phone?.replace(/\D/g, '')}`, '_blank')}
+                                    >
+                                        <MessageCircle className="size-6 fill-current" />
+                                    </Button>
+                                </div>
                             </div>
                         </div>
 
-                        {/* 4. Address Section */}
-                        <div className={cn(
-                            "bg-white rounded-xl p-4 shadow-sm border flex items-center justify-between group transition-all",
-                            formatAddress(pedido) !== "Endereço não informado" ? "border-emerald-100" : "border-slate-100"
-                        )}>
-                            <div className="flex items-center gap-3 flex-1 overflow-hidden">
-                                <div className={cn(
-                                    "size-8 rounded-lg flex items-center justify-center transition-colors",
-                                    formatAddress(pedido) !== "Endereço não informado" ? "bg-emerald-50 text-emerald-500" : "bg-orange-50 text-[#FBA41A]"
-                                )}>
-                                    <MapPin className="size-5" />
+                        {/* 📍 SEÇÃO ENDEREÇO (Apenas se Delivery) */}
+                        {isDelivery ? (
+                            <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <MapPin className="size-4 text-rose-500" />
+                                        <h4 className="text-[11px] font-black uppercase text-rose-500 tracking-widest">Endereço de Entrega</h4>
+                                    </div>
+                                    <Button variant="ghost" size="sm" className="h-6 text-[9px] font-bold uppercase text-blue-500 hover:bg-blue-50" onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(formatAddress(pedido))}`, '_blank')}>
+                                        Ver no Mapa
+                                    </Button>
                                 </div>
-                                <div className="flex flex-col min-w-0">
-                                    <span className={cn(
-                                        "text-[13px] font-bold truncate italic leading-tight",
-                                        formatAddress(pedido) !== "Endereço não informado" ? "text-slate-900" : "text-slate-400"
-                                    )}>
-                                        {formatAddress(pedido) !== "Endereço não informado" ? `📍 ${formatAddress(pedido)}` : formatAddress(pedido)}
-                                    </span>
-                                    {formatAddress(pedido) !== "Endereço não informado" && (
-                                        <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mt-0.5">Endereço Confirmado</span>
+                                <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                                    <p className="text-sm font-bold text-slate-700 whitespace-pre-line leading-relaxed">
+                                        {formatAddress(pedido)}
+                                    </p>
+                                </div>
+                                {pedido.notes && (
+                                    <div className="bg-amber-50 border border-amber-100 p-3 rounded-xl flex gap-2 items-start">
+                                        <MessageCircle className="size-4 text-amber-500 shrink-0 mt-0.5" />
+                                        <p className="text-[11px] font-bold text-amber-700">Obs: {pedido.notes}</p>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div className="bg-emerald-50 rounded-2xl p-4 border border-emerald-100 flex items-center gap-3">
+                                <div className="size-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center">
+                                    <Package className="size-6" />
+                                </div>
+                                <div>
+                                    <h4 className="font-black text-emerald-700 text-sm uppercase">Retirada no Local</h4>
+                                    <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">O cliente virá buscar o pedido</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 💰 SEÇÃO PAGAMENTO */}
+                        <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-4">
+                            <div className="flex items-center gap-2">
+                                <CreditCard className="size-4 text-slate-400" />
+                                <h4 className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Pagamento</h4>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Método</p>
+                                    <div className="flex items-center gap-2">
+                                        <DollarSign className="size-3.5 text-slate-600" />
+                                        <span className="text-xs font-black text-slate-700 uppercase">{formatPaymentMethod(pedido.payment_method)}</span>
+                                    </div>
+                                </div>
+                                <div className={cn(
+                                    "p-3 rounded-xl border flex flex-col justify-center",
+                                    pedido.payment_status === 'pago' ? "bg-emerald-50 border-emerald-100" : "bg-orange-50 border-orange-100"
+                                )}>
+                                    <p className="text-[9px] font-bold opacity-60 uppercase tracking-widest mb-1">Status</p>
+                                    <div className="flex items-center gap-2">
+                                        <div className={cn("size-2 rounded-full", pedido.payment_status === 'pago' ? "bg-emerald-500" : "bg-orange-500")} />
+                                        <span className={cn("text-xs font-black uppercase", pedido.payment_status === 'pago' ? "text-emerald-700" : "text-orange-700")}>
+                                            {pedido.payment_status === 'pago' ? 'Pago' : 'Pendente'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Lógica de Troco */}
+                            {(pedido.payment_method === 'money' || pedido.payment_method === 'dinheiro') && (
+                                <div className="bg-amber-50 border border-amber-100 rounded-xl p-3">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest">Informações de Troco</span>
+                                        <DollarSign className="size-4 text-amber-500" />
+                                    </div>
+                                    {(pedido.precisa_troco || pedido.change_for > 0) ? (
+                                        <div className="space-y-1">
+                                            <div className="flex justify-between text-xs font-bold text-slate-600">
+                                                <span>Pagamento em dinheiro:</span>
+                                                <span>{formatCurrency(pedido.valor_pago || pedido.change_for)}</span>
+                                            </div>
+                                            <div className="flex justify-between text-sm font-black text-amber-700 pt-1 border-t border-amber-100 mt-1">
+                                                <span>Troco a devolver:</span>
+                                                <span>{formatCurrency(pedido.troco || (pedido.valor_pago || pedido.change_for) - pedido.total)}</span>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <p className="text-xs font-black text-amber-700 uppercase italic">Pagamento em dinheiro (Sem troco)</p>
                                     )}
                                 </div>
-                            </div>
-                            <div className="flex items-center gap-1">
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-300 hover:text-blue-500">
-                                    <ExternalLink className="size-5" />
-                                </Button>
-                            </div>
+                            )}
                         </div>
 
-                        {/* 5. Driver Assignment */}
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors">
-                                    <div className="flex items-center gap-3">
-                                        <div className="size-8 rounded-lg bg-blue-50 flex items-center justify-center text-[#0070F3]">
-                                            <Bike className="size-5" />
+                        {/* 5. Driver Assignment (Apenas se Delivery) */}
+                        {isDelivery && (
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 flex items-center justify-between cursor-pointer hover:bg-slate-50 transition-colors">
+                                        <div className="flex items-center gap-3">
+                                            <div className="size-8 rounded-lg bg-blue-50 flex items-center justify-center text-[#0070F3]">
+                                                <Bike className="size-5" />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className={cn("text-[13px] font-black", pedido.courier_name ? "text-slate-900" : "text-slate-400")}>
+                                                    {pedido.courier_name || "Atribuir entregador"}
+                                                </span>
+                                                {pedido.courier_name && <span className="text-[10px] text-blue-500 font-bold uppercase">Em trânsito</span>}
+                                            </div>
                                         </div>
-                                        <div className="flex flex-col">
-                                            <span className={cn("text-[13px] font-black", pedido.courier_name ? "text-slate-900" : "text-slate-400")}>
-                                                {pedido.courier_name || "Atribuir entregador"}
-                                            </span>
-                                            {pedido.courier_name && <span className="text-[10px] text-blue-500 font-bold uppercase">Em trânsito</span>}
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-3">
                                         <ChevronRight className="size-5 text-slate-300" />
                                     </div>
-                                </div>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-[300px] p-0 rounded-2xl overflow-hidden shadow-2xl border-slate-100" align="start">
-                                <div className="p-3 border-b border-slate-100 bg-slate-50">
-                                    <div className="relative">
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-                                        <Input 
-                                            placeholder="Buscar entregador..." 
-                                            className="pl-9 h-9 rounded-xl border-slate-200 text-xs"
-                                            value={courierSearch}
-                                            onChange={(e) => setCourierSearch(e.target.value)}
-                                        />
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[300px] p-0 rounded-2xl overflow-hidden shadow-2xl border-slate-100" align="start">
+                                    <div className="p-3 border-b border-slate-100 bg-slate-50">
+                                        <div className="relative">
+                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                                            <Input 
+                                                placeholder="Buscar entregador..." 
+                                                className="pl-9 h-9 rounded-xl border-slate-200 text-xs"
+                                                value={courierSearch}
+                                                onChange={(e) => setCourierSearch(e.target.value)}
+                                            />
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="max-h-[200px] overflow-y-auto p-1">
-                                    {loadingCouriers ? (
-                                        <div className="p-4 text-center text-xs text-slate-400 animate-pulse">Carregando...</div>
-                                    ) : couriers.length === 0 ? (
-                                        <div className="p-4 text-center text-xs text-slate-400">Nenhum encontrado</div>
-                                    ) : (
-                                        couriers.filter(c => c.name?.toLowerCase().includes(courierSearch.toLowerCase())).map((courier) => (
-                                            <button
-                                                key={courier.id}
-                                                onClick={() => handleAssignCourier(courier)}
-                                                className="w-full text-left px-4 py-3 text-sm font-bold text-slate-700 hover:bg-blue-50 rounded-xl transition-colors flex items-center justify-between group"
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <div className="size-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-blue-100 group-hover:text-blue-500">
-                                                        <User className="size-4" />
+                                    <div className="max-h-[200px] overflow-y-auto p-1">
+                                        {loadingCouriers ? (
+                                            <div className="p-4 text-center text-xs text-slate-400 animate-pulse">Carregando...</div>
+                                        ) : couriers.length === 0 ? (
+                                            <div className="p-4 text-center text-xs text-slate-400">Nenhum encontrado</div>
+                                        ) : (
+                                            couriers.filter(c => c.name?.toLowerCase().includes(courierSearch.toLowerCase())).map((courier) => (
+                                                <button
+                                                    key={courier.id}
+                                                    onClick={() => handleAssignCourier(courier)}
+                                                    className="w-full text-left px-4 py-3 text-sm font-bold text-slate-700 hover:bg-blue-50 rounded-xl transition-colors flex items-center justify-between group"
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="size-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-blue-100 group-hover:text-blue-500">
+                                                            <User className="size-4" />
+                                                        </div>
+                                                        {courier.name}
                                                     </div>
-                                                    {courier.name}
-                                                </div>
-                                                {pedido.courier_id === courier.id && <Check className="size-4 text-blue-500" />}
-                                            </button>
-                                        ))
-                                    )}
-                                </div>
-                            </PopoverContent>
-                        </Popover>
+                                                    {pedido.courier_id === courier.id && <Check className="size-4 text-blue-500" />}
+                                                </button>
+                                            ))
+                                        )}
+                                    </div>
+                                </PopoverContent>
+                            </Popover>
+                        )}
 
                         {/* 6. Products Section with Tabs */}
                         <div className="pt-2">
@@ -403,7 +467,7 @@ export function PedidoDrawer({ onUpdateStatus, onUpdatePaymentStatus }: PedidoDr
                                     className={cn("px-4 py-2 text-xs font-black uppercase tracking-widest border-b-2 transition-colors flex items-center gap-2", activeTab === 'produtos' ? "border-[#0070F3] text-[#0070F3]" : "border-transparent text-slate-400")}
                                     onClick={() => setActiveTab('produtos')}
                                 >
-                                    <span className="text-base leading-none translate-y-[-1px]">+</span> Itens
+                                    <Package className="size-4" /> Itens
                                 </button>
                                 <button
                                     className={cn("px-4 py-2 text-xs font-black uppercase tracking-widest border-b-2 transition-colors flex items-center gap-2", activeTab === 'cozinha' ? "border-[#0070F3] text-[#0070F3]" : "border-transparent text-slate-400")}
@@ -413,7 +477,7 @@ export function PedidoDrawer({ onUpdateStatus, onUpdatePaymentStatus }: PedidoDr
                                 </button>
                             </div>
 
-                            <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-slate-100 divide-y divide-dashed divide-slate-100">
+                            <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 divide-y divide-dashed divide-slate-100">
                                 {loadingItems ? (
                                     <div className="p-8 text-center text-slate-400 animate-pulse font-bold">Buscando itens na base...</div>
                                 ) : items.length === 0 ? (
@@ -426,14 +490,12 @@ export function PedidoDrawer({ onUpdateStatus, onUpdatePaymentStatus }: PedidoDr
                                                     {item.quantity}
                                                 </div>
                                                 <div>
-                                                    <p className="font-black text-slate-900 text-sm tracking-tight">{item.products?.name || item.product_name}</p>
+                                                    <p className="font-black text-slate-900 text-sm tracking-tight">{item.name}</p>
                                                     {item.notes && <p className="text-[10px] text-rose-500 font-bold bg-rose-50 px-2 py-0.5 rounded-full w-fit mt-1">Obs: {item.notes}</p>}
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-4">
-                                                <div className="text-right">
-                                                    <span className="text-sm text-slate-900 font-black">{formatCurrency(item.price * item.quantity)}</span>
-                                                </div>
+                                            <div className="text-right">
+                                                <span className="text-sm text-slate-900 font-black">{formatCurrency((item.unit_price || item.price || 0) * item.quantity)}</span>
                                             </div>
                                         </div>
                                     ))
@@ -447,39 +509,31 @@ export function PedidoDrawer({ onUpdateStatus, onUpdatePaymentStatus }: PedidoDr
                                 <span>Subtotal</span>
                                 <span className="text-slate-900">{formatCurrency(subtotal)}</span>
                             </div>
-                            <div className="flex justify-between items-center text-[13px] font-bold text-[#FBA41A] px-2 uppercase tracking-tighter">
-                                <div className="flex items-center gap-1.5">
-                                    <Bike className="size-4" /> Taxa de Entrega
+                            {isDelivery && (
+                                <div className="flex justify-between items-center text-[13px] font-bold text-[#FBA41A] px-2 uppercase tracking-tighter">
+                                    <div className="flex items-center gap-1.5">
+                                        <Bike className="size-4" /> Taxa de Entrega
+                                    </div>
+                                    <span>{formatCurrency(pedido.delivery_fee || 0)}</span>
                                 </div>
-                                <span>{formatCurrency(pedido.delivery_fee || 0)}</span>
-                            </div>
+                            )}
 
                             <Separator className="bg-slate-200 my-4" />
 
-                            <div className="flex justify-between items-end px-2">
-                                <div className="flex flex-col gap-2">
-                                    <div className={cn("rounded-full px-4 py-1.5 text-[11px] font-black uppercase tracking-widest leading-none w-fit shadow-sm", pedido.payment_status === 'pago' ? "bg-green-500 text-white" : "bg-orange-500 text-white")}>
-                                        {pedido.payment_status === 'pago' ? 'Confirmado' : 'Pendente'}
-                                    </div>
-                                    <div className="flex items-center gap-2 border border-slate-300 border-dashed rounded-full px-3 py-1 bg-white">
-                                        <CreditCard className="size-3.5 text-slate-400" />
-                                        <span className="text-[10px] font-black text-slate-500 uppercase">{pedido.payment_method || 'A DEFINIR'}</span>
-                                    </div>
-                                    {pedido.payment_method === 'money' && pedido.change_for > 0 && (
-                                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-2 mt-1">
-                                            <p className="text-[9px] font-bold text-amber-600 uppercase leading-none mb-1">Troco solicitado</p>
-                                            <div className="flex justify-between items-center gap-4">
-                                                <span className="text-[10px] font-bold text-slate-500 italic">Pago: {formatCurrency(pedido.change_for)}</span>
-                                                <span className="text-[11px] font-black text-amber-600">Troco: {formatCurrency(pedido.change_for - pedido.total)}</span>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="text-right flex flex-col items-end">
-                                    <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Total à Pagar</p>
-                                    <h2 className="text-5xl font-black text-slate-900 italic tracking-tighter leading-none bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
+                            <div className="flex justify-between items-center px-2">
+                                <div className="text-left">
+                                    <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Total a Pagar</p>
+                                    <h2 className="text-4xl font-black text-slate-900 italic tracking-tighter leading-none bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
                                         {formatCurrency(pedido.total)}
                                     </h2>
+                                </div>
+                                <div className="flex flex-col items-end gap-2">
+                                     <div className={cn(
+                                        "rounded-full px-4 py-1.5 text-[11px] font-black uppercase tracking-widest leading-none w-fit shadow-sm",
+                                        pedido.payment_status === 'pago' ? "bg-emerald-500 text-white" : "bg-orange-500 text-white"
+                                     )}>
+                                        {pedido.payment_status === 'pago' ? 'Confirmado' : 'Aguardando'}
+                                     </div>
                                 </div>
                             </div>
                         </div>

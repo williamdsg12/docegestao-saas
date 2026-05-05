@@ -1,79 +1,109 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { getServerUser } from '@/lib/supabaseAuth'
 
 export async function POST(req: Request) {
   try {
     const body = await req.json()
     const {
       tenant_id,
-      customer_id,
-      valor_total,
-      taxa_entrega = 0,
-      desconto = 0,
-      payment_method,
-      notes,
-      precisa_troco = false,
-      valor_pago = 0,
-      troco = 0,
-      items // Array of { id, quantity, price }
+      items,
+      payment_method
     } = body
 
-    const tenantIdResolved = tenant_id || body.company_id
+    console.log('📦 [API/Order] Incoming payload:', JSON.stringify(body, null, 2))
 
-    if (!tenantIdResolved || !items || items.length === 0) {
-      return NextResponse.json({ error: 'Dados incompletos (Faltando dados da Loja/Tenant)' }, { status: 400 })
+    // 1. Backend Security: Identificação do Tenant (Cardápio Público ou Painel)
+    let effectiveTenantId = body.tenant_id || body.company_id
+    
+    // Se vier UUID zerado ou inválido, rejeitar para evitar pedidos órfãos
+    if (!effectiveTenantId || effectiveTenantId === '00000000-0000-0000-0000-000000000000') {
+      console.error('❌ [API/Order] tenant_id inválido ou zerado:', effectiveTenantId)
+      return NextResponse.json({ 
+        error: 'ID da loja não identificado. Tente novamente.' 
+      }, { status: 400 })
     }
 
-    // 1. Inserir o pedido com status 'pending' ou 'novo'
-    const isOnlinePayment = ['pix_online', 'credit_card_online'].includes(payment_method)
-    const initialStatus = isOnlinePayment ? 'pendente_pagamento' : 'novo'
+    // Opcional: Validar se há usuário logado para pedidos internos (ex: mesa pelo painel)
+    // Mas para o cardápio público, o id do corpo da requisição é soberano.
 
-    const { data: pedido, error: pedidoError } = await supabaseAdmin
-      .from('orders')
-      .insert({
-        tenant_id: tenantIdResolved,
-        customer_id: customer_id || body.cliente_id,
+    console.log('🎯 [API/Order] Effective Tenant ID:', effectiveTenantId)
+
+    if (!effectiveTenantId || !items || items.length === 0) {
+      return NextResponse.json({ error: 'Dados incompletos ou Tenant não identificado' }, { status: 400 })
+    }
+
+    // 1. Inserir o pedido com status 'pending' (padrão profissional v5)
+    // Evita erro de CHECK constraint (status deve ser pending, accepted, etc)
+    const initialStatus = 'novo'
+    const rawType = body.order_type || body.tipo_pedido || 'retirada'
+    const normalizedType = (rawType === 'entrega' || rawType === 'delivery') ? 'delivery' : 
+                         (rawType === 'retirada' || rawType === 'balcao') ? 'balcao' : 'salao'
+
+      const rpcParams = {
+        p_tenant_id: effectiveTenantId,
+        p_customer: {
+          name: body.customer?.name || body.name,
+          phone: body.customer?.phone || body.phone,
+          email: body.customer?.email || body.email
+        },
+        p_address: {
+          street: body.address?.street || body.delivery_address || body.address,
+          number: body.address?.number || body.delivery_number || body.number,
+          neighborhood: body.address?.neighborhood || body.delivery_neighborhood || body.neighborhood,
+          city: body.address?.city || body.delivery_city || body.city,
+          complement: body.address?.complement || body.delivery_complement || body.complement,
+          zip: body.address?.zip || body.cep
+        },
+        p_order: {
+          total: body.valor_total || body.total,
+          status: initialStatus,
+          order_status: initialStatus,
+          order_type: normalizedType,
+          notes: body.notes || body.observacoes,
+          delivery_fee: body.taxa_entrega || body.delivery_fee || 0,
+          discount: body.discount || body.desconto || 0
+        },
+      p_items: items.map((item: any) => ({
+        product_id: item.id,
+        name: item.name,
+        quantity: item.quantity,
+        unit_price: item.price,
+        variation: item.variation,
+        extras: item.extras,
+        observation: item.observation || item.observacao
+      })),
+      p_payment: {
+        amount: body.valor_total || body.total,
+        method: payment_method,
         status: initialStatus,
-        total: valor_total,
-        delivery_fee: taxa_entrega,
-        discount: desconto,
-        payment_method,
-        notes,
-        precisa_troco,
-        valor_pago,
-        troco,
-        order_type: body.order_type || body.tipo_pedido || 'retirada',
-        address_id: body.address_id,
-        cliente_id: body.cliente_id || customer_id
-      })
-      .select()
-      .single()
+        needs_change: body.precisa_troco || body.needs_change,
+        change_for: body.valor_pago || body.change_for
+      }
+    }
 
-    if (pedidoError) throw pedidoError
+    console.log('🚀 [API/Order] Calling RPC create_complete_order with params:', JSON.stringify(rpcParams, null, 2))
 
-    // 2. Inserir itens do pedido
-    const itensParaInserir = items.map((item: any) => ({
-      order_id: pedido.id,
-      product_id: item.id,
-      quantity: item.quantity,
-      price: item.price,
-      variation: item.variation,
-      extras: item.extras,
-      observation: item.observation
-    }))
+    // 2. Call Transactional RPC
+    const { data: result, error: rpcError } = await supabaseAdmin
+      .rpc('create_complete_order', rpcParams)
 
-    const { error: itensError } = await supabaseAdmin
-      .from('order_items')
-      .insert(itensParaInserir)
+    if (rpcError) {
+      console.error('❌ [API/Order] RPC Error calling create_complete_order:', rpcError)
+      throw new Error(`Erro ao criar pedido (RPC): ${rpcError.message}`)
+    }
 
-    if (itensError) {
-      console.error('Erro ao inserir itens, mas pedido foi criado:', itensError)
+    console.log('✅ [API/Order] RPC result:', JSON.stringify(result, null, 2))
+
+    if (!result.success) {
+      console.error('❌ [API/Order] Transactional Error in create_complete_order:', result.error, result.detail)
+      throw new Error(`Erro transacional ao processar pedido: ${result.error}`)
     }
 
     return NextResponse.json({ 
       success: true, 
-      orderId: pedido.id,
-      status: pedido.status 
+      orderId: result.order_id,
+      status: initialStatus 
     })
 
   } catch (error: any) {
