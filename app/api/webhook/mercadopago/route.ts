@@ -5,6 +5,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 export async function POST(req: Request) {
     try {
         const body = await req.json();
+        console.log('Webhook recebido');
         const { action, type, data } = body;
 
         // Mercado Pago sends different types of notifications. 
@@ -39,7 +40,9 @@ export async function POST(req: Request) {
                     .from('orders')
                     .update({ 
                         payment_status: 'paid',
-                        status: 'accepted' // Automatically accept order on payment? User's call, but usually yes for SaaS.
+                        order_status: 'novo',
+                        paid: true,
+                        payment_confirmed_at: new Date().toISOString()
                     })
                     .eq('id', order_id);
             }

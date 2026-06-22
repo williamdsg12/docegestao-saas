@@ -126,3 +126,16 @@ export const formatPaymentMethod = (method: string): string => {
 export const getStatusConfig = (status: string) => {
     return STATUS_CONFIG[status] || { label: status, className: 'bg-slate-100 text-slate-400', variant: 'outline' }
 }
+
+/**
+ * Normalizes a phone number to digits only.
+ * @param phone The phone number string.
+ */
+export const normalizePhone = (phone: string): string => {
+    if (!phone) return ''
+    let normalized = phone.replace(/\D/g, '')
+    if ((normalized.length === 12 || normalized.length === 13) && normalized.startsWith('55')) {
+        normalized = normalized.slice(2)
+    }
+    return normalized
+}

@@ -22,14 +22,14 @@ export function MenuCategoryBar({ categories, activeCategory, onCategoryChange }
           onClick={() => onCategoryChange("all")}
           className={cn(
             "py-4 text-[11px] font-black uppercase tracking-widest transition-all relative",
-            activeCategory === "all" ? "text-[#1a56db]" : "text-slate-400 hover:text-slate-600"
+            activeCategory === "all" ? "text-[var(--primary-color)]" : "text-slate-400 hover:text-slate-600"
           )}
         >
           Tudo
           {activeCategory === "all" && (
             <motion.div 
               layoutId="active-underline" 
-              className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#1a56db]" 
+              className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--primary-color)]" 
             />
           )}
         </button>
@@ -39,14 +39,14 @@ export function MenuCategoryBar({ categories, activeCategory, onCategoryChange }
             onClick={() => onCategoryChange(cat.id)}
             className={cn(
               "py-4 text-[11px] font-black uppercase tracking-widest transition-all relative",
-              activeCategory === cat.id ? "text-[#1a56db]" : "text-slate-400 hover:text-slate-600"
+              activeCategory === cat.id ? "text-[var(--primary-color)]" : "text-slate-400 hover:text-slate-600"
             )}
           >
             {cat.name}
             {activeCategory === cat.id && (
               <motion.div 
                 layoutId="active-underline" 
-                className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#1a56db]" 
+                className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--primary-color)]" 
               />
             )}
           </button>

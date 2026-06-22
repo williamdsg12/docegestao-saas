@@ -1,5 +1,4 @@
 "use client"
-
 import { useState, useEffect, Suspense, useRef, useCallback } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
@@ -9,7 +8,6 @@ import { Loader2, CheckCircle2, QrCode, Copy, Check, ArrowLeft, CreditCard as Ca
 import { toast } from "sonner"
 import { motion } from "framer-motion"
 import { PaymentFormMP } from "@/components/checkout/PaymentFormMP"
-
 function PaymentStatusContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -21,7 +19,44 @@ function PaymentStatusContent() {
   const [hasCopied, setHasCopied] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const [timeLeft, setTimeLeft] = useState(600)
 
+  // Countdown timer logic
+  useEffect(() => {
+    if (pixData?.payment_method === 'pix' && pixData?.status !== 'approved') {
+      const timer = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(timer)
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+      return () => clearInterval(timer)
+    }
+  }, [pixData])
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+  }
+
+  // Audit Logs
+  useEffect(() => {
+    if (pixData) {
+      if (pixData.payment_method === 'pix') {
+        console.log('PIX gerado')
+        if (pixData.qr_code_base64) {
+          console.log('QR Code recebido')
+        }
+        if (pixData.qr_code) {
+          console.log('PIX Copia e Cola recebido')
+        }
+      }
+    }
+  }, [pixData])
   // 🧪 PASSO 8 — GERAR PIX CASO NÃO EXISTA
   const generatePix = useCallback(async (order: any) => {
     if (generating) return;
@@ -36,16 +71,14 @@ function PaymentStatusContent() {
           order_id: order.id,
           tenant_id: order.tenant_id,
           amount: order.total || order.amount,
-          customer_email: order.customer_email || `customer-${order.id}@docegestao.com.br`,
-          customer_name: order.customer_name || 'Cliente'
-        })
-      });
+          customer_email: order.customer?.email || order.customer_email || `customer-${order.id}@docegestao.com.br`,
+          customer_name: order.customer?.name || order.customer_name || 'Cliente'
 
+       })
+      });
       const data = await res.json();
       console.log('RESPOSTA GERAÇÃO PIX:', data);
-
       if (!res.ok) throw new Error(data.error || 'Erro ao gerar cobrança PIX');
-
       if (data.qr_code && data.qr_code_base64) {
         setPixData((prev: any) => ({
           ...prev,
@@ -64,13 +97,13 @@ function PaymentStatusContent() {
       setGenerating(false);
     }
   }, [generating]);
-
   const fetchData = useCallback(async () => {
     if (!orderId) return;
     try {
       setLoading(true);
       setError(null);
       console.log('Buscando dados do pedido:', orderId);
+
       
       // 1. Buscar na tabela 'payments'
       const { data: payData } = await supabase
@@ -78,20 +111,20 @@ function PaymentStatusContent() {
         .select('*')
         .eq('order_id', orderId)
         .maybeSingle()
+
       
       console.log('PAGAMENTO DO SUPABASE:', payData);
-
       if (payData && payData.qr_code_base64) {
         setPixData(payData);
         if (payData.status === 'approved' || payData.status === 'paid') {
-           router.push(`/pedido-confirmado?orderId=${orderId}`)
+           router.push(`/pedido/rastreamento/${orderId}?new=true`)
            return
         }
       } else {
         // 2. Buscar na tabela 'orders' para ter os dados base
         const { data: orderData } = await supabase
           .from('orders')
-          .select('*')
+          .select('*, customer:customers(*)')
           .eq('id', orderId)
           .maybeSingle();
         
@@ -104,7 +137,6 @@ function PaymentStatusContent() {
             payment_method: orderData.payment_method || 'pix'
           };
           setPixData(baseData);
-
           // Se for PIX mas não tiver QR code ainda, gera agora!
           if (baseData.payment_method === 'pix') {
              await generatePix(orderData);
@@ -120,15 +152,42 @@ function PaymentStatusContent() {
       setLoading(false);
     }
   }, [orderId, router, generatePix]);
-
   useEffect(() => {
     if (!orderId) {
       router.push('/')
       return
     }
     fetchData();
-
     // Polling de status
+    // 1. Realtime listener for instant status updates
+    const channel = supabase
+      .channel(`payment-status-${orderId}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'payments',
+        filter: `order_id=eq.${orderId}`
+      }, (payload: any) => {
+        console.log('Realtime payment update received:', payload.new);
+        if (payload.new.status === 'approved' || payload.new.status === 'paid') {
+          toast.success("Pagamento aprovado! 🎉");
+          router.push(`/pedido/rastreamento/${orderId}?new=true`);
+        }
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'orders',
+        filter: `id=eq.${orderId}`
+      }, (payload: any) => {
+        console.log('Realtime order update received:', payload.new);
+        if (payload.new.payment_status === 'paid') {
+          toast.success("Pagamento aprovado! 🎉");
+          router.push(`/pedido/rastreamento/${orderId}?new=true`);
+        }
+      })
+      .subscribe();
+    // 2. Polling de status (fallback)
     const pollInterval = setInterval(async () => {
       try {
         const response = await fetch(`/api/payment/status?id=${orderId}`);
@@ -138,19 +197,18 @@ function PaymentStatusContent() {
             clearInterval(pollInterval);
             toast.success("Pagamento aprovado! 🎉");
             setTimeout(() => {
-              router.push(`/pedido-confirmado?orderId=${orderId}`);
+              router.push(`/pedido/rastreamento/${orderId}?new=true`);
             }, 1500);
           }
         }
       } catch (e) {}
     }, 5000);
     pollIntervalRef.current = pollInterval;
-
     return () => {
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+      supabase.removeChannel(channel);
     }
   }, [orderId, router, fetchData]);
-
   const handleCopy = () => {
     if (pixData?.qr_code) {
       navigator.clipboard.writeText(pixData.qr_code)
@@ -159,7 +217,6 @@ function PaymentStatusContent() {
       setTimeout(() => setHasCopied(false), 2000)
     }
   }
-
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#FFF5F8] p-6 text-center">
@@ -168,7 +225,6 @@ function PaymentStatusContent() {
       </div>
     )
   }
-
   if (error) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#FFF5F8] p-6 text-center">
@@ -183,7 +239,6 @@ function PaymentStatusContent() {
       </div>
     )
   }
-
   // 🚨 PASSO 6 — EVITAR ERRO COM undefined
   if (pixData?.payment_method === 'pix' && !pixData?.qr_code_base64) {
     return (
@@ -198,7 +253,7 @@ function PaymentStatusContent() {
     )
   }
 
-  return (
+ return (
     <div className="min-h-screen bg-[#FFF5F8] py-12 px-4 flex items-center justify-center font-sans selection:bg-pink-100">
       <div className="max-w-md w-full">
         <motion.div
@@ -206,71 +261,93 @@ function PaymentStatusContent() {
             animate={{ opacity: 1, scale: 1 }}
         >
             {pixData.payment_method === 'pix' ? (
-                <Card className="rounded-[50px] overflow-hidden border-none shadow-2xl shadow-pink-100">
-                    <div className="p-10 bg-slate-900 text-white text-center relative overflow-hidden">
-                        <div className="absolute top-0 right-0 size-40 bg-pink-500 rounded-full blur-[100px] opacity-20" />
-                        <div className="relative z-10 text-center">
-                            <div className="size-16 bg-white/10 rounded-3xl flex items-center justify-center mx-auto mb-6 backdrop-blur-md">
-                                {pixData.status === 'approved' ? <CheckCircle2 className="size-8 text-emerald-400" /> : <QrCode className="size-8 text-pink-400" />}
+                <Card className="rounded-[40px] overflow-hidden border-none shadow-2xl bg-white max-w-md mx-auto">
+                    {/* Header */}
+                    <div className="p-8 bg-slate-900 text-white text-center relative overflow-hidden">
+                        <div className="absolute top-0 right-0 size-32 bg-red-600 rounded-full blur-[80px] opacity-20" />
+                        <div className="relative z-10 space-y-4">
+                            <div className="size-14 bg-white/10 rounded-2xl flex items-center justify-center mx-auto backdrop-blur-md">
+                                <QrCode className="size-6 text-red-500" />
                             </div>
-                            <h2 className="text-3xl font-black uppercase italic tracking-tighter mb-2 leading-none">
-                                {pixData.status === 'approved' ? "PAGO!" : "QUASE LÁ!"}
-                            </h2>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">
-                                {pixData.status === 'approved' ? "Redirecionando..." : "Finalize seu pagamento PIX"}
-                            </p>
+                            <div>
+                                <h2 className="text-2xl font-black uppercase italic tracking-tighter leading-none mb-1">
+                                    Pagamento via Pix
+                                </h2>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                    Rápido, seguro e confirmado na hora
+                                </p>
+                            </div>
                         </div>
                     </div>
 
-                    <div className="p-10 bg-white space-y-8">
+                    {/* Content */}
+                    <div className="p-8 space-y-6">
+                        {/* Expiration Timer & Price */}
+                        <div className="flex flex-col items-center gap-2 text-center">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Total a Pagar</span>
+                            <span className="text-3xl font-black text-slate-900">
+                              R$ {(Number(pixData.amount) || Number(pixData.total) || 0).toFixed(2)}
+                            </span>
+                            
+                            <div className="flex items-center gap-2 bg-red-50 text-red-600 px-4 py-1.5 rounded-full font-bold text-[10px] uppercase tracking-widest mt-1">
+                              <Loader2 className="size-3.5 animate-spin" />
+                              <span>Expira em: {formatTime(timeLeft)}</span>
+                            </div>
+                        </div>
+
+                        {/* QR Code Container */}
                         {pixData.qr_code_base64 && (
-                        <div className="bg-slate-50 p-6 rounded-[40px] flex items-center justify-center border-2 border-slate-100 shadow-inner group transition-all">
+                        <div className="bg-slate-50 p-6 rounded-[32px] flex flex-col items-center justify-center border border-slate-100 shadow-inner group transition-all">
                             <img 
-                            src={`data:image/png;base64,${pixData.qr_code_base64}`} 
-                            alt="QR Code PIX" 
-                            className="object-contain group-hover:scale-105 transition-transform"
-                            style={{ width: 200 }}
+                              src={`data:image/png;base64,${pixData.qr_code_base64}`} 
+                              alt="QR Code PIX" 
+                              className="object-contain group-hover:scale-[1.02] transition-transform w-[180px] h-[180px]"
                             />
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-4">
+                              Abra o app do seu banco para ler
+                            </p>
                         </div>
                         )}
                         
-                        <div className="space-y-4">
+                        {/* Copy Code Section */}
                         {pixData.qr_code && (
-                          <div className="space-y-4">
-                            <div className="relative group">
+                          <div className="space-y-3">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 leading-none">
+                              Pix Copia e Cola
+                            </p>
+                            <div className="relative">
                               <textarea 
                                 value={pixData.qr_code} 
                                 readOnly 
-                                className="w-full text-[10px] p-4 bg-slate-50 rounded-2xl border-2 border-slate-100 font-mono text-slate-400 resize-none h-20 focus:outline-none focus:border-pink-200"
+                                className="w-full text-[9px] p-4 bg-slate-50 rounded-2xl border border-slate-100 font-mono text-slate-500 resize-none h-16 focus:outline-none"
                               />
                             </div>
                             
                             <Button 
-                                onClick={handleCopy}
-                                className="w-full h-16 rounded-2xl bg-[#FF2F81] text-white font-black uppercase tracking-widest text-xs flex items-center gap-3 shadow-lg shadow-pink-100 hover:scale-[1.02] active:scale-100"
+                              onClick={handleCopy}
+                              className="w-full h-14 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-bold uppercase tracking-widest text-[11px] flex items-center justify-center gap-3 shadow-lg shadow-red-100 transition-all active:scale-[0.98]"
                             >
-                                {hasCopied ? <Check className="size-4" /> : <Copy className="size-4" />}
-                                {hasCopied ? "Copiado!" : "Copiar Código PIX"}
+                              {hasCopied ? <Check className="size-4" /> : <Copy className="size-4" />}
+                              <span>{hasCopied ? "Copiado!" : "Copiar Código Pix"}</span>
                             </Button>
                           </div>
                         )}
                         
-                        <p className="text-[10px] text-center font-bold text-slate-300 uppercase italic leading-loose">
-                            O pedido será confirmado automaticamente<br/>após o pagamento ser identificado em tempo real.
-                        </p>
-                        </div>
-
+                        {/* Real-time Status Tracker */}
                         <div className="flex items-center gap-3 p-4 bg-amber-50 rounded-2xl border border-amber-100">
                             <Loader2 className="size-4 text-amber-500 animate-spin shrink-0" />
-                            <span className="text-[10px] font-bold text-amber-700 uppercase tracking-widest leading-none">Aguardando confirmação bancária...</span>
+                            <span className="text-[10px] font-bold text-amber-700 uppercase tracking-widest leading-normal">
+                              Aguardando confirmação bancária em tempo real...
+                            </span>
                         </div>
 
+                        {/* Back Link */}
                         <Button 
-                        variant="ghost" 
-                        onClick={() => router.back()}
-                        className="w-full text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2"
+                          variant="ghost" 
+                          onClick={() => router.back()}
+                          className="w-full text-[10px] font-bold uppercase text-slate-400 tracking-widest flex items-center gap-2"
                         >
-                            <ArrowLeft className="size-3" /> Alterar forma de pagamento
+                          <ArrowLeft className="size-3" /> Alterar forma de pagamento
                         </Button>
                     </div>
                 </Card>
@@ -283,16 +360,15 @@ function PaymentStatusContent() {
                         <h2 className="text-3xl font-black uppercase italic tracking-tighter text-slate-900 leading-none">Cartão de Crédito</h2>
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4">Insira os dados para finalizar</p>
                     </div>
-
                     <div className="bg-white rounded-[40px] p-2 shadow-2xl shadow-pink-100 overflow-hidden">
                       <PaymentFormMP 
                           amount={pixData.amount}
                           orderId={orderId!}
                           tenantId={pixData.tenant_id}
-                          customerEmail={pixData.customer_email || ""} 
+                          customerEmail={pixData.customer?.email || pixData.customer_email || ""} 
                           onSuccess={() => {
                               toast.success("Pagamento aprovado! 🎉")
-                              router.push(`/pedido-confirmado?orderId=${orderId}`)
+                              router.push(`/pedido/rastreamento/${orderId}?new=true`)
                           }}
                           onCancel={() => router.back()}
                       />
@@ -301,12 +377,13 @@ function PaymentStatusContent() {
             )}
         </motion.div>
       </div>
-    </div>
+
+   </div>
   )
 }
-
 export default function PaymentStatusPage() {
-  return (
+
+ return (
     <Suspense fallback={<div className="h-screen flex items-center justify-center">Carregando...</div>}>
       <PaymentStatusContent />
     </Suspense>

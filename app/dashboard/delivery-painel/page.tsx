@@ -105,7 +105,17 @@ const statusColors: any = {
   ready: 'bg-indigo-100 text-indigo-600',
   out_for_delivery: 'bg-emerald-100 text-emerald-600',
   delivered: 'bg-slate-100 text-slate-400',
-  cancelled: 'bg-slate-100 text-slate-400'
+  cancelled: 'bg-slate-100 text-slate-400',
+  assigned: 'bg-blue-100 text-blue-600',
+  on_route: 'bg-emerald-100 text-emerald-600',
+  PENDING: 'bg-rose-100 text-rose-600',
+  ACCEPTED: 'bg-sky-100 text-sky-600',
+  PREPARING: 'bg-amber-100 text-amber-600',
+  READY: 'bg-indigo-100 text-indigo-600',
+  ASSIGNED: 'bg-blue-100 text-blue-600',
+  ON_ROUTE: 'bg-emerald-100 text-emerald-600',
+  DELIVERED: 'bg-slate-100 text-slate-400',
+  CANCELLED: 'bg-slate-100 text-slate-400'
 }
 
 const statusLabels: any = {
@@ -115,7 +125,17 @@ const statusLabels: any = {
   ready: 'Pronto',
   out_for_delivery: 'Em entrega',
   delivered: 'Entregue',
-  cancelled: 'Cancelado'
+  cancelled: 'Cancelado',
+  assigned: 'Atribuído',
+  on_route: 'Saiu p/ entrega',
+  PENDING: 'Aguardando',
+  ACCEPTED: 'Confirmado',
+  PREPARING: 'Em preparo',
+  READY: 'Pronto',
+  ASSIGNED: 'Atribuído',
+  ON_ROUTE: 'Saiu p/ entrega',
+  DELIVERED: 'Entregue',
+  CANCELLED: 'Cancelado'
 }
 
 export default function GestorPedidos() {
@@ -159,11 +179,17 @@ function GestorPedidosContent() {
     try {
       const { data, error } = await supabase
         .from('orders')
-        .select(`*, customers!customer_id(*), addresses!address_id(*)`)
+        .select(`*, customers!customer_id(*), addresses!address_id(*), order_items(*)`)
         .eq('tenant_id', profile.tenant_id)
         .order('created_at', { ascending: false })
       if (error) throw error
-      setOrders(data || [])
+      
+      // Map order_status to status to preserve frontend page UI logic
+      const mappedOrders = (data || []).map(o => ({
+        ...o,
+        status: o.order_status || o.status || 'novo'
+      }))
+      setOrders(mappedOrders)
     } catch (error) {
       console.error("Error fetching orders:", error)
     } finally {
@@ -179,7 +205,7 @@ function GestorPedidosContent() {
 
   const handleStatusUpdate = async (orderId: string, newStatus: string) => {
      try {
-       const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', orderId)
+       const { error } = await supabase.from('orders').update({ order_status: newStatus }).eq('id', orderId)
        if (error) throw error
        toast.success(`Status atualizado: ${newStatus}`)
        fetchOrders()
@@ -207,18 +233,46 @@ function GestorPedidosContent() {
   const filteredOrders = useMemo(() => {
      return orders.filter(o => {
         const matchSearch = o.customers?.name?.toLowerCase().includes(search.toLowerCase()) || o.id.includes(search)
-        const matchFilter = filterType === "todos" || (filterType === "pendente" && o.status === "pending") || (filterType === "em_curso" && ['accepted', 'preparing', 'ready', 'out_for_delivery'].includes(o.status))
+        const matchFilter = filterType === "todos" || (filterType === "pendente" && (o.status === "pending" || o.status === "PENDING")) || (filterType === "em_curso" && ['accepted', 'preparing', 'ready', 'out_for_delivery', 'assigned', 'on_route', 'ASSIGNED', 'ON_ROUTE'].includes(o.status))
         return matchSearch && matchFilter
      })
   }, [orders, search, filterType])
-
+ 
   const getNextStatus = (current: string) => {
-     const flow: any = { pending: 'accepted', accepted: 'preparing', preparing: 'ready', ready: 'out_for_delivery', out_for_delivery: 'delivered' }
+     const flow: any = { 
+       pending: 'accepted', 
+       accepted: 'preparing', 
+       preparing: 'ready', 
+       ready: 'assigned',
+       assigned: 'on_route', 
+       on_route: 'delivered',
+       out_for_delivery: 'delivered',
+       PENDING: 'ACCEPTED',
+       ACCEPTED: 'PREPARING',
+       PREPARING: 'READY',
+       READY: 'ASSIGNED',
+       ASSIGNED: 'ON_ROUTE',
+       ON_ROUTE: 'DELIVERED'
+     }
      return flow[current] || null
   }
-
+ 
   const getStatusActionLabel = (status: string) => {
-     const labels: any = { pending: 'Aceitar Pedido', accepted: 'Iniciar Preparo', preparing: 'Marcar como Pronto', ready: 'Despachar / Sair p/ Entrega', out_for_delivery: 'Confirmar Entrega' }
+     const labels: any = { 
+       pending: 'Aceitar Pedido', 
+       accepted: 'Iniciar Preparo', 
+       preparing: 'Marcar como Pronto', 
+       ready: 'Designar Entregador',
+       assigned: 'Despachar Pedido',
+       on_route: 'Confirmar Entrega',
+       out_for_delivery: 'Confirmar Entrega',
+       PENDING: 'Aceitar Pedido', 
+       ACCEPTED: 'Iniciar Preparo', 
+       PREPARING: 'Marcar como Pronto', 
+       READY: 'Designar Entregador',
+       ASSIGNED: 'Despachar Pedido',
+       ON_ROUTE: 'Confirmar Entrega'
+     }
      return labels[status] || 'Finalizado'
   }
 
@@ -391,7 +445,7 @@ function GestorPedidosContent() {
                           <h4 className="text-sm font-black text-slate-900 uppercase italic tracking-widest border-b border-slate-200 pb-4">Itens</h4>
                           <div className="space-y-4">
                              {(selectedOrder.order_items || []).map((item: any, i: number) => (
-                                <div key={i} className="flex justify-between items-center"><div className="flex items-center gap-3"><span className="size-7 rounded-lg bg-white border border-slate-100 flex items-center justify-center font-black text-[10px] text-rose-500">{item.quantity}x</span><span className="text-sm font-black uppercase italic text-slate-700">{item.product_name}</span></div><span className="text-sm font-black text-slate-900">R$ {(item.quantity * item.price).toFixed(2)}</span></div>
+                                <div key={i} className="flex justify-between items-center"><div className="flex items-center gap-3"><span className="size-7 rounded-lg bg-white border border-slate-100 flex items-center justify-center font-black text-[10px] text-rose-500">{item.quantity}x</span><span className="text-sm font-black uppercase italic text-slate-700">{item.name || item.product_name || 'Item'}</span></div><span className="text-sm font-black text-slate-900">R$ {(item.quantity * (item.unit_price || item.price || 0)).toFixed(2)}</span></div>
                              ))}
                           </div>
                           <div className="pt-4 border-t border-slate-200 space-y-2">

@@ -27,7 +27,10 @@ export function ProductCard({ product, onClick, onAddClick }: ProductCardProps) 
     >
       <div className="flex-1 flex flex-col justify-between py-0.5 min-w-0">
         <div className="space-y-1">
-          <h3 className="font-bold text-slate-900 text-sm md:text-base leading-tight group-hover:text-[#1a56db] transition-colors">
+          <h3 
+            className="font-bold text-slate-900 text-sm md:text-base leading-tight group-hover:text-[var(--primary-color)] transition-colors"
+            style={{ color: 'inherit' }}
+          >
             {product.name}
           </h3>
           <p className="text-[11px] text-slate-500 font-medium line-clamp-2 leading-relaxed">
@@ -54,7 +57,8 @@ export function ProductCard({ product, onClick, onAddClick }: ProductCardProps) 
         {/* Floating Add Button OVER photo */}
         <Button 
           size="icon"
-          className="absolute bottom-1 right-1 size-7 rounded-full bg-[#1a56db] hover:bg-[#1e40af] text-white shadow-md transition-all active:scale-90 shrink-0 z-10"
+          className="absolute bottom-1 right-1 size-7 rounded-full bg-[var(--primary-color,#1a56db)] hover:opacity-90 text-white shadow-md transition-all active:scale-90 shrink-0 z-10"
+          style={{ backgroundColor: 'var(--primary-color)' }}
           onClick={(e) => {
             e.stopPropagation()
             onAddClick(product)

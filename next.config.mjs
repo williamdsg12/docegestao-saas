@@ -26,6 +26,14 @@ const nextConfig = {
   turbopack: {
     root: __dirname,
   },
+  async rewrites() {
+    return [
+      {
+        source: '/cardapio/:slug',
+        destination: '/menu/:slug',
+      },
+    ];
+  },
 };
 
 export default nextConfig;

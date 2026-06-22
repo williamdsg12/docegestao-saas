@@ -16,6 +16,7 @@ interface FinalPricingStepProps {
   recipeInfo: {
     markup: number
     yieldPots: number
+    gramsPerPot?: number
   }
   totals: {
     costPerPot: number

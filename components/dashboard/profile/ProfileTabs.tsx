@@ -162,14 +162,12 @@ export function ProfileTabs() {
       qui: { open: "09:00", close: "18:00", closed: false },
       sex: { open: "09:00", close: "18:00", closed: false },
       sab: { open: "09:00", close: "13:00", closed: false },
-      dom: { open: "00:00", close: "00:00", closed: true },
     }
   })
 
   useEffect(() => {
     if (user) {
-      setFormData(prev => ({
-        ...prev,
+      const personalData = {
         fullName: user.user_metadata?.full_name || user.user_metadata?.owner_name || "",
         personalWhatsapp: user.user_metadata?.whatsapp || "",
         personalPhone: user.user_metadata?.phone || "",
@@ -179,55 +177,51 @@ export function ProfileTabs() {
         specialty: user.user_metadata?.specialty || "",
         experience: user.user_metadata?.experience_years || "",
         storeName: user.user_metadata?.store_name || ""
-      }))
-      
-      const fetchBusinessData = async () => {
-        if (!profile?.company_id) return
-        const { data: companyData } = await supabase
-          .from("companies")
-          .select("*")
-          .eq("id", profile.company_id)
-          .maybeSingle()
-
-        if (companyData) {
-          setFormData(prev => ({
-            ...prev,
-            instagram: companyData.instagram || "",
-            personalWhatsapp: profile?.whatsapp || companyData.phone || prev.personalWhatsapp, // Priorizar profile
-            segment: companyData.segment || "Confeitaria Gourmet",
-            businessBio: companyData.description || "",
-            cep: companyData.address_zip || "",
-            address: {
-              street: companyData.address_street || "",
-              number: companyData.address_number || "",
-              complement: companyData.address_complement || "",
-              neighborhood: companyData.address_neighborhood || "",
-              city: companyData.address_city || "",
-              state: companyData.address_state || ""
-            },
-            deliveryRadius: String(companyData.delivery_radius || "5"),
-            atendeDelivery: !!companyData.delivery_radius,
-            acceptPix: companyData.accept_pix,
-            acceptCard: companyData.accept_card,
-            acceptCash: companyData.accept_cash,
-            minOrderValue: String(companyData.min_order_value || "0,00").replace(".", ","),
-            menuSlug: companyData.menu_slug || "",
-            menuBannerText: companyData.menu_banner_text || "",
-            menuEnabledFeatures: companyData.menu_enabled_features || ["whatsapp", "delivery", "pix"],
-            whatsappConnected: companyData.whatsapp_connected || false,
-            openingHours: companyData.opening_hours?.description || "Seg-Sex: 09h-18h",
-            monthlyGoal: String(business?.config?.monthly_goal || "10000"),
-            logoUrl: companyData.logo_url || "",
-            primaryColor: business?.config?.primary_color || "#FF2F81",
-            receiptHeader: business?.config?.receipt_header || "",
-            receiptFooter: business?.config?.receipt_footer || "Obrigado pela preferência! ✨",
-            detailedHours: business?.config?.operating_hours || prev.detailedHours
-          }))
-        }
       }
-      fetchBusinessData()
+
+      if (business) {
+        const b = business as any
+        setFormData(prev => ({
+          ...prev,
+          ...personalData,
+          instagram: b.instagram || "",
+          personalWhatsapp: profile?.whatsapp || b.phone || b.telefone || personalData.personalWhatsapp,
+          segment: b.segment || "Confeitaria Gourmet",
+          businessBio: b.description || "",
+          cep: b.address_zip || "",
+          address: {
+            street: b.address_street || "",
+            number: b.address_number || "",
+            complement: b.address_complement || "",
+            neighborhood: b.address_neighborhood || "",
+            city: b.address_city || "",
+            state: b.address_state || ""
+          },
+          deliveryRadius: String(b.delivery_radius || "5"),
+          atendeDelivery: !!b.delivery_radius,
+          acceptPix: b.accept_pix ?? true,
+          acceptCard: b.accept_card ?? true,
+          acceptCash: b.accept_cash ?? true,
+          minOrderValue: String(b.min_order_value || "0.00").replace(".", ","),
+          menuSlug: b.slug || b.menu_slug || "",
+          menuBannerText: b.menu_banner_text || "",
+          menuEnabledFeatures: b.menu_enabled_features || ["whatsapp", "delivery", "pix"],
+          whatsappConnected: b.whatsapp_connected || false,
+          openingHours: b.opening_hours?.description || "Seg-Sex: 09h-18h",
+          monthlyGoal: String(b.config?.monthly_goal || "10000"),
+          logoUrl: b.logo_url || "",
+          primaryColor: b.config?.primary_color || "#FF2F81",
+          receiptHeader: b.config?.receipt_header || "",
+          receiptFooter: b.config?.receipt_footer || "Obrigado pela preferência! ✨",
+          detailedHours: b.opening_hours && Object.keys(b.opening_hours).length > 2 
+            ? b.opening_hours 
+            : prev.detailedHours
+        }))
+      } else {
+        setFormData(prev => ({ ...prev, ...personalData }))
+      }
     }
-  }, [user, profile])
+  }, [user, business, profile])
 
   const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
@@ -360,6 +354,7 @@ export function ProfileTabs() {
 
         const payloadCompanies = {
           name: formData.storeName,
+          nome: formData.storeName, // Legacy compatibility
           instagram: formData.instagram,
           segment: formData.segment,
           description: formData.businessBio,
@@ -370,26 +365,18 @@ export function ProfileTabs() {
           address_neighborhood: formData.address.neighborhood,
           address_city: formData.address.city,
           address_state: formData.address.state,
-          delivery_radius: parseFloat(formData.deliveryRadius),
+          delivery_radius: parseFloat(formData.deliveryRadius) || 0,
+          delivery_fee: business?.delivery_fee || 0,
           accept_pix: formData.acceptPix,
           accept_card: formData.acceptCard,
           accept_cash: formData.acceptCash,
-          min_order_value: parseFloat(formData.minOrderValue.replace(",", ".")),
+          min_order_value: parseFloat(formData.minOrderValue.replace(",", ".")) || 0,
           menu_slug: formData.menuSlug,
           menu_banner_text: formData.menuBannerText,
           menu_enabled_features: formData.menuEnabledFeatures,
-          opening_hours: { description: formData.openingHours }
-        }
-
-        const payloadEmpresas = {
-          nome: formData.storeName,
-          telefone: formData.personalWhatsapp,
-          endereco: `${formData.address.street}, ${formData.address.number}`,
-          delivery_fee: business?.delivery_fee || 0,
-          min_order_value: parseFloat(formData.minOrderValue.replace(",", ".")),
-          delivery_radius: parseFloat(formData.deliveryRadius),
           opening_hours: {
             ...formData.detailedHours,
+            description: formData.openingHours,
             is_open_manual: business?.opening_hours?.is_open_manual !== false,
             receipt_header: formData.receiptHeader,
             receipt_footer: formData.receiptFooter,
@@ -410,19 +397,18 @@ export function ProfileTabs() {
         const payloadDelivery = {
           tenant_id: businessId,
           base_fee: business?.delivery_fee || 0,
-          max_km: parseFloat(formData.deliveryRadius),
+          max_km: parseFloat(formData.deliveryRadius) || 0,
           whatsapp_number: formData.personalWhatsapp
         }
 
-        const [resCompanies] = await Promise.all([
+        const [resUnified, resTenants, resDigital, resDelivery] = await Promise.all([
           supabase.from("companies").update(payloadCompanies).eq("id", businessId).select(),
-          supabase.from("empresas").update(payloadEmpresas).eq("id", businessId),
           supabase.from('tenants').update({ slug: formData.menuSlug, name: formData.storeName }).eq('id', businessId),
           supabase.from('digital_menu_settings').upsert(payloadDigitalMenu),
           supabase.from('delivery_settings').upsert(payloadDelivery)
         ])
 
-        if (resCompanies.error) throw resCompanies.error
+        if (resUnified.error) throw resUnified.error
 
         const { error: authError } = await updateProfile({
           store_name: formData.storeName,

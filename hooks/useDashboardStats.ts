@@ -14,8 +14,13 @@ export function useDashboardStats() {
         const hoje = new Date()
         hoje.setHours(0, 0, 0, 0)
         const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1)
+        const startOfYear = new Date(hoje.getFullYear(), 0, 1)
+        const sixtyDaysAgo = new Date()
+        sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60)
+        const queryStartDate = startOfYear < sixtyDaysAgo ? startOfYear : sixtyDaysAgo
+        queryStartDate.setHours(0, 0, 0, 0)
 
-        // Optimized query: Select only needed columns (Standardized order_status)
+        // 1. Fetch Orders from last 60 days or since start of year
         const { data: rawOrders, error: orderError } = await supabase
             .from("orders")
             .select(`
@@ -24,20 +29,42 @@ export function useDashboardStats() {
                 valor_total, 
                 status, 
                 order_status, 
+                payment_status,
+                paid,
                 created_at, 
+                customer_id,
                 customers(name),
                 order_items(id, name, quantity, unit_price)
             `)
             .eq('tenant_id', tenantId)
-            .gte("created_at", inicioMes.toISOString())
+            .gte("created_at", queryStartDate.toISOString())
 
         if (orderError) throw orderError
 
-        // NEW: Fetch total unique customers for the tenant
+        // 2. Fetch Menu Views from queryStartDate
+        const { data: rawViews, error: viewsError } = await supabase
+            .from("menu_views")
+            .select("id, created_at")
+            .eq('tenant_id', tenantId)
+            .gte("created_at", queryStartDate.toISOString())
+
+        if (viewsError) throw viewsError
+
+        // 3. Fetch Abandoned Carts from queryStartDate
+        const { data: rawCarts, error: cartsError } = await supabase
+            .from("abandoned_carts")
+            .select("id, created_at, total")
+            .eq('tenant_id', tenantId)
+            .gte("created_at", queryStartDate.toISOString())
+
+        if (cartsError) throw cartsError
+
+        // 4. Fetch unique customer count for tenant
         const { count: customerCount, error: customerError } = await supabase
             .from("customers")
             .select("*", { count: 'exact', head: true })
             .eq('tenant_id', tenantId)
+            .is('deleted_at', null)
 
         if (customerError) throw customerError
 
@@ -47,15 +74,23 @@ export function useDashboardStats() {
             status: o.order_status || o.status || 'pending'
         }))
 
-        const sales = orders.filter(o => o.status === 'delivered' || o.status === 'finalizado')
+        // Helper to check if an order is paid and not cancelled
+        const isPaidOrder = (o: any) => 
+            (o.payment_status === 'paid' || o.payment_status === 'pago' || o.paid === true || o.status === 'delivered' || o.status === 'finalizado') && 
+            (o.status !== 'cancelled' && o.status !== 'cancelado')
+
+        const sales = orders.filter(isPaidOrder)
         const ativos = orders.filter(o => !['finalizado', 'cancelado', 'arquivado', 'pendente_pagamento', 'delivered'].includes(o.status)).length
 
+        // Monthly statistics (backwards compatibility)
         const hojeSales = sales.filter(o => new Date(o.created_at) >= hoje)
         const totalHoje = hojeSales.reduce((acc, p) => acc + p.total, 0)
-        const totalMes = sales.reduce((acc, p) => acc + p.total, 0)
-        const ticketMedio = sales.length > 0 ? totalMes / sales.length : 0
+        
+        const mesSales = sales.filter(o => new Date(o.created_at) >= inicioMes)
+        const totalMes = mesSales.reduce((acc, p) => acc + p.total, 0)
+        const ticketMedio = mesSales.length > 0 ? totalMes / mesSales.length : 0
 
-        // Calculate Star Products (Top 3)
+        // Calculate Star Products (Top 3 based on 60 days)
         const productStats: Record<string, { name: string, sales: number, revenue: number }> = {}
         orders.forEach(o => {
             (o.order_items || []).forEach((item: any) => {
@@ -73,7 +108,7 @@ export function useDashboardStats() {
             .map((p, i) => ({
                 ...p,
                 rank: i + 1,
-                margin: '---' // Margin would need product cost data
+                margin: '---'
             }))
 
         const diasPassados = hoje.getDate()
@@ -89,7 +124,9 @@ export function useDashboardStats() {
             receitaEstimada,
             totalClientes: customerCount || 0,
             topProducts,
-            pedidos: orders
+            pedidos: orders,
+            menuViews: rawViews || [],
+            abandonedCarts: rawCarts || []
         }
     }
 
@@ -98,7 +135,8 @@ export function useDashboardStats() {
         queryFn: fetchStats,
         enabled: !!tenantId,
         refetchOnWindowFocus: true,
-        staleTime: 1000 * 60 * 3, // 3 minutes stale
+        staleTime: 1000 * 30, // 30 seconds stale
+        refetchInterval: 1000 * 30, // Polling fallback: every 30 seconds
     })
 
     useEffect(() => {
@@ -112,6 +150,30 @@ export function useDashboardStats() {
                     event: "*", 
                     schema: "public", 
                     table: "orders",
+                    filter: `tenant_id=eq.${tenantId}`
+                },
+                () => {
+                    queryClient.invalidateQueries({ queryKey: ["dashboard-stats", tenantId] })
+                }
+            )
+            .on(
+                "postgres_changes",
+                { 
+                    event: "*", 
+                    schema: "public", 
+                    table: "menu_views",
+                    filter: `tenant_id=eq.${tenantId}`
+                },
+                () => {
+                    queryClient.invalidateQueries({ queryKey: ["dashboard-stats", tenantId] })
+                }
+            )
+            .on(
+                "postgres_changes",
+                { 
+                    event: "*", 
+                    schema: "public", 
+                    table: "abandoned_carts",
                     filter: `tenant_id=eq.${tenantId}`
                 },
                 () => {
@@ -134,7 +196,10 @@ export function useDashboardStats() {
         totalClientes: data?.totalClientes || 0,
         topProducts: data?.topProducts || [],
         pedidos: data?.pedidos || [],
+        menuViews: data?.menuViews || [],
+        abandonedCarts: data?.abandonedCarts || [],
         loading,
         refresh: () => queryClient.invalidateQueries({ queryKey: ["dashboard-stats", tenantId] })
     }
 }
+

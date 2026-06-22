@@ -35,6 +35,7 @@ import {
     DialogContent,
     DialogHeader,
     DialogTitle,
+    DialogDescription,
 } from "@/components/ui/dialog"
 import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
@@ -99,7 +100,7 @@ export function MultiStepQuoteModal({ open, onOpenChange, onSuccess }: MultiStep
         if (!tenantId) return
         setSearchingClient(true)
         try {
-            const { data } = await supabase.from('customers').select('*').eq('tenant_id', tenantId).order('name')
+            const { data } = await supabase.from('customers').select('*').eq('tenant_id', tenantId).is('deleted_at', null).order('name')
             setClients(data || [])
         } catch (e) {
             console.error(e)

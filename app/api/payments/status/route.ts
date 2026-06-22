@@ -14,7 +14,7 @@ export async function GET(req: Request) {
         // 1. Check Order Status first (it might have been updated by Webhook)
         const { data: order, error: orderError } = await supabaseAdmin
             .from('orders')
-            .select('status')
+            .select('order_status')
             .eq('id', orderId)
             .single();
 
@@ -23,10 +23,10 @@ export async function GET(req: Request) {
         }
 
         // If order is already processed/paid, return success
-        if (order.status !== 'pendente_pagamento') {
+        if (order.order_status !== 'pendente_pagamento') {
             return NextResponse.json({ 
                 status: 'approved', // Mapping the system status to a "success" for the frontend
-                order_status: order.status
+                order_status: order.order_status
             });
         }
 
@@ -58,7 +58,12 @@ export async function GET(req: Request) {
                     const tunaStatus = await getTunaPaymentStatus(payment.external_id, payment.tenant_id);
                     
                     if (tunaStatus === 'approved') {
-                        await supabaseAdmin.from('orders').update({ status: 'novo' }).eq('id', orderId);
+                        await supabaseAdmin.from('orders').update({ 
+                            order_status: 'novo',
+                            payment_status: 'paid',
+                            paid: true,
+                            payment_confirmed_at: new Date().toISOString()
+                        }).eq('id', orderId);
                         await supabaseAdmin.from('payments').update({ status: 'approved', updated_at: new Date().toISOString() }).eq('id', payment.id);
                         return NextResponse.json({ status: 'approved' });
                     }
@@ -68,7 +73,12 @@ export async function GET(req: Request) {
                     const mpResult = await paymentClient.get({ id: payment.external_id });
 
                     if (mpResult.status === 'approved') {
-                        await supabaseAdmin.from('orders').update({ status: 'novo' }).eq('id', orderId);
+                        await supabaseAdmin.from('orders').update({ 
+                            order_status: 'novo',
+                            payment_status: 'paid',
+                            paid: true,
+                            payment_confirmed_at: new Date().toISOString()
+                        }).eq('id', orderId);
                         await supabaseAdmin.from('payments').update({ status: 'approved', updated_at: new Date().toISOString() }).eq('id', payment.id);
                         return NextResponse.json({ status: 'approved' });
                     }

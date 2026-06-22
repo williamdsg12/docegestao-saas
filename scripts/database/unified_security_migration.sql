@@ -15,7 +15,7 @@ BEGIN
     -- Table: ingredientes
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'ingredientes') THEN
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='ingredientes' AND column_name='company_id') THEN
-            ALTER TABLE public.ingredientes ADD COLUMN company_id uuid REFERENCES public.companies(id) ON DELETE CASCADE;
+            ALTER TABLE public.ingredientes ADD COLUMN company_id uuid REFERENCES public.tenants(id) ON DELETE CASCADE;
         END IF;
         ALTER TABLE public.ingredientes ENABLE ROW LEVEL SECURITY;
     END IF;
@@ -23,7 +23,7 @@ BEGIN
     -- Table: products
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'products') THEN
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='company_id') THEN
-            ALTER TABLE public.products ADD COLUMN company_id uuid REFERENCES public.companies(id) ON DELETE CASCADE;
+            ALTER TABLE public.products ADD COLUMN company_id uuid REFERENCES public.tenants(id) ON DELETE CASCADE;
         END IF;
         ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
     END IF;
@@ -31,7 +31,7 @@ BEGIN
     -- Table: orders
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'orders') THEN
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='company_id') THEN
-            ALTER TABLE public.orders ADD COLUMN company_id uuid REFERENCES public.companies(id) ON DELETE CASCADE;
+            ALTER TABLE public.orders ADD COLUMN company_id uuid REFERENCES public.tenants(id) ON DELETE CASCADE;
         END IF;
         ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
     END IF;
@@ -39,7 +39,7 @@ BEGIN
     -- Table: menu_orders
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'menu_orders') THEN
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='menu_orders' AND column_name='company_id') THEN
-            ALTER TABLE public.menu_orders ADD COLUMN company_id uuid REFERENCES public.companies(id) ON DELETE CASCADE;
+            ALTER TABLE public.menu_orders ADD COLUMN company_id uuid REFERENCES public.tenants(id) ON DELETE CASCADE;
         END IF;
         ALTER TABLE public.menu_orders ENABLE ROW LEVEL SECURITY;
     END IF;
@@ -47,7 +47,7 @@ BEGIN
     -- Table: transactions
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'transactions') THEN
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='transactions' AND column_name='company_id') THEN
-            ALTER TABLE public.transactions ADD COLUMN company_id uuid REFERENCES public.companies(id) ON DELETE CASCADE;
+            ALTER TABLE public.transactions ADD COLUMN company_id uuid REFERENCES public.tenants(id) ON DELETE CASCADE;
         END IF;
         ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
     END IF;
@@ -58,7 +58,7 @@ BEGIN
             ALTER TABLE public.quotes RENAME COLUMN confeitaria_id TO company_id;
         END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='quotes' AND column_name='company_id') THEN
-            ALTER TABLE public.quotes ADD COLUMN company_id uuid REFERENCES public.companies(id) ON DELETE CASCADE;
+            ALTER TABLE public.quotes ADD COLUMN company_id uuid REFERENCES public.tenants(id) ON DELETE CASCADE;
         END IF;
         ALTER TABLE public.quotes ENABLE ROW LEVEL SECURITY;
     END IF;
@@ -66,7 +66,7 @@ BEGIN
     -- Table: clients
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'clients') THEN
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='company_id') THEN
-            ALTER TABLE public.clients ADD COLUMN company_id uuid REFERENCES public.companies(id) ON DELETE CASCADE;
+            ALTER TABLE public.clients ADD COLUMN company_id uuid REFERENCES public.tenants(id) ON DELETE CASCADE;
         END IF;
         ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;
     END IF;
@@ -152,7 +152,7 @@ CREATE POLICY "Users can view their own profile" ON public.profiles
 FOR ALL USING (auth.uid() = id);
 
 -- COMPANIES (SELF ACCESS)
-ALTER TABLE public.companies ENABLE ROW LEVEL SECURITY;
-DROP POLICY IF EXISTS "Owners can view their own company" ON public.companies;
-CREATE POLICY "Owners can view their own company" ON public.companies
+ALTER TABLE public.tenants ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Owners can view their own company" ON public.tenants;
+CREATE POLICY "Owners can view their own company" ON public.tenants
 FOR ALL USING (auth.uid() = owner_id);

@@ -21,6 +21,8 @@ import { usePedidoStore } from "@/store/pedidoStore"
 import { usePathname } from "next/navigation"
 import { AuthGuard } from "@/components/auth/AuthGuard"
 import { initSound, requestNotificationPermission, startAlert, stopAlert } from "@/lib/notifications"
+import { usePedidosRealtime } from "@/hooks/usePedidosRealtime"
+import { NewOrderAlertModal } from "@/components/dashboard/NewOrderAlertModal"
 import { BottomNav } from "@/components/dashboard/BottomNav"
 
 export default function DashboardLayout({
@@ -30,6 +32,7 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname()
   const { user, subscription, isAdmin, loadingSubscription } = useAuth()
+  usePedidosRealtime()
   
   // Routes that should NOT show the standard sidebar (Smart Gestão)
   const isSmartGestao = pathname?.includes('/dashboard/gestao') || 
@@ -41,9 +44,8 @@ export default function DashboardLayout({
   const [soundEnabled, setSoundEnabled] = useState(true)
 
   const novoPedido = usePedidoStore(s => s.novoPedido)
-  // usePedidoSound removido para usar o novo sistema nativo em notifications.ts
-
   const pedidos = usePedidoStore(s => s.pedidos)
+  const pendingOrdersCount = pedidos.filter(p => p.status === 'novo' || p.status === 'pending').length
 
   useEffect(() => {
     const saved = localStorage.getItem("order_sound_enabled")
@@ -52,21 +54,78 @@ export default function DashboardLayout({
     }
   }, [])
 
-  // Efeito reativo para controlar o som baseado nos pedidos pendentes
+  // Auto-unlock audio context on very first user interaction
   useEffect(() => {
-    if (!soundEnabled) {
+    const handleFirstInteraction = async () => {
+      await initSound()
+      document.removeEventListener("click", handleFirstInteraction)
+      document.removeEventListener("keydown", handleFirstInteraction)
+    }
+    if (typeof window !== 'undefined') {
+      document.addEventListener("click", handleFirstInteraction)
+      document.addEventListener("keydown", handleFirstInteraction)
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        document.removeEventListener("click", handleFirstInteraction)
+        document.removeEventListener("keydown", handleFirstInteraction)
+      }
+    }
+  }, [])
+
+  // Update browser tab title dynamically: (X) Pedidos - DoceGestão
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (pendingOrdersCount > 0) {
+        document.title = `(${pendingOrdersCount}) Pedidos - DoceGestão`
+      } else {
+        document.title = 'DoceGestão - Gestão Inteligente para Confeiteiras'
+      }
+    }
+  }, [pendingOrdersCount])
+
+  // Stop alert automatically if no pending delivery orders are left in the system
+  useEffect(() => {
+    const temDeliveryPendentes = pedidos.some(
+      (p) =>
+        (p.status === 'novo' || p.status === 'pending') &&
+        (p.order_type === 'delivery' || p.delivery?.type === 'delivery')
+    )
+    if (!temDeliveryPendentes) {
       stopAlert()
-      return
+    }
+  }, [pedidos])
+
+  // Background 5-min critical check for unattended pending delivery orders
+  useEffect(() => {
+    const checkCriticalOrders = () => {
+      const now = new Date()
+      const hasCritical = pedidos.some(p => {
+        if (p.status !== 'novo' && p.status !== 'pending') return false
+        const isDelivery = p.order_type === 'delivery' || p.delivery?.type === 'delivery'
+        if (!isDelivery) return false
+        const createdAt = new Date(p.created_at || p.createdAt)
+        const diffMs = now.getTime() - createdAt.getTime()
+        return diffMs >= 5 * 60 * 1000
+      })
+
+      if (hasCritical) {
+        const soundEnabledLocal = localStorage.getItem("order_sound_enabled") !== "false"
+        if (soundEnabledLocal) {
+          startAlert()
+        }
+        toast.warning("⚠️ Pedido de Delivery aguardando atendimento!", {
+          description: "Existem pedidos de delivery pendentes sem atendimento há mais de 5 minutos.",
+          duration: 8000,
+        })
+      }
     }
 
-    const temPedidosPendentes = pedidos.some(p => p.status === 'novo' || p.status === 'pending')
-    
-    if (temPedidosPendentes) {
-      startAlert()
-    } else {
-      stopAlert()
-    }
-  }, [pedidos, soundEnabled])
+    const checkInterval = setInterval(checkCriticalOrders, 30000)
+    checkCriticalOrders()
+
+    return () => clearInterval(checkInterval)
+  }, [pedidos])
 
   const toggleSound = async () => {
     const newState = !soundEnabled
@@ -132,6 +191,7 @@ export default function DashboardLayout({
           {showOnboarding && (
             <OnboardingModal onComplete={() => setShowOnboarding(false)} />
           )}
+          <NewOrderAlertModal />
           
           <DashboardSidebar>
             <div className="flex-1 overflow-y-auto w-full min-w-0 bg-[var(--bg-app)] flex flex-col relative">
@@ -195,7 +255,7 @@ export default function DashboardLayout({
                         size="icon"
                         onClick={toggleSound}
                         className={cn(
-                          "hidden md:flex size-10 rounded-full border transition-all shadow-sm",
+                          "flex size-10 rounded-full border transition-all shadow-sm",
                           soundEnabled 
                             ? "border-[var(--secondary)]/20 bg-[var(--secondary)]/10 text-[var(--secondary)] hover:bg-[var(--secondary)]/20" 
                             : "border-[var(--border)] bg-[var(--bg-card)] text-[var(--text-muted)] hover:bg-[var(--bg-app)]"

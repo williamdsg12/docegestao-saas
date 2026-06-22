@@ -1,4 +1,5 @@
 import { supabase } from "./supabaseClient"
+import { normalizePhone } from "./formatters"
 
 export async function createOrder(data: any) {
   const {
@@ -15,18 +16,34 @@ export async function createOrder(data: any) {
     // 1. CUSTOMER
     // =========================
     // Usamos upsert para evitar duplicados e manter o ID
-    const { data: customerData, error: customerError } = await supabase
+    const normalizedPhone = normalizePhone(customer.phone)
+    const payload = {
+      tenant_id,
+      name: customer.name,
+      phone: customer.phone,
+      telefone_normalizado: normalizedPhone,
+      email: customer.email,
+      deleted_at: null
+    }
+
+    console.log('Telefone original:', customer.phone)
+    console.log('Telefone normalizado:', normalizedPhone)
+    console.log('Dados enviados:', payload)
+
+    const response = await supabase
       .from("customers")
-      .upsert({
-        tenant_id,
-        name: customer.name,
-        phone: customer.phone,
-        email: customer.email
-      }, { onConflict: 'tenant_id, phone' })
+      .upsert(payload, { onConflict: 'tenant_id, telefone_normalizado' })
       .select()
       .single()
 
-    if (customerError) throw customerError
+    console.log('Resultado do upsert:', response)
+
+    const { data: customerData, error: customerError } = response
+
+    if (customerError) {
+      console.error('ERRO SQL COMPLETO NO UPSERT DE CLIENTE:', customerError)
+      throw customerError
+    }
 
     // =========================
     // 2. ADDRESS
@@ -51,12 +68,36 @@ export async function createOrder(data: any) {
     // =========================
     // 3. ORDER
     // =========================
+    let normalizedType = 'balcao'
+    const rawType = (data.order_type || '').toLowerCase()
+    if (['delivery', 'entrega'].includes(rawType)) {
+      normalizedType = 'delivery'
+    } else if (['mesa', 'salao', 'local'].includes(rawType)) {
+      normalizedType = 'salao'
+    } else if (['balcao', 'retirada', 'pickup'].includes(rawType)) {
+      normalizedType = 'balcao'
+    }
+
+    let normalizedStatus = 'novo'
+    const rawStatus = (data.order_status || '').toLowerCase()
+    if (['novo', 'pending', 'waiting', 'pendente'].includes(rawStatus)) {
+      normalizedStatus = 'novo'
+    } else if (['preparo', 'em_preparo', 'preparing'].includes(rawStatus)) {
+      normalizedStatus = 'preparo'
+    } else if (['pronto', 'ready'].includes(rawStatus)) {
+      normalizedStatus = 'pronto'
+    } else if (['finalizado', 'completed', 'paid', 'entregue', 'delivered'].includes(rawStatus)) {
+      normalizedStatus = 'finalizado'
+    } else if (['cancelado', 'cancelled'].includes(rawStatus)) {
+      normalizedStatus = 'cancelado'
+    }
+
     const { data: orderData, error: orderError } = await supabase
       .from("orders")
       .insert({
         tenant_id,
-        order_type: data.order_type || 'retirada',
-        order_status: "pending",
+        order_type: normalizedType,
+        order_status: normalizedStatus,
         customer_id: customerData.id,
         address_id: addressData.id,
         notes: data.notes,

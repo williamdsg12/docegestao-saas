@@ -28,6 +28,21 @@ export async function POST(req: Request) {
       tenant_id: effectiveTenantId
     }
 
+    // Verify if cash register is open
+    const { data: openRegister, error: registerErr } = await supabaseAdmin
+      .from('cash_registers')
+      .select('id')
+      .eq('company_id', effectiveTenantId)
+      .eq('status', 'open')
+      .limit(1)
+      .maybeSingle()
+
+    if (registerErr || !openRegister) {
+      return NextResponse.json({ 
+        error: 'O caixa deste estabelecimento está FECHADO. Não é possível registrar pedidos no momento.' 
+      }, { status: 400 })
+    }
+
     const result = await createOrder(data)
 
     if (!result.success) {

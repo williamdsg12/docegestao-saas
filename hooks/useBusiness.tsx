@@ -128,9 +128,9 @@ export const BusinessProvider = ({ children }: { children: React.ReactNode }) =>
                     primary_color: resMenu.data?.primary_color || resCompany.data?.primary_color || resSettings.data?.primary_color,
                     instagram: resMenu.data?.instagram || profileData?.instagram || resCompany.data?.instagram,
                     rate_per_km: resDelivery.data?.fee_per_km ?? 0,
-                    monthly_goal: 10000
+                    monthly_goal: resEmpresa.data?.opening_hours?.monthly_goal || 10000
                 },
-                opening_hours: resSettings.data?.opening_hours || resCompany.data?.opening_hours || resEmpresa.data?.opening_hours || {},
+                opening_hours: resSettings.data?.opening_hours || resEmpresa.data?.opening_hours || resCompany.data?.opening_hours || {},
                 is_manual_override: resSettings.data?.is_manual_override,
                 manual_status: resSettings.data?.manual_status,
                 logo_url: resMenu.data?.menu_logo || resEmpresa.data?.logo_url || resCompany.data?.logo_url || resSettings.data?.logo_url,

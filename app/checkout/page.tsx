@@ -177,6 +177,21 @@ export default function CheckoutPage() {
         throw new Error("ID da loja não encontrado. Recarregue a página.")
       }
 
+      // Check if cash register is open
+      const { data: openRegister, error: registerErr } = await supabase
+        .from('cash_registers')
+        .select('id')
+        .eq('company_id', effectiveTenantId)
+        .eq('status', 'open')
+        .limit(1)
+        .maybeSingle()
+
+      if (registerErr || !openRegister) {
+        toast.error("O caixa deste estabelecimento está FECHADO. Não é possível receber novos pedidos no momento.")
+        setIsSubmitting(false)
+        return
+      }
+
       // 1. Prepare data for the Transactional RPC (Relational Model v12)
       const rpcParams = {
         p_tenant_id: effectiveTenantId,
@@ -199,7 +214,9 @@ export default function CheckoutPage() {
           order_type: (distance || 0) > 0 ? 'delivery' : 'pickup',
           notes: customerInfo.notes,
           delivery_fee: deliveryFee,
-          discount: 0
+          discount: 0,
+          latitude: address?.lat || null,
+          longitude: address?.lng || null
         },
         p_items: cart.map(item => ({
           product_id: item.id,
@@ -236,6 +253,12 @@ export default function CheckoutPage() {
 
       const newOrderId = result.order_id
       const order = { id: newOrderId, ...rpcParams.p_order } // Mock order object for webhook
+
+      // Save store slug in localStorage for post-delivery redirects
+      const slugToSave = business?.slug || businessFromMenu?.slug || "";
+      if (slugToSave) {
+        localStorage.setItem('storeSlug', slugToSave);
+      }
 
       // 5. External Actions (n8n Webhook)
       const n8nUrl = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL
@@ -288,7 +311,7 @@ export default function CheckoutPage() {
       // Default Success (Cash on delivery or manual payment)
       toast.success("Pedido realizado com sucesso!")
       localStorage.removeItem('checkout_cart')
-      router.push(`/pedido-confirmado?orderId=${order.id}`)
+      router.push(`/pedido/rastreamento/${order.id}?new=true`)
 
     } catch (err: any) {
       console.error("Full Finalization Error Object:", err)

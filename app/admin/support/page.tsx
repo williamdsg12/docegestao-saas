@@ -5,7 +5,8 @@ import {
   Search, Send, Headphones, RefreshCcw, 
   Mic, Paperclip, X, Clock, AlertCircle, CheckCircle2,
   ChevronLeft, MessageSquare, Star, Zap, Smile, 
-  Sparkles, BookOpen, Trash2, Filter, MoreVertical
+  Sparkles, BookOpen, Trash2, Filter, MoreVertical,
+  Play
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"

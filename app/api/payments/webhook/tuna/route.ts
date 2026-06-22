@@ -24,9 +24,14 @@ export async function POST(req: Request) {
             // 1. Update Order Status in 'orders' table
             const { error: orderError } = await supabaseAdmin
                 .from('orders')
-                .update({ status: 'novo' }) // 'novo' is the start of production in this system
+                .update({ 
+                    order_status: 'novo',
+                    payment_status: 'paid',
+                    paid: true,
+                    payment_confirmed_at: new Date().toISOString()
+                }) // 'novo' is the start of production in this system
                 .eq('id', partnerOrderId)
-                .eq('status', 'pendente_pagamento'); // Safety check
+                .eq('order_status', 'pendente_pagamento'); // Safety check
 
             if (orderError) console.error('Error updating order to novo from Tuna:', orderError);
 

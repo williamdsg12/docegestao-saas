@@ -37,7 +37,7 @@ export function useProfileStats() {
       ] = await Promise.all([
         supabase.from('receitas').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId),
         supabase.from('orders').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId),
-        supabase.from('customers').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId),
+        supabase.from('customers').select('id', { count: 'exact', head: true }).eq('tenant_id', tenantId).is('deleted_at', null),
         supabase.from('orders').select('total').eq('tenant_id', tenantId).in('status', ['delivered', 'finalizado'])
       ])
 

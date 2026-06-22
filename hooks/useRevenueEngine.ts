@@ -54,7 +54,7 @@ export function useRevenueEngine() {
             }
 
             // 2. Volume de Vendas e Plano
-            if (totalMes > 3000 && profile?.plan_type !== 'premium') {
+            if (totalMes > 3000 && (profile as any)?.plan_type !== 'premium') {
                 newInsights.push({
                     title: "Escalabilidade Detectada",
                     description: "Seu volume de vendas este mês justifica o uso de automações de marketing. O plano Premium pode economizar 5h do seu atendimento por semana.",

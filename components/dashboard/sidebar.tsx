@@ -30,12 +30,15 @@ import {
   MessageSquare,
   Megaphone,
   ShoppingBag,
+  Bot,
+  ShieldCheck
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { motion, AnimatePresence } from "framer-motion"
 import { useAuth } from "@/hooks/useAuth"
+import { usePedidoStore } from "@/store/pedidoStore"
 import { useRouter } from "next/navigation"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
@@ -66,6 +69,7 @@ const menuGroups = [
       { name: "Produtos (Catálogo)", icon: Coffee, path: "/dashboard/menu", feature: "menu" },
       { name: "Estoque (Insumos)", icon: UtensilsCrossed, path: "/dashboard/estoque", feature: "ingredientes" },
       { name: "Receitas", icon: BookOpen, path: "/dashboard/receitas", feature: "receitas" },
+      { name: "Mesas", icon: UtensilsCrossed, path: "/dashboard/mesas", feature: "pedidos" },
     ]
   },
   {
@@ -73,6 +77,7 @@ const menuGroups = [
     icon: Megaphone,
     items: [
       { name: "Marketing & VIP", icon: Megaphone, path: "/dashboard/marketing", feature: "marketing" },
+      { name: "Configurar Robô", icon: Bot, path: "/dashboard/chatbot", feature: "marketing" },
       { name: "Relatórios", icon: BarChart3, path: "/dashboard/relatorios", feature: "relatorios" },
     ]
   },
@@ -81,6 +86,7 @@ const menuGroups = [
     icon: Wallet,
     items: [
       { name: "Fluxo de Caixa", icon: Wallet, path: "/dashboard/financeiro", feature: "financeiro" },
+      { name: "Configuração de Recebimentos", icon: ShieldCheck, path: "/dashboard/financeiro/recebimentos", feature: "financeiro" },
       { name: "Precificação", icon: Calculator, path: "/dashboard/precificacao-inteligente", badge: "Novo", feature: "precificacao" },
       { name: "Assinatura", icon: Crown, path: "/dashboard/assinatura", feature: "assinatura" },
     ]
@@ -91,6 +97,7 @@ const menuGroups = [
     items: [
       { name: "Ajustes do Sistema", icon: Settings, path: "/dashboard/settings", feature: "perfil" },
       { name: "Visual Premium", icon: Palette, path: "/dashboard/configuracoes", feature: "perfil" },
+      { name: "Equipe e Funções", icon: Users, path: "/dashboard/equipe", feature: "equipe" },
       { name: "Impressoras", icon: Printer, path: "/dashboard/settings/impressoras", badge: "PRO", feature: "pro_features" },
     ]
   }
@@ -175,7 +182,7 @@ function SidebarContent({
       .select(`
         id,
         tickets!inner(tenant_id)
-      `)
+      `, { count: 'exact', head: true })
       .eq('lido', false)
       .eq('remetente', profile?.is_admin ? 'usuario' : 'admin')
 
@@ -183,7 +190,7 @@ function SidebarContent({
       query = query.eq('tickets.tenant_id', profile?.tenant_id)
     }
 
-    const { count, error } = await query.range(0, 0, { count: 'exact' })
+    const { count, error } = await query.range(0, 0)
     if (!error && count !== null) {
       setUnreadSupportCount(count)
     }
@@ -202,12 +209,17 @@ function SidebarContent({
     }
   }, [fetchUnreadSupport])
 
+  const pendingOrdersCount = usePedidoStore(s => s.pedidos.filter(p => p.status === 'novo' || p.status === 'pending').length)
+
   // Update menu groups with dynamic badge
   const updatedMenuGroups = menuGroups.map(group => ({
     ...group,
     items: group.items.map(item => {
       if (item.name === "Mensagens") {
         return { ...item, badge: unreadSupportCount > 0 ? unreadSupportCount.toString() : undefined }
+      }
+      if (item.name === "Pedidos") {
+        return { ...item, badge: pendingOrdersCount > 0 ? pendingOrdersCount.toString() : undefined }
       }
       return item
     })

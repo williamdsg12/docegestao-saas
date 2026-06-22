@@ -74,18 +74,37 @@ export default function LogisticaPage() {
     const { data: couriersData } = await supabase
       .from('entregadores')
       .select('*, entregador_localizacao(*)')
-      .eq('company_id', profile.company_id)
+      .eq('empresa_id', profile.company_id)
     
     setCouriers(couriersData || [])
 
-    // Fetch active deliveries (saiu_entrega)
-    const { data: ordersData } = await supabase
-      .from('pedidos')
-      .select('*, clientes(nome)')
-      .eq('company_id', profile.company_id)
-      .eq('status', 'saiu_entrega')
+    // Fetch active deliveries (saiu_entrega, a_caminho, chegou)
+    const { data: ordersData, error: ordersError } = await supabase
+      .from('orders')
+      .select(`
+        *,
+        customers(*),
+        addresses!address_id(*)
+      `)
+      .eq('tenant_id', profile.company_id)
+      .in('order_status', ['saiu_entrega', 'a_caminho', 'chegou'])
     
-    setActiveDeliveries(ordersData || [])
+    if (ordersError) {
+      console.error("Error fetching active orders for logistics:", ordersError.message)
+    }
+
+    const mapped = (ordersData || []).map((o: any) => ({
+      ...o,
+      clientes: {
+        nome: o.customers?.name || o.customers?.full_name || 'Cliente'
+      },
+      status: o.order_status || o.status,
+      // Default coordinates if not set in order
+      lat: Number(o.latitude || o.addresses?.latitude || -23.5505),
+      lng: Number(o.longitude || o.addresses?.longitude || -46.6333)
+    }))
+    
+    setActiveDeliveries(mapped)
   }, [profile])
 
   const atualizarMapa = useCallback((newLocation: any) => {
@@ -227,6 +246,22 @@ export default function LogisticaPage() {
                 )
               })}
 
+              {/* Active Delivery Destination Markers */}
+              {activeDeliveries.map(delivery => {
+                if (!delivery.lat || !delivery.lng) return null
+                return (
+                  <Marker
+                    key={delivery.id}
+                    position={{ lat: Number(delivery.lat), lng: Number(delivery.lng) }}
+                    onClick={() => onSelectMarker(delivery, 'delivery')}
+                    icon={{
+                      url: "https://maps.google.com/mapfiles/ms/icons/red-pushpin.png",
+                      scaledSize: new google.maps.Size(32, 32)
+                    }}
+                  />
+                )
+              })}
+
               {/* Info Window */}
               {selectedMarker && (
                 <InfoWindow
@@ -313,7 +348,16 @@ export default function LogisticaPage() {
                       <div className="flex-1">
                         <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-0.5 md:mb-1">Entregador Responsável</p>
                         <p className="text-[10px] md:text-xs font-black uppercase text-white tracking-widest">
-                           {couriers.find(c => c.id === delivery.entregador_id)?.nome || "Buscando..."}
+                           {(() => {
+                             const courier = couriers.find(c => c.id === delivery.entregador_id)
+                             if (!courier) return "Buscando..."
+                             try {
+                               const parsed = JSON.parse(courier.nome)
+                               return parsed.nome
+                             } catch (e) {
+                               return courier.nome
+                             }
+                           })()}
                         </p>
                       </div>
                     </div>

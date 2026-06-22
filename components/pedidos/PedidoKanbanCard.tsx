@@ -110,7 +110,7 @@ export function PedidoKanbanCard({ pedido, onAccept, onReject, onNextStep }: Ped
       {/* Content: Customer & Price */}
       <div className="mb-2">
         <h4 className="font-black text-[var(--text-primary)] uppercase italic truncate text-[11px] pr-2">
-            {pedido.customers?.name || "Cliente Final"}
+            {pedido.customers?.name || pedido.customer?.name || pedido.customerName || pedido.cliente_name || pedido.nomeCliente || pedido.cliente?.nome || "Cliente Final"}
         </h4>
         <div className="flex items-center justify-between mt-0.5">
             <span className="font-black text-[var(--text-primary)] text-sm tracking-tight italic">

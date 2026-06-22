@@ -159,10 +159,14 @@ export function PedidoCard({ pedido, onAccept, onReject, onNextStep, onUpdatePay
                 {/* 4. CLIENTE / LOGISTICA */}
                 <div className="flex-1 p-4 flex flex-col justify-center gap-1.5 overflow-hidden">
                     <div className="flex items-center gap-2">
-                        <span className="text-sm font-black text-slate-700 truncate">{pedido.customers?.name || "Cliente Final"}</span>
+                        <span className="text-sm font-black text-slate-700 truncate">
+                            {pedido.customers?.name || pedido.customer?.name || pedido.customerName || pedido.cliente_name || pedido.nomeCliente || pedido.cliente?.nome || "Cliente Final"}
+                        </span>
                         <div className="flex items-center gap-1 bg-[#F0FDF4] text-[#22C55E] rounded-md px-1.5 py-0.5 border border-[#DCFCE7] cursor-pointer hover:bg-[#DCFCE7]">
                             <MessageCircle className="size-3 fill-current" />
-                            <span className="text-[9px] font-black">{formatPhone(pedido.customers?.phone || "")}</span>
+                            <span className="text-[9px] font-black">
+                                {formatPhone(pedido.customers?.phone || pedido.customer?.phone || pedido.customerPhone || pedido.cliente_phone || pedido.telefoneCliente || pedido.cliente?.telefone || "")}
+                            </span>
                             <ChevronDown className="size-2.5" />
                         </div>
                     </div>

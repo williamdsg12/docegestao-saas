@@ -296,15 +296,22 @@ export function PedidoDrawer({ onUpdateStatus, onUpdatePaymentStatus }: PedidoDr
                                         <User className="size-7" />
                                     </div>
                                     <div>
-                                        <h4 className="font-black text-slate-900 text-base leading-tight">{pedido.customers?.name || "Cliente Final"}</h4>
-                                        <p className="text-sm text-slate-500 font-bold">{formatPhone(pedido.customers?.phone || "")}</p>
+                                        <h4 className="font-black text-slate-900 text-base leading-tight">
+                                            {pedido.customers?.name || pedido.customer?.name || pedido.customerName || pedido.cliente_name || pedido.nomeCliente || pedido.cliente?.nome || "Cliente Final"}
+                                        </h4>
+                                        <p className="text-sm text-slate-500 font-bold">
+                                            {formatPhone(pedido.customers?.phone || pedido.customer?.phone || pedido.customerPhone || pedido.cliente_phone || pedido.telefoneCliente || pedido.cliente?.telefone || "")}
+                                        </p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <Button
                                         size="icon"
                                         className="h-11 w-11 bg-[#25D366] hover:bg-[#128C7E] text-white rounded-2xl shadow-lg shadow-green-100 transition-all hover:scale-105"
-                                        onClick={() => window.open(`https://wa.me/55${pedido.customers?.phone?.replace(/\D/g, '')}`, '_blank')}
+                                        onClick={() => {
+                                            const phone = pedido.customers?.phone || pedido.customer?.phone || pedido.customerPhone || pedido.cliente_phone || pedido.telefoneCliente || pedido.cliente?.telefone || "";
+                                            window.open(`https://wa.me/55${phone.replace(/\D/g, '')}`, '_blank');
+                                        }}
                                     >
                                         <MessageCircle className="size-6 fill-current" />
                                     </Button>

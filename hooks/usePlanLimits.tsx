@@ -50,7 +50,7 @@ export function usePlanLimits() {
       const [ordersCount, productsCount, clientsCount] = await Promise.all([
         supabase.from('orders').select('id', { count: 'exact' }).eq('tenant_id', tenantId),
         supabase.from('products').select('id', { count: 'exact' }).eq('tenant_id', tenantId),
-        supabase.from('customers').select('id', { count: 'exact' }).eq('tenant_id', tenantId)
+        supabase.from('customers').select('id', { count: 'exact' }).eq('tenant_id', tenantId).is('deleted_at', null)
       ])
 
       const planData = sub?.plans

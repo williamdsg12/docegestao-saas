@@ -130,9 +130,13 @@ export async function POST(req: Request) {
 
         return NextResponse.json({
             id: result.id,
+            payment_id: result.id,
+            order_id: order_id,
             qr_code: pixData.qr_code,
+            pix_code: pixData.qr_code,
             qr_code_base64: pixData.qr_code_base64,
-            ticket_url: pixData.ticket_url
+            ticket_url: pixData.ticket_url,
+            expires_at: new Date(Date.now() + 3600000).toISOString()
         });
 
     } catch (error: any) {

@@ -41,6 +41,9 @@ export function CheckoutFlow({ isOpen, onClose, subtotal, deliveryFee, total, te
     number: "",
     complement: "",
     neighborhood: "",
+    city: "",
+    state: "",
+    reference_point: "",
     tax_id: "",
     notes: "",
     payment_method: "pix",
@@ -50,19 +53,129 @@ export function CheckoutFlow({ isOpen, onClose, subtotal, deliveryFee, total, te
   const [deliveryType, setDeliveryType] = useState<"entrega" | "retirada">("entrega")
   const [paymentStatus, setPaymentStatus] = useState<"idle" | "processing" | "success" | "error">("idle")
   
+  const [addressesList, setAddressesList] = useState<any[]>([])
+  const [selectedAddressId, setSelectedAddressId] = useState<string>("")
+  const [isSearchingPhone, setIsSearchingPhone] = useState(false)
+  const [isNewCustomer, setIsNewCustomer] = useState(true)
+  const [showNewAddressForm, setShowNewAddressForm] = useState(false)
+
   const router = useRouter()
 
-  const handleNext = () => {
-    if (step === 2) {
-      const phoneRegex = /^\(\d{2}\) \d{5}-\d{4}$/
-      if (!phoneRegex.test(customerInfo.phone)) {
-        setPhoneError("Telefone inválido. Use (XX) XXXXX-XXXX")
-        return
-      }
-      setPhoneError("")
+  // Trigger lookup automatically when phone reaches 11 digits
+  useEffect(() => {
+    const clean = customerInfo.phone.replace(/\D/g, "")
+    if (clean.length === 11) {
+      handleSearchCustomer(clean)
     }
-    setStep(prev => prev + 1)
+  }, [customerInfo.phone])
+
+  const handleSearchCustomer = async (cleanPhone: string) => {
+    setIsSearchingPhone(true)
+    try {
+      const res = await fetch(`/api/customers?phone=${cleanPhone}&storeId=${tenantId}`)
+      if (!res.ok) throw new Error("Search failed")
+      const customer = await res.json()
+      
+      if (customer) {
+        toast.success(`Bem-vindo de volta, ${customer.name || 'Cliente'}! 🎉`)
+        
+        setCustomerInfo(prev => ({
+          ...prev,
+          name: customer.name || "",
+          phone: formatPhone(customer.phone) || prev.phone,
+          cep: customer.cep || "",
+          address: customer.address || "",
+          number: customer.number || "",
+          complement: customer.complement || "",
+          neighborhood: customer.neighborhood || "",
+          city: customer.city || "",
+          state: customer.state || "",
+          reference_point: customer.reference_point || "",
+          tax_id: customer.cpf_cnpj || ""
+        }))
+
+        const list = customer.addresses || []
+        setAddressesList(list)
+        
+        if (list.length > 0) {
+          const mainAddr = list.find((a: any) => a.id !== 'synthetic-addr') || list[0]
+          setSelectedAddressId(mainAddr.id)
+          setCustomerInfo(prev => ({
+            ...prev,
+            cep: mainAddr.zip || prev.cep,
+            address: mainAddr.street || prev.address,
+            number: mainAddr.number || prev.number,
+            complement: mainAddr.complement || prev.complement,
+            neighborhood: mainAddr.neighborhood || prev.neighborhood,
+            city: mainAddr.city || prev.city,
+            state: mainAddr.state || prev.state,
+            reference_point: mainAddr.reference || prev.reference_point
+          }))
+          setShowNewAddressForm(false)
+        } else {
+          setSelectedAddressId("customer-main")
+          setShowNewAddressForm(false)
+        }
+
+        setIsNewCustomer(false)
+        setStep(2)
+      } else {
+        setIsNewCustomer(true)
+        setAddressesList([])
+        setSelectedAddressId("")
+        setShowNewAddressForm(true)
+        setStep(2)
+      }
+    } catch (err) {
+      console.error("Error searching customer:", err)
+      toast.error("Erro ao buscar cadastro")
+    } finally {
+      setIsSearchingPhone(false)
+    }
   }
+
+  const logAbandonedCart = async () => {
+    try {
+      const slug = window.location.pathname.split('/')[2] || ""
+      const cartLink = `${window.location.origin}/menu/${slug}?cart=recovered`
+      await fetch('/api/checkout/abandoned-cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tenantId,
+          phone: customerInfo.phone,
+          clientName: customerInfo.name,
+          cartLink
+        })
+      })
+    } catch (err) {
+      console.warn("Failed to log abandoned cart:", err)
+    }
+  }
+
+  const handleStep1Submit = async () => {
+    const clean = customerInfo.phone.replace(/\D/g, "")
+    if (clean.length < 10) {
+      setPhoneError("Telefone inválido. Deve conter DDD + número.")
+      return
+    }
+    setPhoneError("")
+    await handleSearchCustomer(clean)
+  }
+
+  const handleStep2Submit = async () => {
+    if (!customerInfo.name) {
+      toast.error("Nome é obrigatório")
+      return
+    }
+    if (!customerInfo.address || !customerInfo.number) {
+      toast.error("Endereço e número são obrigatórios")
+      return
+    }
+    await logAbandonedCart()
+    setStep(3)
+  }
+
   const handleBack = () => setStep(prev => prev - 1)
 
   const formatPhone = (value: string) => {
@@ -108,7 +221,6 @@ export function CheckoutFlow({ isOpen, onClose, subtotal, deliveryFee, total, te
     setIsSubmitting(true)
     setPaymentStatus("processing")
     try {
-      // Get items from localStorage for the message
       const slug = window.location.pathname.split('/')[2]
       const cartData = JSON.parse(localStorage.getItem(`cart_${slug}`) || "[]")
 
@@ -120,6 +232,19 @@ export function CheckoutFlow({ isOpen, onClose, subtotal, deliveryFee, total, te
 
       const result: any = await onSubmit(orderData)
       if (result?.orderId) {
+        try {
+          await fetch('/api/checkout/abandoned-cart', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              tenantId,
+              phone: customerInfo.phone
+            })
+          })
+        } catch (recoverErr) {
+          console.warn("Failed to update recovered cart:", recoverErr)
+        }
+
         setPaymentStatus("success")
         setTimeout(() => handleFinalize(result.orderId, cartData), 1500)
       }
@@ -140,16 +265,16 @@ export function CheckoutFlow({ isOpen, onClose, subtotal, deliveryFee, total, te
            <div className="flex items-center gap-3">
               {step > 1 && !isSubmitting && (
                 <button onClick={handleBack} className="text-slate-400 hover:text-slate-900 transition-colors">
-                  <ArrowLeft className="size-5" />
+                   <ArrowLeft className="size-5" />
                 </button>
               )}
               <DialogTitle className="text-lg font-bold text-slate-900">
-                {step === 1 ? "Adicione seu endereço" : step === 2 ? "Suas informações" : "Pagamento"}
+                {step === 1 ? "Identificação" : step === 2 ? "Seus dados e endereço" : "Pagamento"}
               </DialogTitle>
            </div>
            {!isSubmitting && (
              <Button variant="ghost" size="icon" className="rounded-full" onClick={onClose}>
-               <X className="size-5" />
+                <X className="size-5" />
              </Button>
            )}
         </div>
@@ -157,96 +282,209 @@ export function CheckoutFlow({ isOpen, onClose, subtotal, deliveryFee, total, te
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
            <AnimatePresence mode="wait">
               {step === 1 && (
-                <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
-                   <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-4">
-                      <div className="flex items-center gap-3 text-slate-400">
-                         <Info className="size-4" />
-                         <span className="text-[10px] font-bold uppercase tracking-widest">Minhas informações</span>
-                      </div>
-                      <div className="space-y-4">
-                         <div className="space-y-1.5">
-                            <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Endereço de entrega</Label>
-                            <AddressAutocomplete
-                              onAddressSelect={(addr) => {
-                                setCustomerInfo(prev => ({
-                                  ...prev,
-                                  address: addr.street || addr.formatted_address,
-                                  neighborhood: addr.neighborhood,
-                                  cep: addr.zip,
-                                  city: addr.city,
-                                  number: addr.number || prev.number
-                                }))
-                                if (addr.lat && addr.lng) onFeeUpdate(5.00) // Dummy fee for now
-                              }}
-                              placeholder="Rua, Número, Bairro"
-                              className="h-14 rounded-xl bg-slate-50 border-none font-bold"
-                            />
-                         </div>
-                         <div className="grid grid-cols-2 gap-4">
-                            <Input 
-                              placeholder="Número" 
-                              className="h-12 rounded-xl bg-slate-50 border-none font-bold" 
-                              value={customerInfo.number} 
-                              onChange={e => setCustomerInfo({...customerInfo, number: e.target.value})} 
-                            />
-                            <Input 
-                              placeholder="Bairro" 
-                              className="h-12 rounded-xl bg-slate-50 border-none font-bold" 
-                              value={customerInfo.neighborhood} 
-                              onChange={e => setCustomerInfo({...customerInfo, neighborhood: e.target.value})} 
-                            />
-                         </div>
+                <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6 text-center">
+                   <div className="space-y-2">
+                      <Smartphone className="size-12 mx-auto text-[#1a56db] animate-bounce" />
+                      <h3 className="text-xl font-bold text-slate-900">Informe seu telefone (WhatsApp)</h3>
+                      <p className="text-xs text-slate-500">Para recuperar seus dados automaticamente em futuras compras.</p>
+                   </div>
+                   <div className="space-y-4 text-left">
+                      <div className="space-y-1.5">
+                         <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Telefone (WhatsApp)</Label>
                          <Input 
-                            placeholder="Complemento (Opcional)" 
-                            className="h-12 rounded-xl bg-slate-50 border-none font-bold" 
-                            value={customerInfo.complement} 
-                            onChange={e => setCustomerInfo({...customerInfo, complement: e.target.value})} 
+                           placeholder="(00) 00000-0000" 
+                           className={cn("h-14 rounded-xl bg-white border-slate-200 font-bold text-center text-lg", phoneError && "border-red-500")} 
+                           value={customerInfo.phone} 
+                           disabled={isSearchingPhone}
+                           onChange={e => setCustomerInfo({...customerInfo, phone: formatPhone(e.target.value)})} 
                          />
+                         {phoneError && <p className="text-[10px] text-red-500 font-bold uppercase tracking-widest mt-1 text-center">{phoneError}</p>}
                       </div>
                    </div>
                    <Button 
-                      disabled={!customerInfo.address || !customerInfo.number} 
-                      onClick={handleNext} 
-                      className="w-full h-14 rounded-xl bg-[#1a56db] text-white font-bold uppercase tracking-widest shadow-lg shadow-blue-100"
+                      disabled={customerInfo.phone.length < 14 || isSearchingPhone} 
+                      onClick={handleStep1Submit} 
+                      className="w-full h-14 rounded-xl bg-[#1a56db] text-white font-bold uppercase tracking-widest shadow-lg shadow-blue-100 flex items-center justify-center gap-2"
                    >
-                      Confirme o endereço
+                      {isSearchingPhone ? (
+                        <>
+                          <Loader2 className="size-5 animate-spin" /> Buscando cadastro...
+                        </>
+                      ) : (
+                        <>
+                          Continuar <ArrowRight className="size-4" />
+                        </>
+                      )}
                    </Button>
                 </motion.div>
               )}
 
               {step === 2 && (
-                <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6 text-center">
-                   <div className="space-y-2">
-                      <h3 className="text-xl font-bold text-slate-900">Adicione seu nome e número de telefone</h3>
-                      <p className="text-xs text-slate-500">Isso ajudará a loja a entrar em contato se necessário.</p>
-                   </div>
-                   <div className="space-y-4 text-left">
-                      <div className="space-y-1.5">
-                         <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Nome completo</Label>
-                         <Input 
-                           placeholder="Ex: João Silva" 
-                           className="h-14 rounded-xl bg-white border-slate-200 font-bold" 
-                           value={customerInfo.name} 
-                           onChange={e => setCustomerInfo({...customerInfo, name: e.target.value})} 
-                         />
+                <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
+                   
+                   {/* Personal Info */}
+                   <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 space-y-4">
+                      <div className="flex items-center gap-3 text-slate-400">
+                         <Info className="size-4" />
+                         <span className="text-[10px] font-bold uppercase tracking-widest">Informações Pessoais</span>
                       </div>
-                      <div className="space-y-1.5">
-                         <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Telefone (WhatsApp)</Label>
-                         <Input 
-                           placeholder="(00) 00000-0000" 
-                           className={cn("h-14 rounded-xl bg-white border-slate-200 font-bold", phoneError && "border-red-500")} 
-                           value={customerInfo.phone} 
-                           onChange={e => setCustomerInfo({...customerInfo, phone: formatPhone(e.target.value)})} 
-                         />
-                         {phoneError && <p className="text-[10px] text-red-500 font-bold uppercase tracking-widest mt-1">{phoneError}</p>}
+                      <div className="space-y-4">
+                         <div className="space-y-1.5">
+                            <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Nome Completo</Label>
+                            <Input 
+                              placeholder="Ex: João Silva" 
+                              className="h-12 rounded-xl bg-slate-50 border-none font-bold" 
+                              value={customerInfo.name} 
+                              onChange={e => setCustomerInfo({...customerInfo, name: e.target.value})} 
+                            />
+                         </div>
+                         <div className="space-y-1.5">
+                            <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">CPF / CNPJ (Opcional)</Label>
+                            <Input 
+                              placeholder="000.000.000-00" 
+                              className="h-12 rounded-xl bg-slate-50 border-none font-bold" 
+                              value={customerInfo.tax_id} 
+                              onChange={e => setCustomerInfo({...customerInfo, tax_id: e.target.value})} 
+                            />
+                         </div>
                       </div>
                    </div>
+
+                   {/* Address Selection / input */}
+                   <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 space-y-4">
+                      <div className="flex items-center justify-between">
+                         <div className="flex items-center gap-3 text-slate-400">
+                            <MapPin className="size-4" />
+                            <span className="text-[10px] font-bold uppercase tracking-widest">Endereço de Entrega</span>
+                         </div>
+                         {!isNewCustomer && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-xs font-bold text-[#1a56db] hover:bg-blue-50/50"
+                              onClick={() => {
+                                setShowNewAddressForm(prev => !prev);
+                                if (!showNewAddressForm) {
+                                  setSelectedAddressId("new-address");
+                                } else {
+                                  if (addressesList.length > 0) setSelectedAddressId(addressesList[0].id);
+                                }
+                              }}
+                            >
+                               {showNewAddressForm ? "Ver Meus Endereços" : "+ Adicionar Novo"}
+                            </Button>
+                         )}
+                      </div>
+
+                      {/* Display address list if returning customer */}
+                      {!isNewCustomer && !showNewAddressForm && addressesList.length > 0 && (
+                         <div className="space-y-2">
+                            {addressesList.map((addr) => (
+                               <button
+                                 key={addr.id}
+                                 type="button"
+                                 onClick={() => {
+                                   setSelectedAddressId(addr.id);
+                                   setCustomerInfo(prev => ({
+                                     ...prev,
+                                     cep: addr.zip || prev.cep,
+                                     address: addr.street || prev.address,
+                                     number: addr.number || prev.number,
+                                     complement: addr.complement || prev.complement,
+                                     neighborhood: addr.neighborhood || prev.neighborhood,
+                                     city: addr.city || prev.city,
+                                     state: addr.state || prev.state,
+                                     reference_point: addr.reference || prev.reference_point
+                                   }));
+                                 }}
+                                 className={cn(
+                                   "w-full text-left p-3.5 rounded-xl border-2 transition-all flex items-start gap-3",
+                                   selectedAddressId === addr.id ? "border-[#1a56db] bg-blue-50/30 text-[#1a56db]" : "border-slate-100 bg-slate-50 text-slate-600"
+                                 )}
+                               >
+                                 <div className={cn("size-5 rounded-full border-2 flex items-center justify-center mt-0.5 shrink-0", selectedAddressId === addr.id ? "border-[#1a56db]" : "border-slate-300")}>
+                                    {selectedAddressId === addr.id && <div className="size-2.5 rounded-full bg-[#1a56db]" />}
+                                 </div>
+                                 <div className="text-xs">
+                                    <p className="font-bold text-slate-800">{addr.street}, {addr.number}</p>
+                                    <p className="text-[10px] text-slate-500 font-medium">{addr.neighborhood} - {addr.city} {addr.complement ? `(${addr.complement})` : ''}</p>
+                                 </div>
+                               </button>
+                            ))}
+                         </div>
+                      )}
+
+                      {/* Show form when new customer or showNewAddressForm is toggled */}
+                      {(isNewCustomer || showNewAddressForm) && (
+                         <div className="space-y-4">
+                            <div className="space-y-1.5">
+                               <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Buscar Endereço</Label>
+                               <AddressAutocomplete
+                                 onAddressSelect={(addr) => {
+                                   setCustomerInfo(prev => ({
+                                     ...prev,
+                                     address: addr.street || addr.formatted_address,
+                                     neighborhood: addr.neighborhood,
+                                     cep: addr.zip,
+                                     city: addr.city,
+                                     state: addr.state || prev.state,
+                                     number: addr.number || prev.number
+                                   }))
+                                   if (addr.lat && addr.lng) onFeeUpdate(5.00) // Dummy fee
+                                 }}
+                                 placeholder="Digite rua, número, bairro..."
+                                 className="h-12 rounded-xl bg-slate-50 border-none font-bold"
+                               />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                               <div className="space-y-1.5">
+                                 <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Número</Label>
+                                 <Input 
+                                   placeholder="Número" 
+                                   className="h-12 rounded-xl bg-slate-50 border-none font-bold" 
+                                   value={customerInfo.number} 
+                                   onChange={e => setCustomerInfo({...customerInfo, number: e.target.value})} 
+                                 />
+                               </div>
+                               <div className="space-y-1.5">
+                                 <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Bairro</Label>
+                                 <Input 
+                                   placeholder="Bairro" 
+                                   className="h-12 rounded-xl bg-slate-50 border-none font-bold" 
+                                   value={customerInfo.neighborhood} 
+                                   onChange={e => setCustomerInfo({...customerInfo, neighborhood: e.target.value})} 
+                                 />
+                               </div>
+                            </div>
+                            <div className="space-y-1.5">
+                               <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Complemento</Label>
+                               <Input 
+                                 placeholder="Complemento (Opcional)" 
+                                 className="h-12 rounded-xl bg-slate-50 border-none font-bold" 
+                                 value={customerInfo.complement} 
+                                 onChange={e => setCustomerInfo({...customerInfo, complement: e.target.value})} 
+                               />
+                            </div>
+                            <div className="space-y-1.5">
+                               <Label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Ponto de Referência</Label>
+                               <Input 
+                                 placeholder="Ponto de referência (Opcional)" 
+                                 className="h-12 rounded-xl bg-slate-50 border-none font-bold" 
+                                 value={customerInfo.reference_point} 
+                                 onChange={e => setCustomerInfo({...customerInfo, reference_point: e.target.value})} 
+                               />
+                            </div>
+                         </div>
+                      )}
+
+                   </div>
+
                    <Button 
-                      disabled={!customerInfo.name || customerInfo.phone.length < 14} 
-                      onClick={handleNext} 
-                      className="w-full h-14 rounded-xl bg-[#1a56db] text-white font-bold uppercase tracking-widest shadow-lg shadow-blue-100"
+                      disabled={!customerInfo.name || !customerInfo.address || !customerInfo.number} 
+                      onClick={handleStep2Submit} 
+                      className="w-full h-14 rounded-xl bg-[#1a56db] text-white font-bold uppercase tracking-widest shadow-lg shadow-blue-100 flex items-center justify-center gap-2"
                    >
-                      Confirmar informações
+                      Confirmar informações <ArrowRight className="size-4" />
                    </Button>
                 </motion.div>
               )}

@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useRevenueEngine } from "@/hooks/useRevenueEngine"
+import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 
 const REASONS = [

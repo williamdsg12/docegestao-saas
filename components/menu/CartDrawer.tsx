@@ -22,9 +22,11 @@ interface CartDrawerProps {
   isOpen: boolean
   onClose: () => void
   items: CartItem[]
+  allProducts: any[]
   onUpdateQuantity: (id: string, delta: number) => void
   onRemoveItem: (id: string) => void
-  onCheckout: () => void
+  onAddToCart: (product: any) => void
+  onCheckout: (type: 'local' | 'retirada' | 'delivery') => void
   subtotal: number
 }
 
@@ -32,12 +34,37 @@ export function CartDrawer({
   isOpen, 
   onClose, 
   items, 
+  allProducts,
   onUpdateQuantity, 
   onRemoveItem, 
+  onAddToCart,
   onCheckout, 
   subtotal 
 }: CartDrawerProps) {
   const [deliveryType, setDeliveryType] = useState<'local' | 'retirada' | 'delivery'>('delivery')
+
+  // Os produtos sugeridos devem vir dos outros produtos
+  // da loja (excluindo os já no carrinho):
+  const suggestedProducts = allProducts
+    .filter(p => !items.some(item => item.id === p.id))
+    .slice(0, 3)
+
+  const handleAddSuggested = (product: any) => {
+    // Se o produto for simples (sem variações complexas), adiciona direto
+    // Caso contrário, poderíamos abrir o modal, mas aqui vamos simplificar 
+    // enviando para o onAddToCart que já gerencia se precisa abrir modal ou não
+    onAddToCart({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      quantity: 1,
+      image_url: product.image_url,
+      totalItemPrice: product.price,
+      variation: null,
+      extras: [],
+      observation: ""
+    })
+  }
 
   return (
     <AnimatePresence>
@@ -64,7 +91,7 @@ export function CartDrawer({
                </button>
                <div className="text-right">
                  <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Sua sacola</span>
-                 <span className="block text-sm font-black text-[#1a56db] italic">R$ {subtotal.toFixed(2)}</span>
+                 <span className="block text-sm font-black text-red-600 italic">R$ {subtotal.toFixed(2)}</span>
                </div>
             </div>
             
@@ -105,7 +132,7 @@ export function CartDrawer({
                               <span className="w-8 text-center font-bold text-xs">{item.quantity}</span>
                               <button 
                                 onClick={() => onUpdateQuantity(item.id, 1)} 
-                                className="px-3 h-full flex items-center justify-center text-slate-400 hover:text-[#1a56db]"
+                                className="px-3 h-full flex items-center justify-center text-slate-400 hover:text-red-600"
                               >
                                 <Plus className="size-4" />
                               </button>
@@ -118,23 +145,34 @@ export function CartDrawer({
               )}
 
               {/* 🍰 COMPLEMENTE SEU PEDIDO */}
-              <div className="mt-4 p-6 bg-white">
-                 <h3 className="text-xs font-black uppercase italic tracking-widest text-slate-400 mb-4">Complemente seu pedido</h3>
-                 <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar -mx-2 px-2">
-                    {[1, 2, 3].map(i => (
-                      <div key={i} className="min-w-[140px] bg-slate-50 rounded-xl p-3 border border-slate-100 space-y-2">
-                         <div className="aspect-square bg-white rounded-lg overflow-hidden border border-slate-100">
-                           <img src={`https://images.unsplash.com/photo-1551024601-bec78aea704b?auto=format&fit=crop&q=80&w=200`} className="size-full object-cover" alt="Complemento" />
-                         </div>
-                         <h5 className="font-bold text-[11px] truncate leading-tight">Mousse de Chocolate</h5>
-                         <div className="flex items-center justify-between">
-                            <span className="text-xs font-black italic">R$ 12,00</span>
-                            <button className="size-6 bg-[#1a56db] text-white rounded-full flex items-center justify-center"><Plus className="size-4" /></button>
-                         </div>
+              {suggestedProducts.length > 0 && (
+                <div className="mt-4 p-6 bg-white">
+                  <h3 className="text-xs font-black uppercase italic tracking-widest text-slate-400 mb-4">Complemente seu pedido</h3>
+                  <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar -mx-2 px-2">
+                    {suggestedProducts.map(product => (
+                      <div key={product.id} className="min-w-[140px] bg-slate-50 rounded-xl p-3 border border-slate-100 space-y-2">
+                        <div className="aspect-square bg-white rounded-lg overflow-hidden border border-slate-100">
+                          {product.image_url ? (
+                             <img src={product.image_url} className="size-full object-cover" alt={product.name} />
+                          ) : (
+                            <div className="size-full flex items-center justify-center text-slate-200 bg-slate-50">🍰</div>
+                          )}
+                        </div>
+                        <h5 className="font-bold text-[11px] truncate leading-tight">{product.name}</h5>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-black italic">R$ {product.price.toFixed(2)}</span>
+                          <button 
+                            onClick={() => handleAddSuggested(product)}
+                            className="size-6 bg-red-600 text-white rounded-full flex items-center justify-center hover:bg-red-700 transition-colors"
+                          >
+                            <Plus className="size-4" />
+                          </button>
+                        </div>
                       </div>
                     ))}
-                 </div>
-              </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* 🛒 FOOTER ACTIONS */}
@@ -147,7 +185,7 @@ export function CartDrawer({
                         onClick={() => setDeliveryType(type)}
                         className={cn(
                           "flex-1 py-3 text-[10px] font-black uppercase italic tracking-widest rounded-lg transition-all",
-                          deliveryType === type ? "bg-white text-[#1a56db] shadow-sm" : "text-slate-400 hover:text-slate-600"
+                          deliveryType === type ? "bg-white text-red-600 shadow-sm" : "text-slate-400 hover:text-slate-600"
                         )}
                      >
                         {type === 'local' ? 'No local' : type === 'retirada' ? 'Retirada' : 'Delivery'}
@@ -156,8 +194,8 @@ export function CartDrawer({
                 </div>
                 
                 <Button 
-                  onClick={onCheckout} 
-                  className="w-full h-14 rounded-xl bg-[#1a56db] hover:bg-[#1e40af] text-white font-black uppercase italic tracking-widest flex items-center justify-center gap-3 shadow-lg shadow-blue-100 active:scale-95"
+                  onClick={() => onCheckout(deliveryType)} 
+                  className="w-full h-14 rounded-xl bg-red-600 hover:bg-red-700 text-white font-black uppercase italic tracking-widest flex items-center justify-center gap-3 shadow-lg shadow-red-100 active:scale-95"
                 >
                   Confirmar (R$ {subtotal.toFixed(2)})
                 </Button>

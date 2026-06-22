@@ -27,12 +27,14 @@ export async function POST(req: Request) {
                     amount: parseFloat(amount),
                     orderId: order_id,
                     token: token,
-                    installments: installments || 1,
+                    installments: Number(installments) || 1,
                     customer: {
                         name: customer_name || 'Cliente',
                         email: customer_email || 'cliente@docegestao.com.br'
                     }
                 });
+
+                const isApproved = tunaResult.status === 'approved' || tunaResult.status === 2 || tunaResult.status === 3;
 
                 await supabaseAdmin
                     .from('payments')
@@ -40,15 +42,35 @@ export async function POST(req: Request) {
                         order_id,
                         tenant_id,
                         amount,
-                        status: tunaResult.status === 'approved' ? 'approved' : 'pending',
+                        status: isApproved ? 'approved' : 'pending',
                         payment_method: 'credit_card',
                         provider: 'tuna',
                         external_id: tunaResult.external_id
                     });
 
-                return NextResponse.json(tunaResult);
+                if (isApproved) {
+                    console.log('Pagamento aprovado');
+                    await supabaseAdmin
+                        .from('orders')
+                        .update({ 
+                            payment_status: 'paid',
+                            order_status: 'novo',
+                            paid: true,
+                            payment_confirmed_at: new Date().toISOString()
+                        })
+                        .eq('id', order_id);
+                } else {
+                    console.log('Pagamento recusado');
+                }
+
+                return NextResponse.json({
+                    id: tunaResult.id,
+                    status: isApproved ? 'approved' : 'pending',
+                    detail: tunaResult.status
+                });
             } catch (tunaError: any) {
                 console.error('Tuna Card Error:', tunaError);
+                console.log('Pagamento recusado');
                 return NextResponse.json({ error: tunaError.message }, { status: 500 });
             }
         }
@@ -61,6 +83,7 @@ export async function POST(req: Request) {
                 description: `Pedido #${order_id.slice(0, 8)}`,
                 payment_method_id,
                 issuer_id,
+                installments: Number(installments) || 1,
                 payer: {
                     email: customer_email || 'cliente@docegestao.com.br',
                 },
@@ -71,17 +94,34 @@ export async function POST(req: Request) {
         const paymentClient = getPaymentClient();
         const result = await paymentClient.create(paymentData);
 
+        const isApproved = result.status === 'approved';
+
         await supabaseAdmin
             .from('payments')
             .insert({
                 order_id,
                 tenant_id,
                 amount,
-                status: result.status === 'approved' ? 'approved' : 'pending',
+                status: isApproved ? 'approved' : 'pending',
                 payment_method: 'credit_card',
                 provider: 'mercadopago',
                 external_id: result.id?.toString()
             });
+
+        if (isApproved) {
+            console.log('Pagamento aprovado');
+            await supabaseAdmin
+                .from('orders')
+                .update({ 
+                    payment_status: 'paid',
+                    order_status: 'novo',
+                    paid: true,
+                    payment_confirmed_at: new Date().toISOString()
+                })
+                .eq('id', order_id);
+        } else {
+            console.log('Pagamento recusado');
+        }
 
         return NextResponse.json({
             id: result.id,

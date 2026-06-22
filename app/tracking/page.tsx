@@ -1,9 +1,10 @@
 "use client"
 
 import { useSearchParams } from "next/navigation"
+import { Suspense } from "react"
 import TrackingContent from "@/components/tracking/TrackingContent"
 
-export default function TrackingPage() {
+function TrackingPageContent() {
   const searchParams = useSearchParams()
   const orderId = searchParams.get("order_id")
 
@@ -16,4 +17,16 @@ export default function TrackingPage() {
   }
 
   return <TrackingContent orderId={orderId} />
+}
+
+export default function TrackingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center p-6 text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    }>
+      <TrackingPageContent />
+    </Suspense>
+  )
 }
