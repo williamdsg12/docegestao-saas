@@ -194,7 +194,6 @@ function ProdutosContentV4() {
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-20">
       
-<<<<<<< HEAD
       {/* HEADER PREMIUM - FULLY RESPONSIVE */}
       <div className="bg-white border-b border-slate-100 sticky top-0 z-30 shadow-sm">
          <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 h-16 sm:h-20 lg:h-24 flex items-center justify-between gap-2 sm:gap-4 lg:gap-8">
@@ -210,32 +209,11 @@ function ProdutosContentV4() {
                     placeholder="Buscar produtos..." 
                     value={search} onChange={e => setSearch(e.target.value)}
                     className="h-10 sm:h-12 lg:h-14 pl-10 sm:pl-12 lg:pl-14 rounded-xl sm:rounded-2xl border-none bg-slate-50 font-bold text-slate-600 placeholder:text-slate-300 focus:ring-4 focus:ring-indigo-100 transition-all shadow-inner text-sm sm:text-base"
-=======
-      {/* 🚀 HEADER */}
-      <div className="bg-white border-b border-slate-100 sticky top-0 z-30 shadow-sm">
-         <div className="max-w-7xl mx-auto px-[var(--space-md)] h-auto py-4 md:h-24 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 md:gap-8">
-            <div className="flex items-center gap-4 md:gap-6 flex-1">
-               <div className="hidden sm:flex flex-col shrink-0">
-                  <h1 className="text-[var(--font-base)] md:text-[var(--font-lg)] font-black italic uppercase tracking-tighter text-slate-900 leading-none">Meus <span className="text-indigo-600">Produtos</span></h1>
-                  <p className="text-[var(--font-xs)] font-bold text-slate-400 uppercase tracking-widest mt-0.5 whitespace-nowrap">Cardápio</p>
-               </div>
-               
-               <div className="relative flex-1 group">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-300 group-focus-within:text-indigo-500 transition-colors" />
-                  <Input 
-                    placeholder="Buscar..." 
-                    value={search} onChange={e => setSearch(e.target.value)}
-                    className="h-12 md:h-14 pl-12 rounded-2xl border-none bg-slate-50 font-bold text-slate-600 focus:ring-4 focus:ring-indigo-100 transition-all shadow-inner"
->>>>>>> d8bd0f007bcba4de2d011984f266ae7f01f1b5f5
                   />
                </div>
             </div>
 
-<<<<<<< HEAD
             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-=======
-            <div className="flex items-center gap-2">
->>>>>>> d8bd0f007bcba4de2d011984f266ae7f01f1b5f5
                <Button 
                 onClick={() => setShowPreview(!showPreview)}
                 variant={showPreview ? "default" : "outline"} 

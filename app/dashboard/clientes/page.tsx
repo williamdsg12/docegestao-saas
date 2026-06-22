@@ -294,76 +294,6 @@ function ClientesContent() {
         <PageSearch value={search} onChange={setSearch} placeholder="Buscar por nome ou telefone..." />
       </div>
 
-<<<<<<< HEAD
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
-        <AnimatePresence mode="popLayout">
-          {filtered.map((client) => (
-            <motion.div
-              key={client.id}
-              layout
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="group bg-white rounded-2xl sm:rounded-3xl border border-slate-100 p-4 sm:p-5 lg:p-6 shadow-sm hover:shadow-xl transition-all duration-300 relative overflow-hidden"
-            >
-              <div className="flex items-start justify-between mb-4 sm:mb-6">
-                <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-                  <div className="size-10 sm:size-12 rounded-xl sm:rounded-2xl bg-slate-50 flex items-center justify-center font-black text-slate-400 border border-slate-100 shrink-0 text-xs sm:text-sm">
-                    {client.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
-                  </div>
-                  <div className="min-w-0">
-                    <h3 className="font-black text-slate-900 uppercase italic leading-tight truncate text-sm sm:text-base">{client.name}</h3>
-                    <div className="flex items-center gap-1 mt-0.5">
-                      {client.is_vip ? (
-                        <Badge className="bg-amber-100 text-amber-600 border-none font-black text-[7px] sm:text-[8px] uppercase px-1.5 py-0">VIP</Badge>
-                      ) : (
-                        <Badge className="bg-slate-100 text-slate-400 border-none font-black text-[7px] sm:text-[8px] uppercase px-1.5 py-0">Comum</Badge>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex gap-1 shrink-0">
-                  <Button variant="ghost" size="icon" className="size-8 rounded-lg text-slate-400" onClick={() => { setEditingClient(client); setFormData({ name: client.name, phone: client.phone || "", email: client.email || "" }); setNewClientOpen(true) }}>
-                    <Plus className="size-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="size-8 rounded-lg text-rose-400" onClick={() => handleDeleteClient(client.id)}>
-                    <Trash2 className="size-4" />
-                  </Button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-4 sm:mb-6">
-                <div className="p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-slate-50 border border-slate-100">
-                  <span className="text-[7px] sm:text-[8px] font-black text-slate-400 uppercase tracking-wide sm:tracking-widest block">Gasto Total</span>
-                  <span className="text-xs sm:text-sm font-black text-slate-900 italic">R$ {(client.total_spent || 0).toFixed(2)}</span>
-                </div>
-                <div className="p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-slate-50 border border-slate-100">
-                  <span className="text-[7px] sm:text-[8px] font-black text-slate-400 uppercase tracking-wide sm:tracking-widest block">Frequência</span>
-                  <span className="text-xs sm:text-sm font-black text-slate-900 italic">{client.orders_count || 0} Pedidos</span>
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                <Button 
-                  onClick={() => window.open(`https://wa.me/${client.phone?.replace(/\D/g, '')}`, '_blank')}
-                  className="flex-1 h-9 sm:h-10 rounded-lg sm:rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase text-[9px] sm:text-[10px] gap-1.5 sm:gap-2"
-                  disabled={!client.phone}
-                >
-                  <MessageCircle className="size-3.5 sm:size-4" /> WhatsApp
-                </Button>
-                <Button 
-                  onClick={() => window.location.href = `mailto:${client.email}`}
-                  variant="outline" 
-                  className="h-9 sm:h-10 rounded-lg sm:rounded-xl font-black uppercase text-[9px] sm:text-[10px] text-slate-400 border-slate-100 px-3"
-                  disabled={!client.email}
-                >
-                  <Mail className="size-3.5 sm:size-4" />
-                </Button>
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-=======
       {error && (
         <div className="p-8 rounded-3xl border border-red-100 bg-red-50/50 text-red-700 text-center space-y-4">
           <p className="font-bold text-sm">Ocorreu um erro ao carregar seus clientes.</p>
@@ -543,7 +473,6 @@ function ClientesContent() {
               ))}
             </AnimatePresence>
           )}
->>>>>>> d8bd0f007bcba4de2d011984f266ae7f01f1b5f5
 
           {!loading && (!Array.isArray(filtered) || filtered.length === 0) && (
             <div className="col-span-full">
@@ -559,20 +488,6 @@ function ClientesContent() {
       )}
 
       <Dialog open={newClientOpen} onOpenChange={setNewClientOpen}>
-<<<<<<< HEAD
-        <DialogContent className="w-[calc(100%-2rem)] max-w-lg rounded-2xl sm:rounded-[32px] p-4 sm:p-6 lg:p-8 mx-auto">
-          <DialogHeader className="mb-4 sm:mb-6"><DialogTitle className="text-lg sm:text-xl lg:text-2xl font-black uppercase italic">{editingClient ? 'Editar' : 'Cadastrar'} Cliente</DialogTitle></DialogHeader>
-          <div className="space-y-4 sm:space-y-5 font-bold">
-            <div className="space-y-1.5 sm:space-y-2">
-              <Label className="text-[9px] sm:text-[10px] uppercase text-slate-400">Nome Completo</Label>
-              <Input className="h-11 sm:h-12 rounded-lg sm:rounded-xl text-base" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              <div className="space-y-1.5 sm:space-y-2"><Label className="text-[9px] sm:text-[10px] uppercase text-slate-400">Telefone / WhatsApp</Label><Input className="h-11 sm:h-12 rounded-lg sm:rounded-xl text-base" placeholder="(00) 00000-0000" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} /></div>
-              <div className="space-y-1.5 sm:space-y-2"><Label className="text-[9px] sm:text-[10px] uppercase text-slate-400">Email</Label><Input type="email" className="h-11 sm:h-12 rounded-lg sm:rounded-xl text-base" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} /></div>
-            </div>
-            <Button onClick={handleSaveClient} disabled={isSaving} className="w-full h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-rose-500 font-black uppercase text-white shadow-lg mt-3 sm:mt-4 text-sm sm:text-base">{isSaving ? "Gravando..." : "Salvar Cadastro"}</Button>
-=======
         <DialogContent className="sm:max-w-xl rounded-[32px] p-8 max-h-[90vh] overflow-y-auto">
           <DialogHeader className="mb-6"><DialogTitle className="text-2xl font-black uppercase italic">{editingClient ? 'Editar' : 'Cadastrar'} Cliente</DialogTitle></DialogHeader>
           <div className="space-y-5 font-bold">
@@ -670,7 +585,6 @@ function ClientesContent() {
             </div>
 
             <Button onClick={handleSaveClient} disabled={isSaving} className="w-full h-14 rounded-2xl bg-rose-500 font-black uppercase text-white shadow-lg mt-4">{isSaving ? "Gravando..." : "Salvar Cadastro"}</Button>
->>>>>>> d8bd0f007bcba4de2d011984f266ae7f01f1b5f5
           </div>
         </DialogContent>
       </Dialog>

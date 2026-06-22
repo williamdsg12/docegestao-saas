@@ -24,7 +24,6 @@ import { AuthGuard } from "@/components/auth/AuthGuard"
 import { initSound, requestNotificationPermission, startAlert, stopAlert } from "@/lib/notifications"
 import { usePedidosRealtime } from "@/hooks/usePedidosRealtime"
 import { NewOrderAlertModal } from "@/components/dashboard/NewOrderAlertModal"
-import { BottomNav } from "@/components/dashboard/BottomNav"
 
 export default function DashboardLayout({
   children,
@@ -195,65 +194,6 @@ export default function DashboardLayout({
           <NewOrderAlertModal />
           
           <DashboardSidebar>
-<<<<<<< HEAD
-            <div className="flex-1 flex flex-col min-h-0 bg-[#F8FAFC]">
-              {/* Modern Header - Fully Responsive */}
-              <header className="h-14 sm:h-16 lg:h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 px-3 sm:px-4 md:px-6 lg:px-8 flex items-center justify-between shrink-0 relative z-20">
-                <div className="flex items-center gap-2 sm:gap-4 lg:gap-6 flex-1 min-w-0">
-                  <SidebarTrigger className="md:hidden shrink-0" />
-                  
-                  {/* Search - Desktop/Tablet */}
-                  <button
-                    onClick={() => setCommandOpen(true)}
-                    className="hidden md:flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2 bg-slate-100 rounded-xl lg:rounded-2xl w-full max-w-xs lg:max-w-md border border-slate-200 hover:bg-slate-200 transition-all group"
-                  >
-                    <Search className="size-4 text-slate-400 group-hover:text-blue-500 shrink-0" />
-                    <span className="text-[10px] lg:text-xs font-bold text-slate-400 uppercase tracking-wider lg:tracking-widest text-left flex-1 truncate">
-                      Pesquisar
-                    </span>
-                    <kbd className="hidden lg:inline-flex h-5 select-none items-center gap-1 rounded border border-slate-300 bg-white px-1.5 font-mono text-[10px] font-black text-slate-500">
-                      <span className="text-xs">⌘</span>K
-                    </kbd>
-                  </button>
-                  
-                  {/* Mobile Search Icon */}
-                  <button
-                    onClick={() => setCommandOpen(true)}
-                    className="md:hidden flex items-center justify-center size-9 bg-slate-100 rounded-xl border border-slate-200 hover:bg-slate-200 transition-all"
-                  >
-                    <Search className="size-4 text-slate-500" />
-                  </button>
-                </div>
-
-                <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-4">
-                  {/* Trial Info - Desktop only */}
-                  <Link
-                    href="/dashboard/billing"
-                    className="hidden xl:flex items-center gap-2 px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg lg:rounded-xl bg-amber-50 border border-amber-200 text-amber-700 font-bold text-[9px] lg:text-[10px] uppercase tracking-wider lg:tracking-widest hover:bg-amber-100 transition-all"
-                  >
-                    <Clock className="size-3 animate-pulse shrink-0" />
-                    <span className="truncate max-w-[140px] lg:max-w-none">{getTrialLabel()}</span>
-                  </Link>
-
-                  <div className="h-6 lg:h-8 w-px bg-slate-200 mx-1 lg:mx-2 hidden lg:block" />
-
-                  <div className="flex items-center gap-1 sm:gap-1.5 lg:gap-3">
-                    <ThemeToggle />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={toggleSound}
-                      className={cn(
-                        "size-8 sm:size-9 lg:size-10 rounded-full border transition-all shadow-sm",
-                        soundEnabled ? "border-emerald-100 bg-emerald-50 text-emerald-600 hover:bg-emerald-100" : "border-slate-100 bg-slate-50 text-slate-400 hover:bg-slate-100"
-                      )}
-                      title={soundEnabled ? "Som Ativo" : "Som Mudo"}
-                    >
-                      {soundEnabled ? <Volume2 className="size-4 sm:size-5" strokeWidth={3} /> : <VolumeX className="size-4 sm:size-5" />}
-                    </Button>
-                    <NotificationBell />
-                    <UserAvatarMenu />
-=======
             <div className="flex-1 overflow-y-auto w-full min-w-0 bg-[var(--bg-app)] flex flex-col relative">
               {/* Modern Header - Professional & Fluid */}
               {!isPedidosPage && (
@@ -279,20 +219,8 @@ export default function DashboardLayout({
                         Doce <span className="text-[var(--secondary)]">Gestão</span>
                       </h1>
                     </div>
->>>>>>> d8bd0f007bcba4de2d011984f266ae7f01f1b5f5
                   </div>
 
-<<<<<<< HEAD
-              {/* Responsive Content Area */}
-              <div className="flex-1 overflow-y-auto w-full min-w-0">
-                <main className="max-w-[1800px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 xl:px-10 py-4 sm:py-6 lg:py-8 xl:py-10 pb-20 md:pb-8">
-                  {children}
-                </main>
-              </div>
-              
-              {/* Bottom Navigation - Mobile Only */}
-              <BottomNav />
-=======
                   <div className="flex items-center gap-2 md:gap-4 ml-auto">
                     {/* Subscription Info - Large Desktop Only */}
                     <Link
@@ -355,7 +283,6 @@ export default function DashboardLayout({
                   <div className="opacity-60">SaaS Platinum v4.5</div>
                 </footer>
               )}
->>>>>>> d8bd0f007bcba4de2d011984f266ae7f01f1b5f5
             </div>
             <BottomNav />
           </DashboardSidebar>

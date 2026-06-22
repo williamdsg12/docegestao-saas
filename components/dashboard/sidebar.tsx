@@ -394,7 +394,6 @@ export function DashboardSidebar({ children }: { children: React.ReactNode }) {
           />
         </motion.aside>
 
-<<<<<<< HEAD
         {isMobile && (
           <Sheet open={isOpenMobile} onOpenChange={setIsOpenMobile}>
             <SheetContent side="left" className="p-0 border-none w-[280px] sm:w-[320px] bg-[#0F172A] safe-area-pt">
@@ -413,16 +412,6 @@ export function DashboardSidebar({ children }: { children: React.ReactNode }) {
             <div className="hidden lg:block uppercase tracking-widest text-[9px]">v4.5.0 Premium</div>
           </div>
         </main>
-=======
-        {/* Mobile & Tablet Drawer (sm, md) */}
-        <Sheet open={isOpenMobile} onOpenChange={setIsOpenMobile}>
-          <SheetContent side="left" className="p-0 border-none w-[280px] bg-[var(--bg-sidebar)]">
-            <SidebarContent isCollapsed={false} onLogout={handleLogout} isMobile />
-          </SheetContent>
-        </Sheet>
-
-        {children}
->>>>>>> d8bd0f007bcba4de2d011984f266ae7f01f1b5f5
       </div>
     </SidebarContext.Provider>
   )
