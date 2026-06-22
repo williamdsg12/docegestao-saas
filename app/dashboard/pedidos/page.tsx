@@ -1977,6 +1977,27 @@ export default function MerchantDashboardV2() {
       await updateStatus({ orderId, newStatus })
       toast.success(`Pedido atualizado para: ${newStatus.toUpperCase()}`)
 
+      const order = orders.find((o: any) => o.id === orderId)
+
+      // Trigger automated Dispatch Engine matchmaking for delivery orders when marked ready
+      if (newStatus === 'pronto' && (order?.order_type === 'delivery' || order?.delivery?.type === 'delivery')) {
+        fetch('/api/delivery/dispatch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId })
+        })
+        .then(res => res.json())
+        .then(resData => {
+          if (resData.error) {
+            toast.error(resData.error)
+          } else {
+            toast.info("Dispatch Engine: Buscando entregador online mais próximo...")
+          }
+        })
+        .catch(err => console.error("Error triggering dispatch engine:", err))
+      }
+
+
       // Disparar notificação WhatsApp automaticamente
       const order = orders.find((o: any) => o.id === orderId)
       if (order?.customer?.phone) {

@@ -59,6 +59,20 @@ interface DeliveryOrder {
   endereco_entrega?: string
 }
 
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371 // Earth's radius in km
+  const dLat = (lat2 - lat1) * (Math.PI / 180)
+  const dLon = (lon2 - lon1) * (Math.PI / 180)
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) *
+      Math.cos(lat2 * (Math.PI / 180)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return R * c
+}
+
 export default function DriverDashboardPage() {
   const router = useRouter()
   const [driver, setDriver] = useState<DriverProfile | null>(null)
@@ -73,6 +87,86 @@ export default function DriverDashboardPage() {
   const [photoBase64, setPhotoBase64] = useState<string | null>(null)
   const [isDrawing, setIsDrawing] = useState(false)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
+
+  // Real-time dispatch call overlay states
+  const [activeDispatchCall, setActiveDispatchCall] = useState<any | null>(null)
+  const [dispatchOrderDetails, setDispatchOrderDetails] = useState<any | null>(null)
+  const [countdown, setCountdown] = useState<number>(20)
+  const lastCoordsRef = useRef<{ latitude: number; longitude: number; timestamp: number } | null>(null)
+
+  const audioContextRef = useRef<AudioContext | null>(null)
+  const alarmIntervalRef = useRef<number | null>(null)
+  const vibrationIntervalRef = useRef<number | null>(null)
+
+  // Synthetic alarm beep loops
+  const startSyntheticAlarm = useCallback(() => {
+    if (alarmIntervalRef.current) return
+    try {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
+      if (!AudioContextClass) return
+      const ctx = new AudioContextClass()
+      audioContextRef.current = ctx
+
+      const playBeep = () => {
+        if (ctx.state === 'suspended') {
+          ctx.resume().catch(() => {})
+        }
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+
+        osc.type = 'sawtooth'
+        osc.frequency.setValueAtTime(880, ctx.currentTime)
+        gain.gain.setValueAtTime(0.3, ctx.currentTime)
+
+        osc.start(ctx.currentTime)
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15)
+        osc.stop(ctx.currentTime + 0.15)
+
+        setTimeout(() => {
+          const osc2 = ctx.createOscillator()
+          const gain2 = ctx.createGain()
+          osc2.connect(gain2)
+          gain2.connect(ctx.destination)
+          osc2.type = 'sawtooth'
+          osc2.frequency.setValueAtTime(880, ctx.currentTime)
+          gain2.gain.setValueAtTime(0.3, ctx.currentTime)
+
+          osc2.start(ctx.currentTime)
+          gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15)
+          osc2.stop(ctx.currentTime + 0.15)
+        }, 200)
+      }
+
+      playBeep()
+      alarmIntervalRef.current = window.setInterval(playBeep, 1000)
+    } catch (err) {
+      console.error("Error starting synthetic audio alarm:", err)
+    }
+
+    if (navigator.vibrate) {
+      navigator.vibrate([400, 200, 400])
+      vibrationIntervalRef.current = window.setInterval(() => {
+        navigator.vibrate([400, 200, 400])
+      }, 2000)
+    }
+  }, [])
+
+  const stopSyntheticAlarm = useCallback(() => {
+    if (alarmIntervalRef.current) {
+      clearInterval(alarmIntervalRef.current)
+      alarmIntervalRef.current = null
+    }
+    if (vibrationIntervalRef.current) {
+      clearInterval(vibrationIntervalRef.current)
+      vibrationIntervalRef.current = null
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close().catch(() => {})
+      audioContextRef.current = null
+    }
+  }, [])
 
   // Validate session on load
   useEffect(() => {
@@ -130,7 +224,7 @@ export default function DriverDashboardPage() {
         .order('created_at', { ascending: true })
 
       if (error) throw error
-      
+
       const ordersWithEntrega = [...(data || [])]
       if (ordersWithEntrega.length > 0) {
         const orderIds = ordersWithEntrega.map(o => o.id)
@@ -138,7 +232,7 @@ export default function DriverDashboardPage() {
           .from('entregas')
           .select('*')
           .in('pedido_id', orderIds)
-        
+
         if (entregas) {
           ordersWithEntrega.forEach(o => {
             const ent = entregas.find(e => e.pedido_id === o.id)
@@ -148,12 +242,147 @@ export default function DriverDashboardPage() {
           })
         }
       }
-      
+
       setOrders(ordersWithEntrega)
     } catch (e: any) {
       console.error(e.message)
     }
   }, [driver])
+
+  const handleIncomingDispatch = useCallback(async (dispatch: any) => {
+    try {
+      const { data: order, error } = await supabase
+        .from('orders')
+        .select('*, tenants!company_id(*), customers!customer_id(name, phone), addresses!address_id(*)')
+        .eq('id', dispatch.order_id)
+        .single()
+
+      if (error || !order) {
+        console.error("Error fetching order for dispatch:", error)
+        return
+      }
+
+      setActiveDispatchCall(dispatch)
+      setDispatchOrderDetails(order)
+
+      const secondsLeft = Math.max(0, Math.floor((new Date(dispatch.expires_at).getTime() - Date.now()) / 1000))
+      setCountdown(secondsLeft)
+
+      startSyntheticAlarm()
+    } catch (err) {
+      console.error(err)
+    }
+  }, [startSyntheticAlarm])
+
+  // Respond to Dispatch Offer
+  async function respondToDispatch(accept: boolean) {
+    if (!activeDispatchCall) return
+    const status = accept ? 'accepted' : 'rejected'
+
+    try {
+      const { error } = await supabase
+        .from('delivery_dispatches')
+        .update({ status })
+        .eq('id', activeDispatchCall.id)
+
+      if (error) throw error
+
+      if (accept) {
+        toast.success("Corrida aceita com sucesso!")
+        fetchAssignedOrders()
+      } else {
+        toast.success("Chamada recusada.")
+      }
+    } catch (err) {
+      console.error("Error responding to dispatch:", err)
+      toast.error("Erro ao responder chamada")
+    } finally {
+      setActiveDispatchCall(null)
+      setDispatchOrderDetails(null)
+      stopSyntheticAlarm()
+    }
+  }
+
+  // Monitor dispatches Realtime and Initial Check
+  useEffect(() => {
+    if (!driver || driver.status !== 'online') {
+      setActiveDispatchCall(null)
+      setDispatchOrderDetails(null)
+      return
+    }
+
+    const channel = supabase
+      .channel(`driver-dispatches-${driver.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'delivery_dispatches',
+        filter: `driver_id=eq.${driver.id}`
+      }, (payload) => {
+        const dispatch = payload.new
+        if (dispatch.status === 'pending') {
+          handleIncomingDispatch(dispatch)
+        }
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'delivery_dispatches',
+        filter: `driver_id=eq.${driver.id}`
+      }, (payload) => {
+        const dispatch = payload.new
+        if (dispatch.status !== 'pending') {
+          setActiveDispatchCall(null)
+          setDispatchOrderDetails(null)
+        }
+      })
+      .subscribe()
+
+    async function checkPendingDispatches() {
+      const { data } = await supabase
+        .from('delivery_dispatches')
+        .select('*')
+        .eq('driver_id', driver.id)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(1)
+
+      if (data && data.length > 0) {
+        const expiresAt = new Date(data[0].expires_at).getTime()
+        if (expiresAt > Date.now()) {
+          handleIncomingDispatch(data[0])
+        }
+      }
+    }
+    checkPendingDispatches()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [driver, handleIncomingDispatch])
+
+  // Countdown timer effect
+  useEffect(() => {
+    if (!activeDispatchCall) {
+      stopSyntheticAlarm()
+      return
+    }
+
+    const interval = setInterval(() => {
+      const secondsLeft = Math.max(0, Math.floor((new Date(activeDispatchCall.expires_at).getTime() - Date.now()) / 1000))
+      setCountdown(secondsLeft)
+
+      if (secondsLeft <= 0) {
+        setActiveDispatchCall(null)
+        setDispatchOrderDetails(null)
+        stopSyntheticAlarm()
+      }
+    }, 1000)
+
+    return () => {
+      clearInterval(interval)
+    }
+  }, [activeDispatchCall, stopSyntheticAlarm])
 
   useEffect(() => {
     if (driver) {
@@ -162,9 +391,9 @@ export default function DriverDashboardPage() {
       // Realtime subscription for assigned orders
       const channel = supabase
         .channel(`driver-orders-${driver.id}`)
-        .on('postgres_changes', { 
-          event: '*', 
-          schema: 'public', 
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
           table: 'orders',
           filter: `driver_id=eq.${driver.id}`
         }, () => {
@@ -178,9 +407,31 @@ export default function DriverDashboardPage() {
     }
   }, [driver, fetchAssignedOrders])
 
-  // Live telemetry push
-  const sendLocationUpdate = useCallback(async (lat: number, lng: number, speed: number | null, heading: number | null) => {
+  // Live telemetry push with GPS mock and velocity checks
+  const sendLocationUpdate = useCallback(async (lat: number, lng: number, speed: number | null, heading: number | null, mocked: boolean) => {
     if (!driver) return
+
+    let isMocked = mocked
+    const now = Date.now()
+    if (lastCoordsRef.current) {
+      const dist = calculateDistance(
+        lastCoordsRef.current.latitude,
+        lastCoordsRef.current.longitude,
+        lat,
+        lng
+      ) * 1000 // meters
+      const timeDiff = (now - lastCoordsRef.current.timestamp) / 1000 // seconds
+      if (timeDiff > 2) {
+        const computedSpeed = dist / timeDiff
+        if (computedSpeed > 35) { // 35 m/s is ~126 km/h
+          isMocked = true
+          toast.warning("Velocidade de deslocamento suspeita detectada!", {
+            description: "Seu GPS pode estar sendo simulado ou instável."
+          })
+        }
+      }
+    }
+    lastCoordsRef.current = { latitude: lat, longitude: lng, timestamp: now }
 
     // 1. Update database coordinates for driver dashboard list
     await supabase
@@ -192,7 +443,19 @@ export default function DriverDashboardPage() {
       })
       .eq('id', driver.id)
 
-    // 2. If there are active deliveries ON_ROUTE, post coordinates for client map tracking
+    // 2. Append directly to driver_locations history log
+    await supabase
+      .from('driver_locations')
+      .insert({
+        driver_id: driver.id,
+        latitude: lat,
+        longitude: lng,
+        speed: speed !== null ? Number(speed) : null,
+        heading: heading !== null ? Number(heading) : null,
+        is_mocked: isMocked
+      })
+
+    // 3. If there are active deliveries ON_ROUTE, post coordinates for client map tracking
     const activeOrder = orders.find(o => {
       const s = o.order_status.toLowerCase()
       return s === 'on_route' || s === 'a_caminho'
@@ -208,7 +471,8 @@ export default function DriverDashboardPage() {
             latitude: lat,
             longitude: lng,
             speed: speed || 0,
-            heading: heading || 0
+            heading: heading || 0,
+            isMocked: isMocked
           })
         })
       } catch (err) {
@@ -230,7 +494,8 @@ export default function DriverDashboardPage() {
     watchIdRef.current = navigator.geolocation.watchPosition(
       (position) => {
         const { latitude, longitude, speed, heading } = position.coords
-        sendLocationUpdate(latitude, longitude, speed, heading)
+        const mocked = (position.coords as any).mocked || (position as any).mocked || false
+        sendLocationUpdate(latitude, longitude, speed, heading, mocked)
       },
       (error) => {
         console.error("GPS error:", error)
@@ -814,6 +1079,107 @@ export default function DriverDashboardPage() {
                 <CheckCircle2 size={14} /> Concluir Entrega
               </Button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* iFood-Style Incoming Call Overlay */}
+      {activeDispatchCall && dispatchOrderDetails && (
+        <div className="fixed inset-0 bg-slate-950 z-[9999] flex flex-col justify-between p-6 animate-in fade-in zoom-in duration-200">
+          {/* Top Banner / Store Details */}
+          <div className="flex flex-col items-center text-center mt-12 space-y-4">
+            <div className="size-20 bg-pink-500 rounded-[32px] flex items-center justify-center text-white text-3xl font-black italic shadow-2xl shadow-pink-500/20 animate-bounce">
+              <Truck size={36} />
+            </div>
+            <div className="space-y-1">
+              <span className="text-[10px] font-black text-pink-500 uppercase tracking-widest bg-pink-500/10 px-3 py-1 rounded-full border border-pink-500/20">
+                Nova Chamada Disponível
+              </span>
+              <h2 className="text-2xl font-black uppercase italic tracking-tight text-white pt-2">
+                {dispatchOrderDetails.tenants?.name || "Doce Gestão"}
+              </h2>
+              <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">
+                {dispatchOrderDetails.tenants?.street 
+                  ? `${dispatchOrderDetails.tenants.street}, ${dispatchOrderDetails.tenants.number}` 
+                  : "Endereço da Loja"}
+              </p>
+            </div>
+          </div>
+
+          {/* Center Details: Value, Distance & Countdown */}
+          <div className="space-y-6">
+            <div className="bg-slate-900 border border-slate-800 rounded-[32px] p-6 space-y-4 shadow-xl">
+              <div className="flex justify-between items-center border-b border-slate-800/60 pb-4">
+                <div>
+                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block leading-none">
+                    Valor do Pedido
+                  </span>
+                  <span className="text-2xl font-black italic text-white leading-none">
+                    R$ {Number(dispatchOrderDetails.total || 0).toFixed(2).replace('.', ',')}
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block leading-none">
+                    Pagamento
+                  </span>
+                  <span className="text-sm font-bold text-pink-400 uppercase tracking-wide">
+                    {dispatchOrderDetails.payment_method || "PIX"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1">
+                    Cliente
+                  </span>
+                  <p className="text-sm font-bold text-slate-300">
+                    {dispatchOrderDetails.customers?.name || "Cliente"}
+                  </p>
+                </div>
+                <div className="flex-1 text-right">
+                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1">
+                    Destino
+                  </span>
+                  <p className="text-xs font-bold text-slate-300 truncate">
+                    {dispatchOrderDetails.endereco_entrega || 
+                     (dispatchOrderDetails.addresses 
+                       ? `${dispatchOrderDetails.addresses.neighborhood}, ${dispatchOrderDetails.addresses.city}`
+                       : "Retirada")}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Countdown Slider Progress Bar */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center text-xs font-black uppercase tracking-wider text-slate-400">
+                <span>Tempo restante</span>
+                <span className="text-pink-500 font-mono text-sm">{countdown}s</span>
+              </div>
+              <div className="h-3 bg-slate-900 border border-slate-800 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-pink-500 to-rose-600 transition-all duration-1000 ease-linear"
+                  style={{ width: `${(countdown / 20) * 100}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="grid grid-cols-2 gap-4 mb-8">
+            <Button 
+              onClick={() => respondToDispatch(false)}
+              className="h-16 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white rounded-[24px] font-black uppercase tracking-widest text-xs"
+            >
+              Recusar
+            </Button>
+            <Button 
+              onClick={() => respondToDispatch(true)}
+              className="h-16 bg-emerald-500 hover:bg-emerald-600 text-white rounded-[24px] font-black uppercase italic tracking-widest text-sm shadow-lg shadow-emerald-500/20 animate-pulse"
+            >
+              Aceitar
+            </Button>
           </div>
         </div>
       )}

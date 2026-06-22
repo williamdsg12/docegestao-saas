@@ -3,7 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 
 export async function POST(req: Request) {
   try {
-    const { orderId, deliveryPersonId, latitude, longitude, speed, heading } = await req.json()
+    const { orderId, deliveryPersonId, latitude, longitude, speed, heading, isMocked } = await req.json()
 
     if (!orderId || !latitude || !longitude) {
       return NextResponse.json({ error: 'Missing required fields (orderId, latitude, longitude)' }, { status: 400 })
@@ -52,6 +52,23 @@ export async function POST(req: Request) {
     if (error) {
       console.error('Error upserting delivery tracking:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    // Append to driver_locations for history & audit
+    if (deliveryPersonId) {
+      const { error: locErr } = await supabaseAdmin
+        .from('driver_locations')
+        .insert({
+          driver_id: deliveryPersonId,
+          latitude: Number(latitude),
+          longitude: Number(longitude),
+          speed: speed !== undefined && speed !== null ? Number(speed) : null,
+          heading: heading !== undefined && heading !== null ? Number(heading) : null,
+          is_mocked: isMocked === true
+        })
+      if (locErr) {
+        console.error('Error logging to driver_locations:', locErr)
+      }
     }
 
     return NextResponse.json({ success: true, data })
