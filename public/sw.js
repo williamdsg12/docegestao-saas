@@ -3,13 +3,13 @@ self.addEventListener("push", function (event) {
 
   self.registration.showNotification("DoceGestão 🚀", {
     body: data.message,
-    icon: "/logo.png",
+    icon: "/logo_cupcake.png",
   });
 });
 
 self.addEventListener("notificationclick", function(event) {
   event.notification.close();
   event.waitUntil(
-    clients.openWindow("/dashboard/orders")
+    clients.openWindow("/dashboard/pedidos")
   );
 });

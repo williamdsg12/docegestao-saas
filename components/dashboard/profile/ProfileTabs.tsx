@@ -23,6 +23,7 @@ import {
   MessageSquare,
   Zap,
   Sparkles,
+  Rocket,
   RotateCw,
   Camera,
   ExternalLink,
@@ -161,14 +162,12 @@ export function ProfileTabs() {
       qui: { open: "09:00", close: "18:00", closed: false },
       sex: { open: "09:00", close: "18:00", closed: false },
       sab: { open: "09:00", close: "13:00", closed: false },
-      dom: { open: "00:00", close: "00:00", closed: true },
     }
   })
 
   useEffect(() => {
     if (user) {
-      setFormData(prev => ({
-        ...prev,
+      const personalData = {
         fullName: user.user_metadata?.full_name || user.user_metadata?.owner_name || "",
         personalWhatsapp: user.user_metadata?.whatsapp || "",
         personalPhone: user.user_metadata?.phone || "",
@@ -178,55 +177,51 @@ export function ProfileTabs() {
         specialty: user.user_metadata?.specialty || "",
         experience: user.user_metadata?.experience_years || "",
         storeName: user.user_metadata?.store_name || ""
-      }))
-      
-      const fetchBusinessData = async () => {
-        if (!profile?.company_id) return
-        const { data: companyData } = await supabase
-          .from("companies")
-          .select("*")
-          .eq("id", profile.company_id)
-          .maybeSingle()
-
-        if (companyData) {
-          setFormData(prev => ({
-            ...prev,
-            instagram: companyData.instagram || "",
-            personalWhatsapp: profile?.whatsapp || companyData.phone || prev.personalWhatsapp, // Priorizar profile
-            segment: companyData.segment || "Confeitaria Gourmet",
-            businessBio: companyData.description || "",
-            cep: companyData.address_zip || "",
-            address: {
-              street: companyData.address_street || "",
-              number: companyData.address_number || "",
-              complement: companyData.address_complement || "",
-              neighborhood: companyData.address_neighborhood || "",
-              city: companyData.address_city || "",
-              state: companyData.address_state || ""
-            },
-            deliveryRadius: String(companyData.delivery_radius || "5"),
-            atendeDelivery: !!companyData.delivery_radius,
-            acceptPix: companyData.accept_pix,
-            acceptCard: companyData.accept_card,
-            acceptCash: companyData.accept_cash,
-            minOrderValue: String(companyData.min_order_value || "0,00").replace(".", ","),
-            menuSlug: companyData.menu_slug || "",
-            menuBannerText: companyData.menu_banner_text || "",
-            menuEnabledFeatures: companyData.menu_enabled_features || ["whatsapp", "delivery", "pix"],
-            whatsappConnected: companyData.whatsapp_connected || false,
-            openingHours: companyData.opening_hours?.description || "Seg-Sex: 09h-18h",
-            monthlyGoal: String(business?.config?.monthly_goal || "10000"),
-            logoUrl: companyData.logo_url || "",
-            primaryColor: business?.config?.primary_color || "#FF2F81",
-            receiptHeader: business?.config?.receipt_header || "",
-            receiptFooter: business?.config?.receipt_footer || "Obrigado pela preferência! ✨",
-            detailedHours: business?.config?.operating_hours || prev.detailedHours
-          }))
-        }
       }
-      fetchBusinessData()
+
+      if (business) {
+        const b = business as any
+        setFormData(prev => ({
+          ...prev,
+          ...personalData,
+          instagram: b.instagram || "",
+          personalWhatsapp: profile?.whatsapp || b.phone || b.telefone || personalData.personalWhatsapp,
+          segment: b.segment || "Confeitaria Gourmet",
+          businessBio: b.description || "",
+          cep: b.address_zip || "",
+          address: {
+            street: b.address_street || "",
+            number: b.address_number || "",
+            complement: b.address_complement || "",
+            neighborhood: b.address_neighborhood || "",
+            city: b.address_city || "",
+            state: b.address_state || ""
+          },
+          deliveryRadius: String(b.delivery_radius || "5"),
+          atendeDelivery: !!b.delivery_radius,
+          acceptPix: b.accept_pix ?? true,
+          acceptCard: b.accept_card ?? true,
+          acceptCash: b.accept_cash ?? true,
+          minOrderValue: String(b.min_order_value || "0.00").replace(".", ","),
+          menuSlug: b.slug || b.menu_slug || "",
+          menuBannerText: b.menu_banner_text || "",
+          menuEnabledFeatures: b.menu_enabled_features || ["whatsapp", "delivery", "pix"],
+          whatsappConnected: b.whatsapp_connected || false,
+          openingHours: b.opening_hours?.description || "Seg-Sex: 09h-18h",
+          monthlyGoal: String(b.config?.monthly_goal || "10000"),
+          logoUrl: b.logo_url || "",
+          primaryColor: b.config?.primary_color || "#FF2F81",
+          receiptHeader: b.config?.receipt_header || "",
+          receiptFooter: b.config?.receipt_footer || "Obrigado pela preferência! ✨",
+          detailedHours: b.opening_hours && Object.keys(b.opening_hours).length > 2 
+            ? b.opening_hours 
+            : prev.detailedHours
+        }))
+      } else {
+        setFormData(prev => ({ ...prev, ...personalData }))
+      }
     }
-  }, [user, profile])
+  }, [user, business, profile])
 
   const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     try {
@@ -359,6 +354,7 @@ export function ProfileTabs() {
 
         const payloadCompanies = {
           name: formData.storeName,
+          nome: formData.storeName, // Legacy compatibility
           instagram: formData.instagram,
           segment: formData.segment,
           description: formData.businessBio,
@@ -369,26 +365,18 @@ export function ProfileTabs() {
           address_neighborhood: formData.address.neighborhood,
           address_city: formData.address.city,
           address_state: formData.address.state,
-          delivery_radius: parseFloat(formData.deliveryRadius),
+          delivery_radius: parseFloat(formData.deliveryRadius) || 0,
+          delivery_fee: business?.delivery_fee || 0,
           accept_pix: formData.acceptPix,
           accept_card: formData.acceptCard,
           accept_cash: formData.acceptCash,
-          min_order_value: parseFloat(formData.minOrderValue.replace(",", ".")),
+          min_order_value: parseFloat(formData.minOrderValue.replace(",", ".")) || 0,
           menu_slug: formData.menuSlug,
           menu_banner_text: formData.menuBannerText,
           menu_enabled_features: formData.menuEnabledFeatures,
-          opening_hours: { description: formData.openingHours }
-        }
-
-        const payloadEmpresas = {
-          nome: formData.storeName,
-          telefone: formData.personalWhatsapp,
-          endereco: `${formData.address.street}, ${formData.address.number}`,
-          delivery_fee: business?.delivery_fee || 0,
-          min_order_value: parseFloat(formData.minOrderValue.replace(",", ".")),
-          delivery_radius: parseFloat(formData.deliveryRadius),
           opening_hours: {
             ...formData.detailedHours,
+            description: formData.openingHours,
             is_open_manual: business?.opening_hours?.is_open_manual !== false,
             receipt_header: formData.receiptHeader,
             receipt_footer: formData.receiptFooter,
@@ -409,19 +397,18 @@ export function ProfileTabs() {
         const payloadDelivery = {
           tenant_id: businessId,
           base_fee: business?.delivery_fee || 0,
-          max_km: parseFloat(formData.deliveryRadius),
+          max_km: parseFloat(formData.deliveryRadius) || 0,
           whatsapp_number: formData.personalWhatsapp
         }
 
-        const [resCompanies] = await Promise.all([
+        const [resUnified, resTenants, resDigital, resDelivery] = await Promise.all([
           supabase.from("companies").update(payloadCompanies).eq("id", businessId).select(),
-          supabase.from("empresas").update(payloadEmpresas).eq("id", businessId),
           supabase.from('tenants').update({ slug: formData.menuSlug, name: formData.storeName }).eq('id', businessId),
           supabase.from('digital_menu_settings').upsert(payloadDigitalMenu),
           supabase.from('delivery_settings').upsert(payloadDelivery)
         ])
 
-        if (resCompanies.error) throw resCompanies.error
+        if (resUnified.error) throw resUnified.error
 
         const { error: authError } = await updateProfile({
           store_name: formData.storeName,
@@ -760,8 +747,8 @@ export function ProfileTabs() {
                   </Button>
                </div>
 
-               <div className="grid lg:grid-cols-2 gap-16 items-start">
-                  <div className="space-y-10">
+               <div className="grid lg:grid-cols-12 gap-16 items-start">
+                  <div className="lg:col-span-8 space-y-12">
                      {/* URL Section */}
                      <div className="space-y-6">
                         <Label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 italic">URL DO SEU CARDÁPIO</Label>
@@ -789,33 +776,99 @@ export function ProfileTabs() {
                      </div>
 
                      {/* Rules Section */}
-                     <div className="space-y-6">
-                        <div className="flex items-center gap-3">
-                           <Clock className="size-4 text-slate-400" />
-                           <Label className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-900 italic">FUNCIONAMENTO & REGRAS</Label>
-                        </div>
-                        <div className="grid grid-cols-2 gap-6">
-                           <div className="space-y-3">
-                              <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest pl-2">PEDIDO MÍNIMO (R$)</span>
-                              <Input value={formData.minOrderValue} onChange={e => setFormData({...formData, minOrderValue: e.target.value})} placeholder="0.00" className="h-16 rounded-2xl border-2 border-slate-100 bg-slate-50/50 font-black text-xl px-6" />
+                     <div className="space-y-8">
+                        <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+                           <div className="size-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-500">
+                              <Clock className="size-4" />
                            </div>
-                           <div className="space-y-3">
-                              <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest pl-2">HORÁRIO DE ATENDIMENTO</span>
-                              <div className="grid gap-2 bg-slate-50/50 p-4 rounded-3xl border-2 border-slate-100 max-h-[300px] overflow-y-auto no-scrollbar">
+                           <Label className="text-[14px] font-black uppercase tracking-widest text-slate-900 italic">FUNCIONAMENTO & REGRAS</Label>
+                        </div>
+                        
+                        <div className="grid lg:grid-cols-[1fr_2fr] gap-10 items-start">
+                           {/* Mínimo Order */}
+                           <div className="space-y-4">
+                              <span className="text-[11px] font-black uppercase text-slate-400 tracking-widest ml-2">PEDIDO MÍNIMO (R$)</span>
+                              <div className="relative">
+                                 <div className="absolute left-6 top-1/2 -translate-y-1/2 font-black text-slate-300">R$</div>
+                                 <Input 
+                                    value={formData.minOrderValue} 
+                                    onChange={e => setFormData({...formData, minOrderValue: e.target.value})} 
+                                    placeholder="0.00" 
+                                    className="h-16 pl-14 rounded-[20px] border-2 border-slate-100 bg-slate-50/50 focus:bg-white font-black text-xl transition-all shadow-sm" 
+                                 />
+                              </div>
+                              <p className="text-[10px] uppercase text-slate-400 font-bold ml-2 leading-relaxed">
+                                 Valor mínimo aceito para um novo pedido pelo cardápio.
+                              </p>
+                           </div>
+
+                           {/* Business Hours */}
+                           <div className="space-y-4">
+                              <span className="text-[11px] font-black uppercase text-slate-400 tracking-widest ml-2">HORÁRIO DE ATENDIMENTO</span>
+                              <div className="flex flex-col gap-3 bg-slate-50/50 p-6 rounded-[32px] border-2 border-slate-100">
                                  {Object.entries(formData.detailedHours).map(([day, hours]: [string, any]) => (
-                                   <div key={day} className="flex items-center justify-between p-2 rounded-xl hover:bg-white transition-all">
-                                      <span className="text-[9px] font-black uppercase italic text-slate-500 w-16">{day}</span>
-                                      <div className="flex items-center gap-2">
-                                         <Input type="time" disabled={hours.closed} value={hours.open} onChange={e => {
-                                            const n = {...formData.detailedHours}; (n as any)[day].open = e.target.value; setFormData({...formData, detailedHours: n});
-                                         }} className="h-8 w-24 text-[10px] font-bold" />
-                                         <Input type="time" disabled={hours.closed} value={hours.close} onChange={e => {
-                                            const n = {...formData.detailedHours}; (n as any)[day].close = e.target.value; setFormData({...formData, detailedHours: n});
-                                         }} className="h-8 w-24 text-[10px] font-bold" />
+                                   <div key={day} className={cn(
+                                       "flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-[20px] transition-all", 
+                                       !hours.closed ? "bg-white shadow-sm border border-slate-100" : "bg-transparent opacity-60 hover:opacity-100"
+                                   )}>
+                                      {/* Switch & Day Label */}
+                                      <div className="flex items-center gap-4 min-w-[120px]">
+                                          <Switch 
+                                             checked={!hours.closed} 
+                                             onCheckedChange={v => {
+                                                const n = {...formData.detailedHours}; 
+                                                (n as any)[day].closed = !v; 
+                                                setFormData({...formData, detailedHours: n});
+                                             }} 
+                                             className="data-[state=checked]:bg-[#FF2F81]" 
+                                          />
+                                          <span className={cn(
+                                             "text-sm font-black uppercase italic tracking-widest mt-0.5", 
+                                             !hours.closed ? "text-slate-900" : "text-slate-400"
+                                          )}>
+                                             {day}
+                                          </span>
                                       </div>
-                                      <Switch checked={!hours.closed} onCheckedChange={v => {
-                                         const n = {...formData.detailedHours}; (n as any)[day].closed = !v; setFormData({...formData, detailedHours: n});
-                                      }} className="scale-75 data-[state=checked]:bg-emerald-500" />
+                                      
+                                      {/* Time Inputs */}
+                                      <div className={cn(
+                                         "flex flex-1 items-center gap-3 w-full sm:max-w-md", 
+                                         hours.closed && "opacity-50 pointer-events-none grayscale"
+                                      )}>
+                                         <div className="relative flex-1">
+                                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300">
+                                               <Clock className="size-4" />
+                                            </div>
+                                            <Input 
+                                               type="time" 
+                                               disabled={hours.closed} 
+                                               value={hours.open} 
+                                               onChange={e => {
+                                                  const n = {...formData.detailedHours}; 
+                                                  (n as any)[day].open = e.target.value; 
+                                                  setFormData({...formData, detailedHours: n});
+                                               }} 
+                                               className="h-12 w-full pl-10 pr-2 rounded-xl border-2 border-slate-100 bg-slate-50 focus:bg-white text-[13px] font-black text-slate-700 transition-all" 
+                                            />
+                                         </div>
+                                         <span className="text-slate-300 font-black text-[10px] uppercase tracking-widest px-1">ATÉ</span>
+                                         <div className="relative flex-1">
+                                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300">
+                                               <Clock className="size-4" />
+                                            </div>
+                                            <Input 
+                                               type="time" 
+                                               disabled={hours.closed} 
+                                               value={hours.close} 
+                                               onChange={e => {
+                                                  const n = {...formData.detailedHours}; 
+                                                  (n as any)[day].close = e.target.value; 
+                                                  setFormData({...formData, detailedHours: n});
+                                               }} 
+                                               className="h-12 w-full pl-10 pr-2 rounded-xl border-2 border-slate-100 bg-slate-50 focus:bg-white text-[13px] font-black text-slate-700 transition-all" 
+                                            />
+                                         </div>
+                                      </div>
                                    </div>
                                  ))}
                               </div>
@@ -873,7 +926,7 @@ export function ProfileTabs() {
                   </div>
 
                   {/* QR Code Graphic Section */}
-                  <div className="relative">
+                  <div className="lg:col-span-4 relative">
                      <div className="bg-gradient-to-br from-[#1E293B] to-[#0F172A] rounded-[56px] p-16 flex flex-col items-center justify-center text-center shadow-2xl relative overflow-hidden group">
                         <div className="absolute top-0 right-0 size-64 bg-primary/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2" />
                         <div className="bg-white p-6 rounded-[40px] shadow-2xl mb-10 transition-transform group-hover:scale-110 duration-500">
@@ -901,24 +954,25 @@ export function ProfileTabs() {
 
           {/* WHATSAPP */}
           {activeTab === "whatsapp" && (
-            <motion.div key="whatsapp" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="grid lg:grid-cols-2 gap-16">
-               <div className="space-y-10">
-                  <div className="flex items-center gap-6">
-                     <div className="size-16 rounded-[24px] bg-emerald-50 flex items-center justify-center text-emerald-500 shadow-sm border border-emerald-100">
-                        <Smartphone className="size-8" />
-                     </div>
-                     <div>
-                        <h3 className="text-3xl font-black italic uppercase tracking-tighter text-slate-900">Conexão <span className="text-emerald-500">WhatsApp</span></h3>
-                        <p className="text-slate-400 font-bold text-sm">Receba pedidos, automatize mensagens e conecte-se com seus clientes.</p>
-                     </div>
-                  </div>
-
-                  <div className="space-y-8">
-                     <div className="p-8 rounded-[32px] bg-slate-50 border-2 border-slate-100 space-y-6">
-                        <div className="flex items-center gap-4">
-                           <div className={cn("size-4 rounded-full animate-pulse", waStatus === 'CONNECTED' ? "bg-emerald-500" : "bg-red-500")} />
-                           <span className="font-black italic uppercase text-sm">{waStatus === 'CONNECTED' ? "WHATSAPP CONECTADO" : "AGUARDANDO CONEXÃO..."}</span>
+            <motion.div key="whatsapp" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-12">
+               <div className="grid lg:grid-cols-12 gap-16 items-start">
+                  <div className="lg:col-span-8 space-y-12">
+                     <div className="flex items-center gap-6">
+                        <div className="size-16 rounded-[24px] bg-emerald-50 flex items-center justify-center text-emerald-500 shadow-sm border border-emerald-100">
+                           <Smartphone className="size-8" />
                         </div>
+                        <div>
+                           <h3 className="text-3xl font-black italic uppercase tracking-tighter text-slate-900">Conexão <span className="text-emerald-500">WhatsApp</span></h3>
+                           <p className="text-slate-400 font-bold text-sm">Receba pedidos, automatize mensagens e conecte-se com seus clientes.</p>
+                        </div>
+                     </div>
+
+                     <div className="space-y-8">
+                        <div className="p-8 rounded-[32px] bg-slate-50 border-2 border-slate-100 space-y-6">
+                           <div className="flex items-center gap-4">
+                              <div className={cn("size-4 rounded-full animate-pulse", waStatus === 'CONNECTED' ? "bg-emerald-500" : "bg-red-500")} />
+                              <span className="font-black italic uppercase text-sm">{waStatus === 'CONNECTED' ? "WHATSAPP CONECTADO" : "AGUARDANDO CONEXÃO..."}</span>
+                           </div>
                         <ul className="space-y-4">
                            {[
                              "Receba pedidos direto no seu WhatsApp",
@@ -935,13 +989,13 @@ export function ProfileTabs() {
                   </div>
                </div>
 
-               <div className="flex flex-col items-center justify-center text-center p-12 rounded-[56px] border-4 border-dashed border-slate-100 space-y-8 relative overflow-hidden group">
-                  <div className="relative z-10 transition-all duration-500 group-hover:scale-105">
-                     {waStatus === 'DISCONNECTED' && (
-                        <Button onClick={handleStartWhatsApp} className="h-14 px-8 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase tracking-widest gap-2 shadow-xl shadow-emerald-200">
-                            <QrCode className="size-5" /> Mostrar QR Code Oficial
-                        </Button>
-                     )}
+               <div className="lg:col-span-4 flex flex-col items-center justify-center text-center p-12 rounded-[56px] border-4 border-dashed border-slate-100 space-y-8 relative overflow-hidden group">
+                     <div className="relative z-10 transition-all duration-500 group-hover:scale-105">
+                        {waStatus === 'DISCONNECTED' && (
+                           <Button onClick={handleStartWhatsApp} className="h-14 px-8 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase tracking-widest gap-2 shadow-xl shadow-emerald-200">
+                               <QrCode className="size-5" /> Mostrar QR Code Oficial
+                           </Button>
+                        )}
 
                      {waStatus === 'QR_READY' && waQr && (
                          <div className="bg-white p-6 rounded-[32px] shadow-[0_30px_60px_-15px_rgba(16,185,129,0.3)] border border-emerald-50 relative">
@@ -968,14 +1022,15 @@ export function ProfileTabs() {
                      )}
                   </div>
                </div>
+               </div>
             </motion.div>
           )}
 
           {/* LOGÍSTICA */}
           {activeTab === "entrega" && (
             <motion.div key="entrega" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-12">
-               <div className="grid lg:grid-cols-1 gap-12">
-                  <div className="space-y-12">
+               <div className="grid lg:grid-cols-12 gap-16 items-start">
+                  <div className="lg:col-span-8 space-y-12">
                      <div className="flex items-center gap-4 border-b border-slate-100 pb-4">
                         <div className="size-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-500 shadow-sm"><MapPin className="size-5" /></div>
                         <div>
@@ -1065,6 +1120,23 @@ export function ProfileTabs() {
                         </Button>
                      </div>
                   </div>
+                  
+                  <div className="lg:col-span-4 space-y-6">
+                     <div className="bg-orange-50 rounded-[40px] p-10 relative overflow-hidden group shadow-sm border-2 border-orange-100/50">
+                        <div className="absolute top-0 right-0 size-32 bg-white/40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                        <div className="relative z-10 space-y-6">
+                           <div className="size-16 rounded-3xl bg-white flex items-center justify-center shadow-lg border border-orange-100">
+                              <MapPin className="size-8 text-orange-500" />
+                           </div>
+                           <div className="space-y-2">
+                              <h5 className="text-xl font-black uppercase italic leading-none text-slate-900">Taxa de Entrega</h5>
+                              <p className="text-xs font-bold text-slate-500 leading-relaxed uppercase">
+                                Se for atender via delivery, preencha bem seu CEP base. O sistema calculará tudo sozinho para o cliente.
+                              </p>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
                </div>
             </motion.div>
           )}
@@ -1072,14 +1144,15 @@ export function ProfileTabs() {
           {/* FINANCEIRO */}
           {activeTab === "financeiro" && (
             <motion.div key="financeiro" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-12">
-               <div className="lg:col-span-8 space-y-12">
-                  <div className="flex items-center gap-4 border-b border-slate-100 pb-4">
-                     <div className="size-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-500 shadow-sm"><CreditCard className="size-5" /></div>
-                     <div>
-                        <h4 className="text-xl font-black uppercase italic tracking-tighter text-slate-900">Dados Financeiros</h4>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Configure suas formas de recebimento</p>
+               <div className="grid lg:grid-cols-12 gap-16 items-start">
+                  <div className="lg:col-span-8 space-y-12">
+                     <div className="flex items-center gap-4 border-b border-slate-100 pb-4">
+                        <div className="size-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-500 shadow-sm"><CreditCard className="size-5" /></div>
+                        <div>
+                           <h4 className="text-xl font-black uppercase italic tracking-tighter text-slate-900">Dados Financeiros</h4>
+                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Configure suas formas de recebimento</p>
+                        </div>
                      </div>
-                  </div>
 
                   <div className="space-y-6">
                     <Label className="text-lg font-black uppercase italic text-slate-900 leading-none ml-2">Formas de Pagamento na Entrega</Label>
@@ -1225,6 +1298,24 @@ export function ProfileTabs() {
                        )}
                     </div>
                   </div>
+                  
+                  <div className="lg:col-span-4 space-y-6">
+                     <div className="bg-emerald-900 rounded-[40px] p-10 text-white relative overflow-hidden group shadow-2xl">
+                        <div className="absolute top-0 right-0 size-32 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                        <div className="relative z-10 space-y-6">
+                           <div className="size-16 rounded-3xl bg-white/10 flex items-center justify-center backdrop-blur-md border border-white/20">
+                              <ShieldCheck className="size-8 text-emerald-400" />
+                           </div>
+                           <div className="space-y-2">
+                              <h5 className="text-xl font-black uppercase italic leading-none">Recebimento Seguro</h5>
+                              <p className="text-xs font-bold text-emerald-200 leading-relaxed uppercase">
+                                Com o pagamento online ativado, você <span className="text-white">elimina os calotes</span> e profissionaliza seu negócio.
+                              </p>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+                  </div>
                </div>
             </motion.div>
           )}
@@ -1232,17 +1323,19 @@ export function ProfileTabs() {
           {/* SISTEMA */}
           {activeTab === "sistema" && (
             <motion.div key="sistema" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-12">
-               <div className="flex items-center gap-6 pb-10 border-b border-slate-100">
-                  <div className="size-16 rounded-[24px] bg-slate-900 flex items-center justify-center text-white shadow-xl shadow-slate-200">
-                     <Monitor className="size-8" />
-                  </div>
-                  <div>
-                     <h3 className="text-3xl font-black italic uppercase tracking-tighter text-slate-900">Status do <span className="text-blue-600">Sistema</span></h3>
-                     <p className="text-slate-400 font-bold text-sm">Informações técnicas e operacionais da sua plataforma.</p>
-                  </div>
-               </div>
+               <div className="grid lg:grid-cols-12 gap-16 items-start">
+                  <div className="lg:col-span-8 space-y-12">
+                     <div className="flex items-center gap-6 pb-10 border-b border-slate-100">
+                        <div className="size-16 rounded-[24px] bg-slate-900 flex items-center justify-center text-white shadow-xl shadow-slate-200">
+                           <Monitor className="size-8" />
+                        </div>
+                        <div>
+                           <h3 className="text-3xl font-black italic uppercase tracking-tighter text-slate-900">Status do <span className="text-blue-600">Sistema</span></h3>
+                           <p className="text-slate-400 font-bold text-sm">Informações técnicas e operacionais da sua plataforma.</p>
+                        </div>
+                     </div>
 
-               <div className="grid md:grid-cols-2 gap-8">
+                     <div className="grid md:grid-cols-2 gap-8">
                   <div className="bg-slate-900 rounded-[56px] p-12 text-white flex flex-col justify-between relative overflow-hidden group">
                      <div className="absolute top-0 right-0 size-64 bg-blue-500/10 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2" />
                      <div className="relative z-10">
@@ -1270,6 +1363,25 @@ export function ProfileTabs() {
                      <div className="flex items-center gap-2 px-6 py-2 rounded-full bg-emerald-50 border border-emerald-100">
                         <div className="size-2 rounded-full bg-emerald-500 animate-pulse" />
                         <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Servidor Online (99.9% Uptime)</span>
+                     </div>
+                  </div>
+                     </div>
+                  </div>
+                  
+                  <div className="lg:col-span-4 space-y-6">
+                     <div className="bg-slate-50 rounded-[40px] p-10 relative overflow-hidden group shadow-sm border-2 border-slate-200/50">
+                        <div className="absolute top-0 right-0 size-32 bg-white/40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                        <div className="relative z-10 space-y-6">
+                           <div className="size-16 rounded-3xl bg-white flex items-center justify-center shadow-lg border border-slate-100">
+                              <Rocket className="size-8 text-slate-500" />
+                           </div>
+                           <div className="space-y-2">
+                              <h5 className="text-xl font-black uppercase italic leading-none text-slate-900">Updates Automáticos</h5>
+                              <p className="text-xs font-bold text-slate-500 leading-relaxed uppercase">
+                                Sua plataforma recebe melhorias constantes sem que você precise fazer nada.
+                              </p>
+                           </div>
+                        </div>
                      </div>
                   </div>
                </div>

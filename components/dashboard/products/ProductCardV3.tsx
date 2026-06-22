@@ -27,27 +27,16 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 
-interface Product {
-  id: string
-  name: string
-  price: number
-  category: string
-  active: boolean
-  image_url?: string
-  description?: string
-  preparation_time?: number
-  ai_score?: number
-  ai_optimized?: boolean
-}
+import type { Product } from "@/hooks/useProducts"
 
 interface ProductCardV3Props {
   product: Product
   onEdit: (product: Product) => void
   onDelete: (id: string) => void
-  onDuplicate: (product: Product) => void
-  onToggleStatus: (id: string, currentStatus: boolean) => void
-  onUpdateInline: (id: string, updates: Partial<Product>) => void
-  onOptimize: (product: Product) => void
+  onDuplicate: (product: Product) => void | Promise<any>
+  onToggleStatus: (id: string, currentStatus: boolean) => void | Promise<any>
+  onUpdateInline: (id: string, updates: Partial<Product>) => void | Promise<any>
+  onOptimize: (product: Product) => void | Promise<any>
 }
 
 export function ProductCardV3({

@@ -108,7 +108,7 @@ export function ManagePaymentDrawer({ isOpen, onClose, method, onSuccess }: Mana
             <SheetTitle className="text-2xl font-black text-slate-900 tracking-tighter uppercase italic">
                Configurar: <span className="text-blue-600">"{method.method_name}"</span>
             </SheetTitle>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] italic">Gestão de canais e taxas personalizadas</p>
+            <SheetDescription className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] italic">Gestão de canais e taxas personalizadas</SheetDescription>
           </div>
           <button onClick={onClose} className="size-12 flex items-center justify-center bg-white border border-slate-200 hover:bg-slate-100 rounded-2xl transition-all text-slate-400">
             <X size={24} />

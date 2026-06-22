@@ -530,8 +530,8 @@ export function AnimatedDashboardMockup() {
           >
             {/* Sidebar */}
             <div className="w-56 border-r border-slate-100 bg-slate-50/80 flex flex-col z-10 hidden sm:flex">
-              <div className="h-16 flex items-center px-6 border-b border-slate-100 font-black italic uppercase text-lg tracking-tight">
-                Doce<span className="text-[#FF6B9A]">Gestão</span>
+              <div className="h-16 flex items-center px-6 border-b border-slate-100">
+                <img src="/logo png.png" alt="Doce Gestão" className="h-8 w-auto object-contain" />
               </div>
               <div className="flex-1 py-4 px-3 flex flex-col gap-1 overflow-visible">
                 {menuItems.map((item, index) => {

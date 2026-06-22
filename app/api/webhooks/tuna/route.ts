@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
 
     switch (Status) {
       case 3: // Approved
-        systemStatus = "pendente"; // Pedido aprovado vai para fila de produção
+        systemStatus = "novo"; // Pedido aprovado vai para fila de produção/novos
         isPaid = true;
         break;
       case 4: // Cancelled
@@ -53,9 +53,18 @@ export async function POST(req: NextRequest) {
 
     // 2. Update Order Status
     if (systemStatus !== "pendente_pagamento") {
+      const updateData: any = {
+        order_status: systemStatus
+      };
+      if (isPaid) {
+        updateData.payment_status = "paid";
+        updateData.paid = true;
+        updateData.payment_confirmed_at = new Date().toISOString();
+      }
+      
       const { error: oError } = await supabase
         .from("orders")
-        .update({ status: systemStatus })
+        .update(updateData)
         .eq("id", PartnerReference);
 
       if (oError) {

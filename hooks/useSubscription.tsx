@@ -10,15 +10,16 @@ export interface Subscription {
   plan_id: string
   status: 'trial' | 'active' | 'past_due' | 'canceled' | 'unpaid'
   current_period_end: string
-  plans?: {
-    name: string
-    price: number
-    billing_cycle: string
-    max_orders: number
-    max_products: number
-    max_clients: number
-    features: string[]
-  }
+    plans?: {
+      slug: string
+      name: string
+      price: number
+      billing_cycle: string
+      max_orders: number
+      max_products: number
+      max_clients: number
+      features: string[]
+    }
 }
 
 export function useSubscription() {

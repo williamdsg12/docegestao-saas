@@ -1,12 +1,12 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter, DM_Sans, DM_Serif_Display } from 'next/font/google'
-import { Analytics } from '@vercel/analytics/next'
+import { Inter, Poppins, Manrope } from 'next/font/google'
+import { Analytics } from '@vercel/analytics/react'
 import Script from 'next/script'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
-const dmSans = DM_Sans({ subsets: ['latin'], variable: '--font-dm-sans' })
-const dmSerif = DM_Serif_Display({ weight: '400', subsets: ['latin'], variable: '--font-dm-serif' })
+const poppins = Poppins({ weight: ['300', '400', '500', '600', '700', '800'], subsets: ['latin'], variable: '--font-poppins' })
+const manrope = Manrope({ subsets: ['latin'], variable: '--font-manrope' })
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://docegestao.com.br'),
@@ -80,7 +80,6 @@ export default function RootLayout({
               })(window,document,'script','dataLayer','GTM-T73FGD9M');`}
             </Script>
 
-            {/* Meta Pixel Code */}
             <Script id="fb-pixel" strategy="afterInteractive">
               {`!function(f,b,e,v,n,t,s)
               {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
@@ -93,17 +92,16 @@ export default function RootLayout({
               fbq('init', '1940798166669273');
               fbq('track', 'PageView');`}
             </Script>
+
+            {/* Mercado Pago SDK v2 */}
+            <Script src="https://sdk.mercadopago.com/js/v2" strategy="beforeInteractive" />
           </>
         )}
       </head>
-      <body className={`${inter.variable} ${dmSans.variable} ${dmSerif.variable} font-sans antialiased`} suppressHydrationWarning>
+      <body className={`${inter.variable} ${poppins.variable} ${manrope.variable} font-manrope bg-[var(--bg-app)] text-[var(--text-primary)] antialiased transition-colors duration-200`} suppressHydrationWarning>
         {/* Noscript fallbacks - Solo en producción */}
-        {process.env.NODE_ENV === 'production' && (
-          <noscript dangerouslySetInnerHTML={{ __html: `
-            <iframe src="https://www.googletagmanager.com/ns.html?id=GTM-T73FGD9M" height="0" width="0" style="display:none;visibility:hidden"></iframe>
-            <img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=1940798166669273&ev=PageView&noscript=1" />
-          `}} />
-        )}
+
+        {/* Analytics e Pixel - Next/Script já trata o carregamento seguro */}
 
         <Providers>
           <AffiliateTracker />
@@ -112,9 +110,6 @@ export default function RootLayout({
           </PageTransition>
         </Providers>
         <Analytics />
-        
-        {/* Mercado Pago SDK v2 */}
-        <Script src="https://sdk.mercadopago.com/js/v2" strategy="beforeInteractive" />
         
         {/* Registro do Service Worker para PWA */}
         <Script id="register-sw" strategy="afterInteractive">

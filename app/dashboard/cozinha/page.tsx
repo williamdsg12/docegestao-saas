@@ -137,11 +137,11 @@ function KitchenCard({
                           "font-black text-sm uppercase italic tracking-tighter truncate transition-all",
                           checkedItems[item.id] ? "text-emerald-500/50 line-through" : "text-white"
                        )}>
-                          {item.quantidade}x {item.products?.name || "Produto"}
+                          {item.quantity || item.quantidade || 1}x {item.name || item.products?.name || "Produto"}
                        </p>
-                       {item.observacoes && (
+                       {(item.observation || item.notes || item.observacoes) && (
                           <p className="text-[10px] font-bold text-amber-500/80 italic line-clamp-1 uppercase tracking-widest">
-                             {item.observacoes}
+                             {item.observation || item.notes || item.observacoes}
                           </p>
                        )}
                     </div>
@@ -204,11 +204,17 @@ function KitchenContent() {
           order_items(*, products(name))
         `)
         .eq('tenant_id', profile.tenant_id)
-        .in('status', ['accepted', 'preparing'])
+        .in('order_status', ['accepted', 'preparing'])
         .order('created_at', { ascending: true })
       
       if (error) throw error
-      setOrders(data || [])
+      
+      // Map order_status to status to preserve frontend page UI logic
+      const mappedOrders = (data || []).map(o => ({
+        ...o,
+        status: o.order_status || o.status || 'novo'
+      }))
+      setOrders(mappedOrders)
     } catch (e: any) {
       console.error("KDS error:", e)
       toast.error("Erro ao sincronizar cozinha")
@@ -228,14 +234,14 @@ function KitchenContent() {
            table: 'orders',
            filter: `tenant_id=eq.${profile.tenant_id}` 
         }, (payload) => {
-           if (payload.eventType === 'INSERT' || (payload.new as any).status === 'accepted') {
+           if (payload.eventType === 'INSERT' || (payload.new as any).order_status === 'accepted') {
               if (audioEnabled && audioRef.current) {
                 audioRef.current.play()
               }
               toast.info("Novo pedido na cozinha!")
            }
            fetchOrders()
-        })
+         })
         .subscribe()
       return () => { supabase.removeChannel(subscription) }
     }
@@ -246,7 +252,7 @@ function KitchenContent() {
     try {
       const { error } = await supabase
         .from('orders')
-        .update({ status: nextStatus })
+        .update({ order_status: nextStatus })
         .eq('id', orderId)
       
       if (error) throw error

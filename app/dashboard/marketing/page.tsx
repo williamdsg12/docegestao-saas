@@ -1,383 +1,522 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { supabase } from "@/lib/supabase"
-import { useBusiness } from "@/hooks/useBusiness"
+import { useState, useEffect, useCallback } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import { 
-  Ticket, 
-  Plus, 
-  Trash2, 
-  Gift, 
-  Star, 
-  TrendingUp, 
-  Users, 
-  Zap,
-  Target,
-  Edit3,
-  CheckCircle2,
-  XCircle,
-  Percent,
-  DollarSign,
-  Truck
+  Users, MessageSquare, ShoppingBag, CheckCircle2, 
+  TrendingUp, Share2, Copy, Zap, 
+  Clock, Sparkles, Filter, Search, Bot,
+  Send, History, Calendar, Loader2, AlertCircle, RefreshCw
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Label } from "@/components/ui/label"
+import { Progress } from "@/components/ui/progress"
+import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { useBusiness } from "@/hooks/useBusiness"
 import { toast } from "sonner"
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table"
-import { FeatureGuard } from "@/components/dashboard/FeatureGuard"
+import { supabase } from "@/lib/supabase"
 
-export default function MarketingPage() {
-    return (
-        <FeatureGuard feature="marketing" planRequired="pro">
-            <MarketingContent />
-        </FeatureGuard>
-    )
+interface Campaign {
+  id: string
+  name: string
+  message: string
+  status: 'draft' | 'scheduled' | 'processing' | 'completed' | 'failed'
+  schedule_at: string
+  created_at: string
 }
 
-function MarketingContent() {
-  const { business } = useBusiness()
-  const [coupons, setCoupons] = useState<any[]>([])
-  const [rewards, setRewards] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [isCouponDialogOpen, setIsCouponDialogOpen] = useState(false)
-  const [newCoupon, setNewCoupon] = useState({
-    codigo: "",
-    tipo: "percentual",
-    valor: 0,
-    valor_minimo: 0,
-    limite_uso: 100
+export default function MarketingDashboard() {
+  const { profile, business } = useBusiness()
+  const tenantId = profile?.tenant_id || profile?.company_id
+
+  // Estados do formulário de nova campanha
+  const [name, setName] = useState("")
+  const [message, setMessage] = useState("Olá {client_name}! 🧁 Temos novidades deliciosas hoje. Confira em nosso cardápio: {menu_link}")
+  const [segment, setSegment] = useState("all")
+  const [scheduleAt, setScheduleAt] = useState("")
+  const [isSending, setIsSending] = useState(false)
+
+  // Lista de campanhas enviadas
+  const [campaigns, setCampaigns] = useState<Campaign[]>([])
+  const [loadingCampaigns, setLoadingCampaigns] = useState(true)
+
+  // Estatísticas e contadores
+  const [customerStats, setCustomerStats] = useState({
+    total: 0,
+    vip: 0,
+    inactive: 0,
+    new: 0,
+    recent: 0,
+    birthday: 0,
+    noOrders: 0,
+    abandonedCarts: 0
+  })
+  const [funnelStats, setFunnelStats] = useState({
+    leadsCount: 0,
+    totalSpent: 0,
+    conversionRate: 0,
+    campaignsCount: 0,
+    messagesDelivered: 0,
+    messagesFailed: 0
   })
 
-  useEffect(() => {
-    if (business?.id) {
-      fetchMarketingData()
-    }
-  }, [business?.id])
+  // Link de aquisição de Leads
+  const [waText, setWaText] = useState("Olá! Gostaria de ver o cardápio e fazer um pedido.")
+  const companySlug = profile?.business_name ? profile.business_name.toLowerCase().replace(/\s+/g, '-') : 'menu'
+  const waLink = `https://wa.me/${business?.phone?.replace(/\D/g, '') || profile?.whatsapp?.replace(/\D/g, '') || ''}?text=${encodeURIComponent(waText)}`
 
-  async function fetchMarketingData() {
+  const copyLink = () => {
+    navigator.clipboard.writeText(waLink)
+    toast.success("Link do WhatsApp copiado!")
+  }
+
+  // Carrega campanhas históricas (Fase 10)
+  const fetchCampaigns = useCallback(async () => {
+    if (!tenantId) return
     try {
-      setLoading(true)
-      const [couponsRes, rewardsRes] = await Promise.all([
-        supabase.from('cupons').select('*').eq('company_id', business!.id).order('created_at', { ascending: false }),
-        supabase.from('recompensas').select('*').eq('company_id', business!.id)
-      ])
-      setCoupons(couponsRes.data || [])
-      setRewards(rewardsRes.data || [])
-    } catch (e) {
-      console.error(e)
+      setLoadingCampaigns(true)
+      const res = await fetch(`/api/marketing/campaigns?tenantId=${tenantId}`)
+      if (res.ok) {
+        const data = await res.json()
+        setCampaigns(data)
+      }
+    } catch (err) {
+      console.error("Erro ao carregar campanhas:", err)
     } finally {
-      setLoading(false)
+      setLoadingCampaigns(false)
     }
-  }
+  }, [tenantId])
 
-  async function handleCreateCoupon() {
+  // Carrega estatísticas dos clientes e funil (Fase 13)
+  const fetchStats = useCallback(async () => {
+    if (!tenantId) return
     try {
-      const { error } = await supabase.from('cupons').insert({
-        ...newCoupon,
-        company_id: business!.id,
-        codigo: newCoupon.codigo.toUpperCase()
+      // 1. Estatísticas de Clientes
+      const { data: clients } = await supabase
+        .from('customers')
+        .select('is_vip, created_at, last_order_at, total_spent, birthday, total_orders')
+        .eq('tenant_id', tenantId)
+
+      if (clients) {
+        const now = new Date()
+        const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+        const currentMonth = now.getMonth() + 1
+
+        let vip = 0, inactive = 0, newClients = 0, recent = 0, totalSpent = 0, birthdayCount = 0, noOrders = 0
+
+        clients.forEach(c => {
+          if (c.is_vip) vip++
+          if (c.created_at && new Date(c.created_at) >= oneWeekAgo) newClients++
+          if (c.last_order_at) {
+            const lastOrder = new Date(c.last_order_at)
+            if (lastOrder >= oneWeekAgo) recent++
+            if (lastOrder < thirtyDaysAgo) inactive++
+          } else {
+            inactive++ // sem pedidos é considerado inativo
+            noOrders++
+          }
+          if (Number(c.total_orders || 0) === 0 && c.last_order_at) {
+            noOrders++
+          }
+          if (c.birthday) {
+            const parts = c.birthday.split('-')
+            if (parts.length >= 2 && parseInt(parts[1], 10) === currentMonth) {
+              birthdayCount++
+            }
+          }
+          totalSpent += Number(c.total_spent || 0)
+        })
+
+        // Busca count de carrinhos abandonados pendentes
+        const { count: abandonedCount } = await supabase
+          .from('abandoned_carts')
+          .select('*', { count: 'exact', head: true })
+          .eq('tenant_id', tenantId)
+          .eq('status', 'pending')
+
+        setCustomerStats({
+          total: clients.length,
+          vip,
+          inactive,
+          new: newClients,
+          recent,
+          birthday: birthdayCount,
+          noOrders,
+          abandonedCarts: abandonedCount || 0
+        })
+
+        // 2. Calcula taxa de conversão baseada em compras
+        const convertingClients = clients.filter(c => Number(c.total_spent) > 0).length
+        const conversionRate = clients.length > 0 ? (convertingClients / clients.length) * 100 : 0
+
+        // 3. Busca campanhas concluídas e logs de mensagens entregues da fila
+        const { count: campaignsCount } = await supabase
+          .from('marketing_campaigns')
+          .select('*', { count: 'exact', head: true })
+          .eq('tenant_id', tenantId)
+          .eq('status', 'completed')
+
+        const { count: messagesDelivered } = await supabase
+          .from('campaign_queue')
+          .select('*', { count: 'exact', head: true })
+          .eq('tenant_id', tenantId)
+          .eq('status', 'sent')
+
+        const { count: messagesFailed } = await supabase
+          .from('campaign_queue')
+          .select('*', { count: 'exact', head: true })
+          .eq('tenant_id', tenantId)
+          .eq('status', 'failed')
+
+        setFunnelStats({
+          leadsCount: clients.length,
+          totalSpent,
+          conversionRate,
+          campaignsCount: campaignsCount || 0,
+          messagesDelivered: messagesDelivered || 0,
+          messagesFailed: messagesFailed || 0
+        })
+      }
+    } catch (err) {
+      console.error("Erro ao calcular estatísticas:", err)
+    }
+  }, [tenantId])
+
+  useEffect(() => {
+    if (!tenantId) return
+
+    fetchCampaigns()
+    fetchStats()
+
+    // Realtime para atualizar estatísticas e lista de campanhas na hora (Fase 10)
+    const channel = supabase
+      .channel(`realtime-marketing-dashboard-${tenantId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'customers', filter: `tenant_id=eq.${tenantId}` },
+        () => {
+          console.log('[Realtime] Clientes atualizados')
+          fetchStats()
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'marketing_campaigns', filter: `tenant_id=eq.${tenantId}` },
+        () => {
+          console.log('[Realtime] Campanhas atualizadas')
+          fetchCampaigns()
+          fetchStats()
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'campaign_queue', filter: `tenant_id=eq.${tenantId}` },
+        () => {
+          console.log('[Realtime] Fila de campanhas atualizada')
+          fetchCampaigns()
+          fetchStats()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [tenantId, fetchCampaigns, fetchStats])
+
+  // Criar e enviar nova campanha
+  const handleSendCampaign = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!tenantId) return
+    if (!name.trim() || !message.trim()) {
+      toast.error("Preencha o nome e a mensagem da campanha")
+      return
+    }
+
+    setIsSending(true)
+    const toastId = toast.loading("Enfileirando disparos da campanha...")
+
+    try {
+      const res = await fetch('/api/marketing/campaigns', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tenantId,
+          name,
+          message,
+          segment,
+          scheduleAt: scheduleAt || undefined
+        })
       })
-      if (error) throw error
-      toast.success("Cupom criado com sucesso!")
-      setIsCouponDialogOpen(false)
-      fetchMarketingData()
-    } catch (e) {
-      toast.error("Erro ao criar cupom.")
+
+      if (res.ok) {
+        const result = await res.json()
+        toast.success(`Campanha criada! ${result.targetsCount} envios foram agendados na fila.`, { id: toastId })
+        setName("")
+        setScheduleAt("")
+        fetchCampaigns()
+        fetchStats()
+      } else {
+        const errData = await res.json()
+        throw new Error(errData.error || "Erro ao criar campanha")
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Erro de conexão", { id: toastId })
+    } finally {
+      setIsSending(false)
     }
   }
 
-  async function handleDeleteCoupon(id: string) {
-    try {
-      await supabase.from('cupons').delete().eq('id', id)
-      toast.success("Cupom removido.")
-      fetchMarketingData()
-    } catch (e) {
-      toast.error("Erro ao remover.")
-    }
+  const insertVariable = (variable: string) => {
+    setMessage(prev => prev + " " + variable)
   }
+
+  // Renderização de cards de métricas
+  const funnelSteps = [
+    { label: 'Total de Leads', value: customerStats.total, icon: Users, color: 'bg-blue-500' },
+    { label: 'Campanhas Enviadas', value: funnelStats.campaignsCount, icon: Send, color: 'bg-pink-500' },
+    { label: 'Mensagens Entregues', value: funnelStats.messagesDelivered, icon: CheckCircle2, color: 'bg-emerald-500' },
+    { label: 'Mensagens Falhadas', value: funnelStats.messagesFailed, icon: AlertCircle, color: 'bg-red-500' },
+  ]
 
   return (
-    <div className="p-6 md:p-10 space-y-12 min-h-screen pb-40">
-      
+    <div className="space-y-10 pb-20 max-w-7xl mx-auto px-4">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
-        <div className="space-y-2 text-center lg:text-left">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">
-            Marketing <span className="text-pink-500">& Fidelidade</span>
-          </h1>
-          <p className="text-slate-500 font-medium italic uppercase text-[10px] tracking-widest ml-1">Estratégias de Retenção e Vendas V3</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-2">
+            <h1 className="text-4xl font-black text-gray-800 italic tracking-tighter uppercase flex items-center gap-2">
+              Marketing <span className="text-pink-600">VIP</span>
+            </h1>
+            <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">
+              Painel de Automação de Disparos e Conversões
+            </p>
         </div>
-        <div className="flex gap-4 w-full lg:w-auto">
-           <Button onClick={() => setIsCouponDialogOpen(true)} className="h-16 px-8 rounded-3xl bg-pink-500 text-white font-black uppercase text-[10px] tracking-widest flex gap-3 shadow-xl hover:bg-pink-600 w-full lg:w-auto justify-center">
-              <Plus className="size-5" /> Criar Novo Cupom
-           </Button>
+        <div className="flex items-center gap-3">
+          <Button onClick={() => { fetchCampaigns(); fetchStats(); }} className="h-10 px-4 rounded-xl border bg-white text-gray-700 hover:bg-gray-50 transition-all shadow-sm">
+            <RefreshCw size={16} className="mr-2" /> Atualizar Dados
+          </Button>
         </div>
       </div>
 
-      {/* Overview Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
-         <div className="bg-slate-900 rounded-[32px] sm:rounded-[48px] p-8 sm:p-10 text-white relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-8 opacity-10 rotate-12 group-hover:rotate-45 transition-all duration-1000">
-               <Zap className="size-32" />
+      {/* Visualização de Métricas */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {funnelSteps.map((step, i) => (
+            <div key={i} className="bg-white border border-gray-100 p-6 rounded-[24px] space-y-4 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+                <div className={cn("size-12 rounded-2xl flex items-center justify-center text-white shadow-md", step.color)}>
+                    <step.icon size={22} />
+                </div>
+                <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{step.label}</p>
+                    <h3 className="text-2xl font-black italic tracking-tighter text-gray-800 mt-1">{step.value}</h3>
+                </div>
             </div>
-            <div className="relative z-10 space-y-4 sm:space-y-6">
-               <div className="space-y-1">
-                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Cupons Ativos</p>
-                  <h3 className="text-4xl sm:text-5xl font-black italic tracking-tighter">{coupons.filter(c => c.ativo).length}</h3>
-               </div>
-               <Badge className="bg-pink-500/20 text-pink-500 border-none font-black text-[9px] uppercase tracking-widest px-4 py-2">Impulsionando Vendas</Badge>
-            </div>
-         </div>
-
-         <div className="bg-white rounded-[32px] sm:rounded-[48px] p-8 sm:p-10 border border-slate-100 shadow-xl relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-8 opacity-5 -rotate-12 group-hover:rotate-0 transition-all duration-1000 text-pink-500">
-               <Star className="size-32 fill-current" />
-            </div>
-            <div className="relative z-10 space-y-4 sm:space-y-6">
-               <div className="space-y-1">
-                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Taxa de Conversão</p>
-                  <h3 className="text-4xl sm:text-5xl font-black italic tracking-tighter text-slate-900">24%</h3>
-               </div>
-               <div className="flex items-center gap-2 text-emerald-500 font-bold text-xs">
-                  <TrendingUp className="size-4" /> +12% esse mês
-               </div>
-            </div>
-         </div>
-
-         <div className="bg-pink-50 rounded-[32px] sm:rounded-[48px] p-8 sm:p-10 border border-pink-100 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-8 opacity-10 rotate-12 text-pink-500">
-               <Gift className="size-32" />
-            </div>
-            <div className="relative z-10 space-y-4 sm:space-y-6">
-               <div className="space-y-1">
-                  <p className="text-[9px] font-black uppercase tracking-widest text-pink-600/60">Base de Clientes VIP</p>
-                  <h3 className="text-4xl sm:text-5xl font-black italic tracking-tighter text-pink-600">85</h3>
-               </div>
-               <p className="text-[10px] font-black text-pink-500/60 uppercase tracking-widest leading-none">Total: 1.240 clientes</p>
-            </div>
-         </div>
+        ))}
       </div>
 
-      {/* Coupons Table */}
-      <div className="bg-white rounded-[56px] shadow-2xl overflow-hidden border border-slate-50">
-         <div className="p-6 sm:p-10 border-b border-slate-50 flex items-center justify-between">
-            <h2 className="text-xl sm:text-2xl font-black italic uppercase tracking-tighter flex items-center gap-4">
-               <div className="size-10 sm:size-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center shrink-0">
-                  <Ticket className="size-5 sm:size-6" />
-               </div>
-               Gestão de Cupons
-            </h2>
-         </div>
-         <div className="overflow-x-auto">
-            <Table>
-               <TableHeader>
-                  <TableRow className="border-slate-50 hover:bg-transparent">
-                     <TableHead className="py-8 px-10 text-[10px] font-black uppercase tracking-widest text-slate-400 min-w-[150px]">Código</TableHead>
-                     <TableHead className="py-8 text-[10px] font-black uppercase tracking-widest text-slate-400 min-w-[120px]">Tipo</TableHead>
-                     <TableHead className="py-8 text-[10px] font-black uppercase tracking-widest text-slate-400 min-w-[120px]">Benefício</TableHead>
-                     <TableHead className="py-8 text-[10px] font-black uppercase tracking-widest text-slate-400 min-w-[150px]">Usos</TableHead>
-                     <TableHead className="py-8 text-right px-10 text-[10px] font-black uppercase tracking-widest text-slate-400 min-w-[100px]">Ações</TableHead>
-                  </TableRow>
-               </TableHeader>
-               <TableBody>
-                  {coupons.map(coupon => (
-                     <TableRow key={coupon.id} className="border-slate-50 hover:bg-slate-50 transition-colors">
-                        <TableCell className="py-8 px-10">
-                           <Badge className="h-10 px-4 rounded-xl bg-slate-900 text-white font-black text-sm uppercase italic tracking-widest">
-                              {coupon.codigo}
-                           </Badge>
-                        </TableCell>
-                        <TableCell className="py-8 text-xs font-black uppercase tracking-tight text-slate-500 italic">
-                           {coupon.tipo === 'percentual' && <span className="flex items-center gap-2"> <Percent className="size-3" /> Percentual</span>}
-                           {coupon.tipo === 'fixo' && <span className="flex items-center gap-2"> <DollarSign className="size-3" /> Valor Fixo</span>}
-                           {coupon.tipo === 'frete_gratis' && <span className="flex items-center gap-2"> <Truck className="size-3" /> Frete Grátis</span>}
-                        </TableCell>
-                        <TableCell className="py-8">
-                           <p className="font-black text-slate-900 text-lg italic tracking-tighter">
-                              {coupon.tipo === 'percentual' ? `${coupon.valor}%` : `R$ ${coupon.valor.toFixed(2)}`}
-                              {coupon.valor_minimo > 0 && <span className="text-[9px] font-bold text-slate-300 block">Min: R$ {coupon.valor_minimo}</span>}
-                           </p>
-                        </TableCell>
-                        <TableCell className="py-8">
-                           <div className="flex items-center gap-3">
-                              <span className="font-black text-slate-900">{coupon.usos}</span>
-                              <div className="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                                 <div className="h-full bg-pink-500 rounded-full" style={{ width: `${(coupon.usos / coupon.limite_uso) * 100}%` }} />
-                              </div>
-                              <span className="text-[10px] font-black text-slate-300">/ {coupon.limite_uso}</span>
-                           </div>
-                        </TableCell>
-                        <TableCell className="py-8 text-right px-10">
-                           <Button onClick={() => handleDeleteCoupon(coupon.id)} variant="ghost" className="size-12 rounded-2xl text-rose-500 hover:bg-rose-50 hover:text-rose-600">
-                              <Trash2 className="size-5" />
-                           </Button>
-                        </TableCell>
-                     </TableRow>
-                  ))}
-               </TableBody>
-            </Table>
-         </div>
-      </div>
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        
+        {/* Formulário de Nova Campanha */}
+        <div className="xl:col-span-2 space-y-8">
+            <div className="bg-white border border-gray-100 rounded-[28px] p-8 space-y-6 shadow-sm">
+                <div className="flex items-center gap-3 mb-2">
+                    <div className="size-10 rounded-2xl bg-pink-100 flex items-center justify-center text-pink-600">
+                        <Send size={18} />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-black text-gray-800 uppercase italic tracking-tighter">Criar Nova Campanha</h3>
+                      <p className="text-xs text-gray-400">Enfileire disparos em lote para segmentos específicos</p>
+                    </div>
+                </div>
 
-      {/* Loyalty Rules & Tiers */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-         <div className="bg-slate-900 rounded-[32px] sm:rounded-[56px] p-8 sm:p-12 text-white relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-12 opacity-5">
-               <Target className="size-64" />
-            </div>
-            <div className="relative z-10 space-y-10">
-               <div className="space-y-2">
-                  <h3 className="text-3xl font-black italic uppercase tracking-tighter">Configuração de <span className="text-pink-500">Pontos</span></h3>
-                  <p className="text-slate-400 font-medium italic text-sm">Gamifique a experiência das suas clientes.</p>
-               </div>
-               
-               <div className="space-y-6">
-                  <div className="bg-white/5 backdrop-blur-3xl rounded-[32px] p-8 border border-white/10 flex items-center justify-between">
-                     <div className="space-y-1">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Conversão de Gasto</p>
-                        <p className="text-xl font-black italic uppercase tracking-tighter">R$ 1.00 = 1 Ponto</p>
-                     </div>
-                     <Button variant="ghost" className="size-12 rounded-2xl bg-white/10 text-white"><Edit3 className="size-5" /></Button>
+                <form onSubmit={handleSendCampaign} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Nome da Campanha</label>
+                      <Input 
+                        placeholder="Ex: Promoção de Bolos de Chocolate" 
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        className="bg-gray-50 border-gray-100 rounded-xl"
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Segmento de Clientes</label>
+                      <select 
+                        value={segment}
+                        onChange={(e) => setSegment(e.target.value)}
+                        className="w-full h-10 px-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-pink-500"
+                      >
+                        <option value="all">Todos os Clientes ({customerStats.total})</option>
+                        <option value="vip">Clientes VIP ({customerStats.vip})</option>
+                        <option value="inactive">Clientes Inativos - Sem compras há 30 dias ({customerStats.inactive})</option>
+                        <option value="new">Novos Clientes - Cadastrados há 7 dias ({customerStats.new})</option>
+                        <option value="recent">Últimos Compradores - Compras há 7 dias ({customerStats.recent})</option>
+                        <option value="birthday">Aniversariantes do Mês ({customerStats.birthday})</option>
+                        <option value="no_orders">Clientes sem pedido ({customerStats.noOrders})</option>
+                        <option value="abandoned_cart">Carrinho Abandonado ({customerStats.abandonedCarts})</option>
+                      </select>
+                    </div>
                   </div>
 
-                  <div className="bg-white/5 backdrop-blur-3xl rounded-[32px] p-8 border border-white/10 flex items-center justify-between">
-                     <div className="space-y-1">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">Bônus Primeira Compra</p>
-                        <p className="text-xl font-black italic uppercase tracking-tighter">50 Pontos</p>
-                     </div>
-                     <Button variant="ghost" className="size-12 rounded-2xl bg-white/10 text-white"><Edit3 className="size-5" /></Button>
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Mensagem de Envio</label>
+                      <div className="flex gap-2">
+                        <button type="button" onClick={() => insertVariable("{client_name}")} className="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100">
+                          {"{client_name}"}
+                        </button>
+                        <button type="button" onClick={() => insertVariable("{menu_link}")} className="text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded hover:bg-blue-100">
+                          {"{menu_link}"}
+                        </button>
+                      </div>
+                    </div>
+                    <Textarea 
+                      rows={5}
+                      placeholder="Escreva sua mensagem... Use as variáveis acima para personalizar o envio."
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      className="bg-gray-50 border-gray-100 rounded-xl font-mono text-sm leading-relaxed"
+                      required
+                    />
                   </div>
-               </div>
 
-               <div className="pt-6 space-y-6">
-                  <h4 className="text-[10px] font-black uppercase tracking-widest text-pink-500 text-center">Hierarquia de Níveis</h4>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                     {['Bronze', 'Prata', 'Ouro', 'Diamante'].map((tier, idx) => (
-                        <div key={tier} className="text-center space-y-3 p-4 rounded-[28px] bg-white/5 border border-white/10">
-                           <div className={cn("size-6 rounded-full mx-auto shadow-lg shadow-pink-500/20", idx === 0 ? "bg-amber-700" : idx === 1 ? "bg-slate-300" : idx === 2 ? "bg-amber-400" : "bg-emerald-400 animate-pulse")} />
-                           <p className="text-[10px] font-black uppercase italic tracking-tighter leading-none">{tier}</p>
-                           <p className="text-[8px] font-bold text-slate-500">{[0, 500, 1500, 5000][idx]} pts</p>
-                        </div>
-                     ))}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
+                        <Calendar size={14} /> Agendar Disparo (Opcional)
+                      </label>
+                      <Input 
+                        type="datetime-local" 
+                        value={scheduleAt}
+                        onChange={(e) => setScheduleAt(e.target.value)}
+                        className="bg-gray-50 border-gray-100 rounded-xl text-sm"
+                      />
+                    </div>
+
+                    <Button 
+                      type="submit" 
+                      disabled={isSending}
+                      className="w-full h-11 bg-pink-600 hover:bg-pink-700 text-white font-bold uppercase tracking-wider text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+                    >
+                      {isSending ? (
+                        <>
+                          <Loader2 size={16} className="animate-spin" /> Enfileirando...
+                        </>
+                      ) : (
+                        <>
+                          <Send size={16} /> Disparar Campanha
+                        </>
+                      )}
+                    </Button>
                   </div>
-               </div>
-            </div>
-         </div>
-
-         <div className="bg-white rounded-[32px] sm:rounded-[56px] p-8 sm:p-12 border border-slate-100 shadow-2xl space-y-10">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-               <div className="space-y-1 text-center sm:text-left">
-                  <h3 className="text-2xl sm:text-3xl font-black italic uppercase tracking-tighter text-slate-900 leading-none">Catálogo de <span className="text-pink-500">Recompensas</span></h3>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">O que suas clientes podem resgatar</p>
-               </div>
-               <Button className="h-14 w-full sm:w-14 rounded-2xl bg-pink-500 text-white shadow-xl hover:bg-pink-600 shrink-0"><Plus className="size-6" /></Button>
+                </form>
             </div>
 
-            <div className="space-y-4">
-               {rewards.length === 0 ? (
-                  <div className="h-60 flex flex-col items-center justify-center text-center opacity-30 gap-4">
-                     <Gift className="size-10 text-slate-300" />
-                     <p className="text-[10px] font-black uppercase tracking-widest leading-none">Nenhuma recompensa cadastrada</p>
+            {/* Histórico de Campanhas */}
+            <div className="bg-white border border-gray-100 rounded-[28px] p-8 space-y-6 shadow-sm">
+                <div className="flex items-center gap-3">
+                    <div className="size-10 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-600">
+                        <History size={18} />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-black text-gray-800 uppercase italic tracking-tighter">Histórico de Campanhas</h3>
+                      <p className="text-xs text-gray-400">Acompanhe o andamento dos disparos antigos</p>
+                    </div>
+                </div>
+
+                {loadingCampaigns ? (
+                  <div className="flex justify-center items-center py-10">
+                    <Loader2 size={24} className="animate-spin text-pink-500" />
                   </div>
-               ) : (
-                  rewards.map(reward => (
-                     <div key={reward.id} className="p-6 sm:p-8 rounded-[32px] bg-slate-50 border border-white flex flex-col sm:flex-row items-center justify-between group hover:bg-white hover:shadow-xl hover:scale-[1.02] transition-all duration-500 cursor-pointer gap-6">
-                        <div className="flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
-                           <div className="size-16 rounded-[20px] bg-white shadow-sm flex items-center justify-center text-pink-500 group-hover:scale-110 transition-transform shrink-0">
-                              <Gift className="size-8" />
-                           </div>
-                           <div className="space-y-1">
-                              <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Resgate com pontos</p>
-                              <h4 className="text-lg sm:text-xl font-black italic uppercase tracking-tighter text-slate-900 leading-none">{reward.nome}</h4>
-                           </div>
-                        </div>
-                        <div className="bg-pink-500 h-10 px-6 rounded-full flex items-center justify-center text-white font-black uppercase text-[10px] tracking-widest shadow-lg shadow-pink-100 w-full sm:w-auto">
-                           {reward.pontos_necessarios} Pts
-                        </div>
-                     </div>
-                  ))
-               )}
-            </div>
-         </div>
-      </div>
-
-      {/* Coupon Dialog */}
-      <Dialog open={isCouponDialogOpen} onOpenChange={setIsCouponDialogOpen}>
-         <DialogContent className="w-[95vw] rounded-[32px] sm:rounded-[40px] border-none shadow-2xl p-0 overflow-hidden max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="bg-slate-900 p-10 text-white">
-               <h2 className="text-3xl font-black italic uppercase tracking-tighter">Novo <span className="text-pink-500">Cupom</span></h2>
-               <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-2">Crie ofertas irresistíveis para suas clientes</p>
-            </div>
-            <div className="p-6 sm:p-10 space-y-6">
-               <div className="space-y-4">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Código do Cupom</Label>
-                  <Input 
-                     placeholder="EX: DOCE20, FRETEOFF" 
-                     className="h-16 rounded-[24px] bg-slate-50 border-none font-black uppercase italic tracking-widest text-lg"
-                     value={newCoupon.codigo}
-                     onChange={e => setNewCoupon({...newCoupon, codigo: e.target.value})}
-                  />
-               </div>
-               
-               <div className="grid grid-cols-2 gap-6">
+                ) : campaigns.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-10 text-gray-400 bg-gray-50 rounded-2xl border border-dashed">
+                    <AlertCircle size={24} className="mb-2" />
+                    <p className="text-xs font-semibold uppercase tracking-wider">Nenhuma campanha enviada ainda</p>
+                  </div>
+                ) : (
                   <div className="space-y-4">
-                     <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Tipo</Label>
-                     <select 
-                        className="w-full h-16 rounded-[24px] bg-slate-50 border-none font-black text-xs uppercase tracking-widest px-6 outline-none"
-                        value={newCoupon.tipo}
-                        onChange={e => setNewCoupon({...newCoupon, tipo: e.target.value})}
-                     >
-                        <option value="percentual">Percentual (%)</option>
-                        <option value="fixo">Valor Fixo (R$)</option>
-                        <option value="frete_gratis">Frete Grátis</option>
-                     </select>
+                    {campaigns.map((camp) => (
+                      <div key={camp.id} className="flex flex-col md:flex-row md:items-center justify-between p-4 bg-gray-50 border rounded-2xl gap-4">
+                        <div className="space-y-1">
+                          <p className="font-bold text-gray-800 text-sm">{camp.name}</p>
+                          <p className="text-[10px] text-gray-400 font-mono line-clamp-1">{camp.message}</p>
+                          <p className="text-[8px] text-gray-400 uppercase font-semibold">
+                            Criação: {new Date(camp.created_at).toLocaleString('pt-BR')}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Badge className={cn(
+                            "border-none text-[8px] font-black uppercase px-2 py-1 rounded-lg",
+                            camp.status === "completed" ? "bg-green-100 text-green-700" :
+                            camp.status === "scheduled" ? "bg-blue-100 text-blue-700" :
+                            camp.status === "processing" ? "bg-yellow-100 text-yellow-700" :
+                            "bg-red-100 text-red-700"
+                          )}>
+                            {camp.status}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div className="space-y-4">
-                     <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Valor</Label>
-                     <Input 
-                        type="number"
-                        placeholder="0" 
-                        className="h-16 rounded-[24px] bg-slate-50 border-none font-black text-xl"
-                        value={newCoupon.valor}
-                        onChange={e => setNewCoupon({...newCoupon, valor: parseFloat(e.target.value)})}
-                        disabled={newCoupon.tipo === 'frete_gratis'}
-                     />
-                  </div>
-               </div>
-
-               <div className="space-y-4">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Valor Mínimo do Pedido (Opcional)</Label>
-                  <Input 
-                     type="number"
-                     placeholder="0.00" 
-                     className="h-16 rounded-[24px] bg-slate-50 border-none font-black text-lg"
-                     value={newCoupon.valor_minimo}
-                     onChange={e => setNewCoupon({...newCoupon, valor_minimo: parseFloat(e.target.value)})}
-                  />
-               </div>
-
-               <Button onClick={handleCreateCoupon} className="w-full h-20 rounded-[32px] bg-slate-900 border-none hover:bg-slate-800 text-white font-black italic uppercase text-xs tracking-[0.2em] shadow-2xl transition-all hover:scale-[1.02] active:scale-95 mt-6">
-                  Ativar Cupom Agora
-               </Button>
+                )}
             </div>
-         </DialogContent>
-      </Dialog>
+        </div>
+
+        {/* Barra Lateral / Recuperação e Links */}
+        <div className="space-y-8">
+            {/* Recuperação de Vendas Automática */}
+            <div className="bg-gradient-to-br from-pink-600 to-rose-500 rounded-[28px] p-6 text-white space-y-4 shadow-md">
+                <div className="size-10 bg-white/20 rounded-xl flex items-center justify-center"><Clock size={20} /></div>
+                <h4 className="text-[10px] font-bold uppercase tracking-widest text-pink-100">Recuperador de Vendas</h4>
+                <h3 className="text-3xl font-black italic tracking-tighter">Ativo (30m)</h3>
+                <p className="text-[10px] text-white/80 leading-relaxed font-medium">
+                  Carrinhos de compras não finalizados receberão uma mensagem automática pelo WhatsApp com o link de recuperação exato após 30 minutos de inatividade.
+                </p>
+            </div>
+
+            {/* Gerador de Link Inteligente */}
+            <div className="bg-white border border-gray-100 rounded-[28px] p-6 space-y-6 shadow-sm">
+                <div className="flex items-center gap-3">
+                    <div className="size-10 rounded-2xl bg-emerald-100 flex items-center justify-center text-emerald-600">
+                        <Share2 size={18} />
+                    </div>
+                    <h4 className="text-[10px] font-black uppercase text-gray-700 tracking-wider">Link Inteligente</h4>
+                </div>
+                
+                <p className="text-[10px] text-gray-400 font-bold uppercase leading-relaxed">
+                  Use este link na Bio do Instagram ou no Google para capturar leads automaticamente.
+                </p>
+
+                <div className="space-y-4">
+                    <div className="space-y-1">
+                        <label className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Mensagem Inicial</label>
+                        <Input 
+                            value={waText}
+                            onChange={(e) => setWaText(e.target.value)}
+                            className="bg-gray-50 border-gray-100 rounded-xl text-xs"
+                        />
+                    </div>
+                    <div className="p-3 bg-gray-50 rounded-xl border border-dashed border-gray-200 break-all text-[9px] font-mono text-gray-400">
+                        {waLink}
+                    </div>
+                    <Button onClick={copyLink} className="w-full h-10 bg-emerald-600 hover:bg-emerald-700 text-white font-bold uppercase tracking-wider text-xs rounded-xl shadow-sm">
+                        Copiar Link <Copy size={12} className="ml-1.5" />
+                    </Button>
+                </div>
+            </div>
+        </div>
+      </div>
     </div>
+  )
+}
+
+function StarIcon(props: any) {
+  return (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
   )
 }

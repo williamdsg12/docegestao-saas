@@ -14,7 +14,10 @@ import {
   Share2, 
   Heart,
   MessageCircle,
-  AlertCircle
+  AlertCircle,
+  Globe,
+  X,
+  Bell
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -28,6 +31,7 @@ import { ProductCard } from "@/components/menu/ProductCard"
 import { ProductModal } from "@/components/menu/ProductModal"
 import { CartDrawer } from "@/components/menu/CartDrawer"
 import { CheckoutFlow } from "@/components/menu/CheckoutFlow"
+import { MenuHeader } from "@/components/menu/MenuHeader"
 
 interface CartItem {
   id: string
@@ -55,6 +59,15 @@ function MenuContent({ params }: { params: { slug: string } }) {
   const [deliverySettings, setDeliverySettings] = useState<any>(null)
   const [storeSettings, setStoreSettings] = useState<any>(null)
   const [storeStatus, setStoreStatus] = useState<any>(null)
+  const [menuSettings, setMenuSettings] = useState<any>({
+    primary_color: "#ff2266",
+    background_color: "#ffffff",
+    button_color: "#ff2266",
+    text_color: "#0f172a",
+    button_text: "Pedir no WhatsApp",
+    button_style: "rounded",
+    menu_layout: "grid",
+  })
   
   // UI State
   const [searchTerm, setSearchTerm] = useState("")
@@ -62,6 +75,78 @@ function MenuContent({ params }: { params: { slug: string } }) {
   const [selectedProduct, setSelectedProduct] = useState<any>(null)
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false)
+  
+  // Bug 7: Identification State
+  const [showPhoneModal, setShowPhoneModal] = useState(false)
+  const [phone, setPhone] = useState('')
+  const [foundCustomer, setFoundCustomer] = useState<any>(null)
+  const [loadingPhone, setLoadingPhone] = useState(false)
+  const [pendingDeliveryType, setPendingDeliveryType] = useState<'local' | 'retirada' | 'delivery'>('delivery')
+  const [lastSearchedPhone, setLastSearchedPhone] = useState("")
+
+  const mesa = searchParams?.get('mesa')
+  const [isWaiterPopoverOpen, setIsWaiterPopoverOpen] = useState(false)
+  const [isCallingWaiter, setIsCallingWaiter] = useState(false)
+
+  const handleWaiterCall = async (type: 'call' | 'bill') => {
+    if (!company?.id || !mesa) return
+    setIsCallingWaiter(true)
+    try {
+      const res = await fetch('/api/tables/calls', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          company_id: company.id,
+          table_number: mesa,
+          type
+        })
+      })
+      if (!res.ok) throw new Error("Erro ao chamar garçom")
+      toast.success(type === 'call' ? "🛎️ Garçom chamado com sucesso!" : "🧾 Pedido de conta enviado!")
+      setIsWaiterPopoverOpen(false)
+    } catch (e) {
+      console.error(e)
+      toast.error("Erro ao enviar chamada.")
+    } finally {
+      setIsCallingWaiter(false)
+    }
+  }
+
+  // 500ms Debounce phone query
+  useEffect(() => {
+    if (!company?.id) return // Wait until company metadata is fully loaded to ensure query is properly tenant-scoped
+
+    const digits = phone.replace(/\D/g, "")
+    if (digits.length < 10) {
+      setFoundCustomer(null)
+      return
+    }
+    if (digits === lastSearchedPhone) return
+
+    const timer = setTimeout(async () => {
+      setLastSearchedPhone(digits)
+      setLoadingPhone(true)
+      try {
+        const res = await fetch(`/api/customers?phone=${digits}&storeId=${company.id}`)
+        if (res.ok) {
+          const customer = await res.json()
+          setFoundCustomer(customer)
+          if (customer) {
+            sessionStorage.setItem('checkoutCustomer', JSON.stringify(customer))
+            toast.success(`👋 Bem-vindo de volta, ${customer.name.split(' ')[0]}! Seus dados serão preenchidos automaticamente.`)
+          } else {
+            toast.error("Cliente não encontrado. Complete os dados para realizar o cadastro.")
+          }
+        }
+      } catch (e) {
+        console.error("Error finding customer", e)
+      } finally {
+        setLoadingPhone(false)
+      }
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [phone, lastSearchedPhone, company?.id])
   
   // Cart State
   const [cart, setCart] = useState<CartItem[]>([])
@@ -175,6 +260,17 @@ function MenuContent({ params }: { params: { slug: string } }) {
       if (delSettings.data) {
         setDeliverySettings(delSettings.data)
         setDeliveryFee(Number(delSettings.data.taxa_base) || 0)
+      }
+
+      // 5. Fetch Digital Menu Design Settings
+      const { data: mSettings } = await supabase
+        .from('digital_menu_settings')
+        .select('*')
+        .eq('company_id', targetId)
+        .maybeSingle()
+      
+      if (mSettings) {
+        setMenuSettings(mSettings)
       }
 
       if (!isPreview) {
@@ -306,29 +402,33 @@ function MenuContent({ params }: { params: { slug: string } }) {
         ? `${orderData.address}, ${orderData.number} ${orderData.complement || ''} - ${orderData.neighborhood}` 
         : "Retirada no Local"
 
-      // 1. CRM: Find or Create Client
+      // 1. CRM: Find or Create Client via secure API (handles RLS bypass)
       let clientId = ""
-      const { data: existingClient } = await supabase
-        .from('clientes')
-        .select('id')
-        .eq('company_id', company.id)
-        .eq('phone', orderData.phone)
-        .maybeSingle()
-
-      if (existingClient) {
-        clientId = existingClient.id
-      } else {
-        const { data: newClient, error: clientErr } = await supabase
-          .from('clientes')
-          .insert({
-            company_id: company.id,
+      try {
+        const cleanPhone = orderData.phone.replace(/\D/g, '')
+        const custRes = await fetch('/api/customers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone: cleanPhone,
             name: orderData.name,
-            phone: orderData.phone
+            storeId: company.id,
+            address: orderData.delivery_type === 'entrega' ? {
+              street: orderData.address || '',
+              number: orderData.number || '',
+              neighborhood: orderData.neighborhood || '',
+              complement: orderData.complement || ''
+            } : null
           })
-          .select()
-          .single()
-        if (clientErr) throw clientErr
-        clientId = newClient.id
+        })
+        if (custRes.ok) {
+          const custData = await custRes.json()
+          if (custData && custData.id) {
+            clientId = custData.id
+          }
+        }
+      } catch (custErr) {
+        console.error("Erro no CRM ao salvar cliente:", custErr)
       }
 
       // 2. Create Professional Order via Central API
@@ -338,6 +438,8 @@ function MenuContent({ params }: { params: { slug: string } }) {
         body: JSON.stringify({
           company_id: company.id,
           cliente_id: clientId,
+          customerName: orderData.name,
+          customerPhone: orderData.phone,
           tipo_pedido: orderData.delivery_type,
           valor_total: total,
           taxa_entrega: orderData.delivery_type === 'entrega' ? deliveryFee : 0,
@@ -420,95 +522,56 @@ function MenuContent({ params }: { params: { slug: string } }) {
   )
 
   return (
-    <div className="min-h-screen bg-[#F7F7F7] pb-32 font-sans">
-      {/* Dynamic Header */}
-      <div className="relative h-48 md:h-64 w-full overflow-hidden">
-        <img 
-          src={company.cover_url || "https://images.unsplash.com/photo-1578985545062-69928b1d9587?auto=format&fit=crop&q=80&w=1000"} 
-          className="size-full object-cover" 
-          alt={company.name}
-        />
-        <div className="absolute inset-0 bg-black/40" />
-        <div className="absolute top-6 left-6 flex gap-2">
-           <Button variant="ghost" size="icon" className="bg-white/20 backdrop-blur-md text-white rounded-full hover:bg-white/40" onClick={() => router.back()}>
-             <ChevronLeft className="size-5" />
-           </Button>
+    <div 
+      className="min-h-screen pb-32 font-sans"
+      style={{ 
+        backgroundColor: menuSettings.background_color,
+        '--primary-color': menuSettings.primary_color,
+        '--text-color': menuSettings.text_color,
+        '--button-color': menuSettings.button_color || menuSettings.primary_color,
+      } as React.CSSProperties}
+    >
+      {/* 🔝 TOP BAR (FIDELITY) */}
+      <div 
+        className="text-white py-2 px-4 flex items-center justify-between sticky top-0 z-[60] shadow-md"
+        style={{ backgroundColor: menuSettings.primary_color }}
+      >
+        <div className="flex items-center gap-2">
+          <div className="size-6 rounded-full bg-blue-900 flex items-center justify-center text-[10px] font-bold">W</div>
+          <span className="text-[11px] font-bold uppercase tracking-wider">4 Pontos — Ganhe pontos e recompensas!</span>
         </div>
-        <div className="absolute top-6 right-6 flex gap-2">
-           <Button variant="ghost" size="icon" className="bg-white/20 backdrop-blur-md text-white rounded-full hover:bg-white/40">
-             <Share2 className="size-5" />
-           </Button>
-        </div>
+        {cart.length > 0 && (
+          <button 
+            onClick={() => setIsCartOpen(true)}
+            className="text-[11px] font-black uppercase italic flex items-center gap-1 hover:underline"
+          >
+            Ver meu pedido ›
+          </button>
+        )}
       </div>
 
-      {/* Profile Card */}
-      <div className="max-w-4xl mx-auto px-4 -mt-16 relative z-10">
-        <div className="bg-white rounded-[32px] p-6 md:p-8 shadow-ifood flex flex-col md:flex-row items-center gap-6 text-center md:text-left border border-white">
-          <div className="size-24 md:size-28 rounded-[24px] bg-white p-1 shadow-lg -mt-16 md:-mt-20 border border-slate-50 shrink-0">
-             <div className="size-full rounded-[20px] overflow-hidden bg-slate-50 flex items-center justify-center">
-               <img src={company.logo_url || "https://api.dicebear.com/7.x/initials/svg?seed=" + company.name} className="size-full object-cover" alt="Logo" />
-             </div>
-          </div>
-          <div className="flex-1 space-y-2">
-             <div className="flex flex-col md:flex-row items-center gap-3">
-               <h1 className="text-2xl md:text-3xl font-black italic uppercase tracking-tighter text-slate-800">{company.name}</h1>
-               {storeStatus?.status === 'OPEN' ? (
-                  <Badge className="bg-emerald-50 text-emerald-600 border-none px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest leading-none">● Aberto</Badge>
-               ) : storeStatus?.status === 'PAUSED' ? (
-                  <Badge className="bg-amber-50 text-amber-600 border-none px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest leading-none animate-pulse">● Pausado</Badge>
-               ) : (
-                  <Badge className="bg-rose-50 text-rose-600 border-none px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest leading-none">● Fechado</Badge>
-               )}
-             </div>
-             <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 md:gap-6 text-xs font-bold text-slate-500 uppercase tracking-widest">
-                <div className="flex items-center gap-1.5"><Star className="size-3.5 text-amber-400 fill-amber-400" /> 4.9 <span className="opacity-40">(100+)</span></div>
-                <div className="flex items-center gap-1.5"><Clock className="size-3.5 text-red-500" /> 30-45 min</div>
-                <div className="flex items-center gap-1.5"><MapPin className="size-3.5 text-red-500" /> {company.address_city || "Entrega"}</div>
-             </div>
-          </div>
-        </div>
+      {/* 🖼️ NEW HEADER (Sweet Savory Style) */}
+      <MenuHeader 
+        store={{
+          name: menuSettings.store_name || company.name,
+          logo_url: menuSettings.menu_logo || company.logo_url,
+          cover_url: menuSettings.menu_cover || company.cover_url,
+          isOpen: storeStatus?.isOpen ?? true,
+          deliveryTime: "35-50 min", // We could get this from deliverySettings if available
+          minOrder: Number(deliverySettings?.pedido_minimo) || 0
+        }} 
+      />
 
-        {/* Store Status Banner */}
-        <AnimatePresence>
-          {storeStatus && !storeStatus.isOpen && (
-             <motion.div 
-               initial={{ height: 0, opacity: 0 }}
-               animate={{ height: "auto", opacity: 1 }}
-               exit={{ height: 0, opacity: 0 }}
-               className="mt-6 overflow-hidden"
-             >
-               <div className={cn(
-                 "p-4 rounded-2xl flex items-center gap-4 border",
-                 storeStatus.isPaused 
-                  ? "bg-amber-50 border-amber-100 text-amber-900" 
-                  : "bg-rose-50 border-rose-100 text-rose-900"
-               )}>
-                 <div className={cn(
-                   "size-10 rounded-xl flex items-center justify-center shrink-0",
-                   storeStatus.isPaused ? "bg-amber-500 text-white" : "bg-rose-500 text-white"
-                 )}>
-                   <Clock className="size-5" />
-                 </div>
-                 <div className="flex-1">
-                   <p className="font-black uppercase italic tracking-tighter text-sm leading-tight">{storeStatus.message}</p>
-                   <p className="text-[10px] uppercase font-bold tracking-widest opacity-60 mt-1">{storeStatus.reason}</p>
-                 </div>
-               </div>
-             </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Search Bar */}
-        <div className="mt-8">
-           <div className="relative group">
-              <Search className="absolute left-6 top-1/2 -translate-y-1/2 size-5 text-slate-400 group-focus-within:text-red-500 transition-colors" />
-              <Input 
-                placeholder="Buscar no cardápio..."
-                className="h-14 md:h-16 pl-14 pr-6 rounded-2xl bg-white border-white shadow-ifood text-sm md:text-base font-medium focus-visible:ring-red-500/20 transition-all"
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-              />
-           </div>
+      {/* 🔍 SEARCH BAR */}
+      <div className="max-w-4xl mx-auto px-6 -mt-2 mb-4">
+        <div className="relative group">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+          <Input 
+            placeholder="Buscar no cardápio..."
+            className="h-11 pl-11 pr-4 rounded-xl bg-slate-100 border-none text-sm font-medium focus-visible:ring-blue-500/20"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+          />
         </div>
       </div>
 
@@ -534,7 +597,10 @@ function MenuContent({ params }: { params: { slug: string } }) {
                   <h2 className="text-xl md:text-2xl font-black uppercase italic tracking-tighter text-slate-800">{cat.name}</h2>
                   <div className="h-px flex-1 bg-slate-200/50" />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                <div className={cn(
+                  "grid gap-4 md:gap-6",
+                  menuSettings.menu_layout === 'grid' ? "grid-cols-2" : "grid-cols-1"
+                )}>
                   {catProducts.map(p => (
                     <ProductCard 
                       key={p.id} 
@@ -549,33 +615,33 @@ function MenuContent({ params }: { params: { slug: string } }) {
           })}
       </div>
 
-      {/* Floating Bottom Cart Bar */}
+      {/* 🛒 NEW CART BAR (Sweet Savory Style) */}
       <AnimatePresence>
         {cart.length > 0 && !isCartOpen && (
           <motion.div 
             initial={{ y: 50, opacity: 0 }} 
             animate={{ y: 0, opacity: 1 }} 
             exit={{ y: 50, opacity: 0 }}
-            className="fixed bottom-6 left-4 right-4 z-50 md:max-w-md md:left-1/2 md:-translate-x-1/2"
+            className="fixed bottom-6 left-4 right-4 z-50 md:max-w-lg md:left-1/2 md:-translate-x-1/2"
           >
             <Button 
               onClick={() => setIsCartOpen(true)}
-              className="w-full h-16 rounded-[24px] bg-slate-900 text-white shadow-2xl flex justify-between px-8 group active:scale-95 transition-all overflow-hidden border border-white/10"
+              className="w-full h-16 bg-red-600 hover:bg-red-700 text-white shadow-2xl flex justify-between px-6 rounded-2xl group active:scale-95 transition-all overflow-hidden"
             >
               <div className="flex items-center gap-4">
-                 <div className="size-10 rounded-xl bg-white/10 flex items-center justify-center relative">
+                 <div className="size-10 rounded-xl bg-white/20 flex items-center justify-center relative">
                     <ShoppingCart className="size-5" />
-                    <span className="absolute -top-1 -right-1 size-5 bg-red-600 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-slate-900">
+                    <span className="absolute -top-1.5 -right-1.5 size-5 bg-white text-red-600 text-[10px] font-black rounded-full flex items-center justify-center border-2 border-red-600">
                       {cart.reduce((acc, i) => acc + i.quantity, 0)}
                     </span>
                  </div>
-                 <div className="text-left leading-none space-y-1">
-                   <span className="block text-[10px] font-black uppercase tracking-widest text-slate-400">Ver sacola</span>
+                 <div className="text-left leading-none space-y-0.5">
+                   <span className="block text-[10px] font-black uppercase tracking-widest text-red-100">Total na sacola</span>
                    <span className="block text-lg font-black italic tracking-tighter">R$ {total.toFixed(2)}</span>
                  </div>
               </div>
               <span className="text-xs font-black uppercase italic tracking-widest flex items-center gap-2">
-                Revisar <ArrowRight className="size-4 group-hover:translate-x-1 transition-transform" />
+                VER SACOLA <ArrowRight className="size-4 group-hover:translate-x-1 transition-transform" />
               </span>
             </Button>
           </motion.div>
@@ -594,18 +660,129 @@ function MenuContent({ params }: { params: { slug: string } }) {
         isOpen={isCartOpen} 
         onClose={() => setIsCartOpen(false)} 
         items={cart} 
-        subtotal={subtotal} 
+        allProducts={products}
         onUpdateQuantity={updateQuantity} 
         onRemoveItem={removeItem} 
-        onCheckout={() => {
+        onAddToCart={(p) => {
+          // If it's a simple add from suggested
+          if (p.id && !p.variation) {
+             const fullProduct = products.find(prod => prod.id === p.id)
+             if (fullProduct) {
+                setSelectedProduct(fullProduct)
+                return
+             }
+          }
+          addToCart(p)
+        }}
+        onCheckout={(type) => {
           if (!storeStatus?.isOpen) {
             toast.error("A loja fechou enquanto você montava sua sacola.")
             return
           }
+          setPendingDeliveryType(type)
           setIsCartOpen(false)
-          setIsCheckoutOpen(true)
+          setShowPhoneModal(true) // Trigger Bug 7
         }} 
+        subtotal={subtotal}
       />
+
+      {/* BUG 7 — ONBOARDING DE TELEFONE */}
+      {showPhoneModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] backdrop-blur-sm">
+          <motion.div 
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-3xl p-8 w-full max-w-sm mx-4 shadow-2xl relative"
+          >
+            <button 
+              onClick={() => setShowPhoneModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"
+            >
+              <X className="size-5" />
+            </button>
+
+            <div className="text-center mb-8">
+              <div className="text-5xl mb-4">👋</div>
+              <h2 className="text-2xl font-black italic uppercase tracking-tighter text-slate-900">Olá! Qual seu número?</h2>
+              <p className="text-sm text-slate-500 mt-2">
+                Para agilizar seus pedidos futuros e acompanhar a entrega.
+              </p>
+            </div>
+            
+            <div className="space-y-4">
+              <input
+                type="tel"
+                value={phone}
+                onChange={e => {
+                  let v = e.target.value.replace(/\D/g, '')
+                  if (v.length <= 11) {
+                    if (v.length > 10) {
+                      v = `(${v.slice(0,2)}) ${v.slice(2,7)}-${v.slice(7)}`
+                    } else if (v.length > 6) {
+                      v = `(${v.slice(0,2)}) ${v.slice(2,6)}-${v.slice(6)}`
+                    } else if (v.length > 2) {
+                      v = `(${v.slice(0,2)}) ${v.slice(2)}`
+                    }
+                  }
+                  setPhone(v)
+                }}
+                placeholder="(44) 99999-9999"
+                className="w-full border-2 border-slate-100 rounded-2xl px-4 py-4 text-xl text-center font-bold tracking-wider focus:outline-none focus:border-red-500 transition-colors"
+                autoFocus
+              />
+              
+              {loadingPhone && (
+                <p className="text-center text-xs text-slate-400 animate-pulse">
+                  Verificando cadastro...
+                </p>
+              )}
+
+              {foundCustomer && (
+                <motion.div 
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  className="bg-green-50 border border-green-100 rounded-2xl p-4 text-center"
+                >
+                  <p className="text-green-700 font-bold text-sm">
+                    👋 Bem-vindo de volta, {foundCustomer.name?.split(' ')[0]}!
+                  </p>
+                  <p className="text-green-600 text-[10px] uppercase font-black tracking-widest mt-1">
+                    Seus dados serão preenchidos automaticamente
+                  </p>
+                </motion.div>
+              )}
+              
+              <Button
+                onClick={() => {
+                  const digits = phone.replace(/\D/g, '')
+                  sessionStorage.setItem('checkoutPhone', digits)
+                  sessionStorage.setItem('checkoutDeliveryType', pendingDeliveryType)
+                  setShowPhoneModal(false)
+                  router.push(`/carrinho?s=${slug}&tipo=${pendingDeliveryType}`)
+                }}
+                disabled={phone.replace(/\D/g, '').length < 10 && phone.length > 0}
+                className="w-full h-14 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black uppercase italic tracking-widest text-lg shadow-lg shadow-red-100 transition-all active:scale-95"
+              >
+                {foundCustomer 
+                  ? `Continuar como ${foundCustomer.name?.split(' ')[0]}`
+                  : 'Continuar'
+                }
+              </Button>
+              
+              <button
+                onClick={() => {
+                  sessionStorage.setItem('checkoutDeliveryType', pendingDeliveryType)
+                  setShowPhoneModal(false)
+                  router.push(`/carrinho?s=${slug}&tipo=${pendingDeliveryType}`)
+                }}
+                className="w-full py-2 text-slate-400 text-xs font-bold uppercase tracking-widest hover:text-slate-600 transition-colors"
+              >
+                Pular por agora
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
 
       <CheckoutFlow 
         isOpen={isCheckoutOpen} 
@@ -617,6 +794,64 @@ function MenuContent({ params }: { params: { slug: string } }) {
         onSubmit={handleOrderSubmit}
         onFeeUpdate={setDeliveryFee}
       />
+
+      {/* 🛎️ Botão Flutuante Chamar Garçom */}
+      {mesa && (
+        <>
+          <div className={cn(
+            "fixed z-[45] transition-all duration-300",
+            cart.length > 0 && !isCartOpen
+              ? "bottom-28 right-4"
+              : "bottom-6 right-4"
+          )}>
+            <button
+              onClick={() => setIsWaiterPopoverOpen(!isWaiterPopoverOpen)}
+              className="size-14 rounded-full bg-red-600 hover:bg-red-700 text-white flex items-center justify-center shadow-2xl hover:scale-105 active:scale-95 transition-all outline-none"
+              title="Chamar Garçom / Conta"
+            >
+              <Bell className="size-6 animate-bounce" />
+            </button>
+
+            <AnimatePresence>
+              {isWaiterPopoverOpen && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-40 bg-black/10"
+                    onClick={() => setIsWaiterPopoverOpen(false)}
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9, y: 10 }}
+                    className="absolute right-0 bottom-16 bg-white rounded-2xl p-4 shadow-2xl border border-slate-100 w-56 z-50 flex flex-col gap-2"
+                  >
+                    <div className="text-center pb-2 border-b border-slate-100">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Mesa {mesa}</span>
+                      <span className="text-xs font-bold text-slate-700">Precisa de atendimento?</span>
+                    </div>
+
+                    <button
+                      onClick={() => handleWaiterCall('call')}
+                      disabled={isCallingWaiter}
+                      className="w-full h-11 bg-red-50 hover:bg-red-100 disabled:opacity-50 text-red-600 font-black text-xs uppercase italic tracking-wider rounded-xl flex items-center justify-center gap-2 transition-all font-sans"
+                    >
+                      🛎️ Chamar Garçom
+                    </button>
+
+                    <button
+                      onClick={() => handleWaiterCall('bill')}
+                      disabled={isCallingWaiter}
+                      className="w-full h-11 bg-slate-50 hover:bg-slate-100 disabled:opacity-50 text-slate-700 font-black text-xs uppercase italic tracking-wider rounded-xl flex items-center justify-center gap-2 transition-all border border-slate-100 font-sans"
+                    >
+                      🧾 Pedir Conta
+                    </button>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
+        </>
+      )}
 
     </div>
   )

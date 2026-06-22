@@ -1,0 +1,9 @@
+2026/06/17-18:55:39.240 79a4 Reusing MANIFEST D:\app\sistema confeitaria principal\.wwebjs_auth\session-c6338126-ec7d-4808-966a-b9d7a3e2281a\Default\Local Storage\leveldb/MANIFEST-000001
+2026/06/17-18:55:39.249 79a4 Recovering log #6
+2026/06/17-18:55:39.252 79a4 Reusing old log D:\app\sistema confeitaria principal\.wwebjs_auth\session-c6338126-ec7d-4808-966a-b9d7a3e2281a\Default\Local Storage\leveldb/000006.log 
+2026/06/17-23:01:42.414 79a4 Level-0 table #10: started
+2026/06/17-23:01:42.746 79a4 Level-0 table #10: 18387 bytes OK
+2026/06/17-23:01:43.212 79a4 Delete type=0 #6
+2026/06/18-01:01:50.017 57fc Level-0 table #12: started
+2026/06/18-01:01:50.068 57fc Level-0 table #12: 18073 bytes OK
+2026/06/18-01:01:50.214 57fc Delete type=0 #9

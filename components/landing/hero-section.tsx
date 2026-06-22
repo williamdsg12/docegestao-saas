@@ -28,11 +28,11 @@ function FloatingCard({ children, className, delay = 0 }: { children: React.Reac
 
 export function HeroSection() {
   return (
-    <section className="relative overflow-hidden pt-40 pb-20 lg:pt-52 lg:pb-32 bg-background">
-      {/* Animated Background Mesh Gradient & Particles */}
+    <section className="relative overflow-hidden pt-40 pb-20 lg:pt-52 lg:pb-32 bg-[var(--bg-app)]">
+      {/* Premium Background Elements */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px] mix-blend-multiply opacity-50 animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-secondary/20 rounded-full blur-[150px] mix-blend-multiply opacity-50" />
+        <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-[var(--accent-light)] rounded-full blur-[120px] mix-blend-multiply opacity-40 animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-[var(--secondary)]/10 rounded-full blur-[150px] mix-blend-multiply opacity-30" />
       </div>
 
       <div className="container mx-auto px-6 lg:px-8 max-w-7xl flex flex-col items-center justify-center text-center">
@@ -43,9 +43,9 @@ export function HeroSection() {
           transition={{ duration: 0.6, ease: "easeOut" }}
           className="mb-8"
         >
-          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/20 bg-primary/5 text-primary text-sm font-medium backdrop-blur-sm">
-            <span className="flex h-2 w-2 rounded-full bg-primary animate-ping" />
-            Vendas e gestão unificadas
+          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[var(--primary)]/20 bg-[var(--accent-light)] text-[var(--primary)] text-sm font-black uppercase tracking-widest italic backdrop-blur-sm">
+            <span className="flex h-2 w-2 rounded-full bg-[var(--secondary)] animate-ping" />
+            Gestão Inteligente & Lucrativa
           </span>
         </motion.div>
 
@@ -54,11 +54,11 @@ export function HeroSection() {
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="max-w-4xl text-5xl md:text-7xl font-extrabold tracking-tight text-foreground"
+          className="max-w-4xl text-5xl md:text-7xl font-black tracking-tight text-[var(--text-primary)] uppercase italic leading-[1.1]"
         >
-          Sistema completo para confeitaria que organiza <br className="hidden md:block" />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-[#ff8cae] to-secondary">
-            pedidos, vendas e clientes.
+          O sistema inteligente para confeitaria <br className="hidden md:block" />
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--primary)] via-[var(--accent)] to-[var(--secondary)]">
+            crescer de verdade.
           </span>
         </motion.h1>
 
@@ -67,9 +67,9 @@ export function HeroSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-          className="mt-8 max-w-2xl text-lg md:text-xl text-muted-foreground"
+          className="mt-8 max-w-2xl text-lg md:text-xl font-bold text-[var(--text-muted)]"
         >
-          Pare de perder pedidos no WhatsApp e controle sua confeitaria em um único sistema profissional com design intuitivo e inteligente.
+          Organize pedidos, controle vendas, estoque e clientes em um só lugar.
         </motion.p>
 
         {/* Buttons */}
@@ -77,23 +77,23 @@ export function HeroSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
-          className="mt-10 flex flex-col sm:flex-row gap-4 items-center justify-center"
+          className="mt-10 flex flex-col sm:flex-row gap-4 items-center justify-center w-full"
         >
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full sm:w-auto">
             <Button
-              className="h-14 rounded-full px-8 text-base font-bold text-white shadow-xl shadow-primary/30 bg-gradient-to-r from-primary to-[#ff8cae] border-0"
+              className="h-14 w-full sm:w-auto rounded-2xl px-10 text-base font-black uppercase tracking-widest text-white shadow-xl shadow-[var(--primary)]/20 bg-[var(--primary)] hover:bg-[var(--primary-hover)] border-0 transition-all"
               asChild
             >
               <Link href="/cadastro">
-                Começar teste grátis
+                Teste grátis 7 dias
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
             </Button>
           </motion.div>
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full sm:w-auto">
             <Button
               variant="outline"
-              className="h-14 rounded-full px-8 text-base font-bold border border-border bg-background backdrop-blur-md hover:bg-muted text-foreground"
+              className="h-14 w-full sm:w-auto rounded-2xl px-10 text-base font-black uppercase tracking-widest border-2 border-[var(--border)] bg-white hover:bg-[var(--accent-light)] text-[var(--text-primary)] transition-all"
               asChild
             >
               <Link href="#demonstracao">
@@ -109,10 +109,10 @@ export function HeroSection() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1, delay: 0.8 }}
-          className="mt-10 flex items-center justify-center gap-6 text-sm font-medium text-muted-foreground"
+          className="mt-10 flex items-center justify-center gap-6 text-[10px] font-black uppercase tracking-[0.2em] text-[var(--text-muted)]"
         >
-          <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" /> Sem cartão de crédito</div>
-          <div className="hidden sm:flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-green-500" /> 7 dias grátis</div>
+          <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-[var(--secondary)]" /> Sem cartão de crédito</div>
+          <div className="hidden sm:flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-[var(--secondary)]" /> 7 dias grátis</div>
         </motion.div>
 
         {/* Mockup */}

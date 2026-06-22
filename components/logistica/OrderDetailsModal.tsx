@@ -5,7 +5,8 @@ import {
   Dialog, 
   DialogContent, 
   DialogHeader, 
-  DialogTitle 
+  DialogTitle,
+  DialogDescription 
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -145,6 +146,7 @@ export function OrderDetailsModal({ order, isOpen, onClose, onStatusUpdate }: Or
                 <DialogTitle className="text-2xl font-black italic uppercase tracking-tighter text-white">
                   {currentStatus.label}
                 </DialogTitle>
+                <DialogDescription className="sr-only">Detalhes do pedido e entrega.</DialogDescription>
              </div>
           </div>
           

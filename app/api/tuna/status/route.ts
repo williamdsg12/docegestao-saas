@@ -13,7 +13,7 @@ export async function GET(req: Request) {
         // 1. Fetch current status from database
         const { data: tunaAccount, error: fetchError } = await supabaseAdmin
             .from('tuna_accounts')
-            .select('status, tuna_account_id, connected')
+            .select('status, account_id, conectado')
             .eq('tenant_id', tenant_id)
             .single();
 
@@ -22,18 +22,10 @@ export async function GET(req: Request) {
             throw fetchError;
         }
 
-        // 2. If we have a tuna_account_id, we could potentially call Tuna API to check for updates
-        // if (tunaAccount?.tuna_account_id && tunaAccount.status === 'pending') {
-        //    const updatedStatus = await checkTunaStatus(tunaAccount.tuna_account_id);
-        //    if (updatedStatus !== tunaAccount.status) {
-        //        // Update local DB...
-        //    }
-        // }
-
         return NextResponse.json({ 
             status: tunaAccount?.status || 'not_started',
-            connected: tunaAccount?.connected || false,
-            account_id: tunaAccount?.tuna_account_id || null
+            connected: tunaAccount?.conectado || false,
+            account_id: tunaAccount?.account_id || null
         });
 
     } catch (error: any) {

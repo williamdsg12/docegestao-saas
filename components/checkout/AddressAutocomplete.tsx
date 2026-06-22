@@ -76,16 +76,20 @@ export function AddressAutocomplete({ onAddressSelect, placeholder, className, o
   const [isLoadingCep, setIsLoadingCep] = useState(false)
 
   const handleCepLookup = async (cep: string) => {
+    console.log('CEP:', cep)
     try {
       setIsLoadingCep(true)
+      console.log('Buscando CEP...')
       const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`)
       const data = await res.json()
+      console.log('Resposta:', data)
       
       if (data.erro) {
         toast.error("CEP não encontrado")
         return
       }
 
+      console.log('Endereço encontrado')
       setManualData(prev => ({
         ...prev,
         street: data.logradouro || prev.street,
@@ -96,6 +100,7 @@ export function AddressAutocomplete({ onAddressSelect, placeholder, className, o
       
       toast.success("Endereço preenchido via CEP!")
     } catch (err) {
+      console.log('Erro capturado:', err)
       toast.error("Erro ao buscar CEP")
     } finally {
       setIsLoadingCep(false)

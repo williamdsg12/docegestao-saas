@@ -73,7 +73,9 @@ export function NewOrderPopup({ order, onAccept, onDismiss }: NewOrderPopupProps
                 </div>
                 <div className="min-w-0">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Cliente</p>
-                    <p className="text-sm font-black text-slate-800 truncate uppercase italic">{order.customers?.name || "Cliente Final"}</p>
+                    <p className="text-sm font-black text-slate-800 truncate uppercase italic">
+                        {order.customers?.name || order.customer?.name || order.customerName || order.cliente_name || order.nomeCliente || order.cliente?.nome || "Cliente Final"}
+                    </p>
                 </div>
             </div>
             <div className="text-right shrink-0">

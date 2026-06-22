@@ -23,6 +23,24 @@ import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
+import { AdminModal } from "@/components/admin/AdminModal"
+import { ConfirmationDialog } from "@/components/admin/ConfirmationDialog"
+import { AdminButton } from "@/components/admin/AdminButton"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 interface Subscription {
     id: string
@@ -43,10 +61,39 @@ export default function SubscriptionsManagement() {
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState("")
     const [statusFilter, setStatusFilter] = useState<string>("all")
+    
+    const [plans, setPlans] = useState<any[]>([])
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+    const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+    const [selectedSub, setSelectedSub] = useState<Subscription | null>(null)
+    const [actionLoading, setActionLoading] = useState(false)
+
+    // Form states
+    const [formData, setFormData] = useState({
+        user_id: '',
+        company_id: '',
+        plan_id: '',
+        status: 'trial' as any,
+        frequency: 'mensal' as 'mensal' | 'anual',
+        trial_end: '',
+        current_period_end: ''
+    })
 
     useEffect(() => {
         fetchSubscriptions()
+        fetchPlans()
     }, [])
+
+    async function fetchPlans() {
+        try {
+            const res = await fetch('/api/admin/plans')
+            const data = await res.json()
+            setPlans(data)
+        } catch (error) {
+            console.error("error fetching plans")
+        }
+    }
 
     async function fetchSubscriptions() {
         setLoading(true)
@@ -89,6 +136,90 @@ export default function SubscriptionsManagement() {
         }
     }
 
+    async function handleCreate() {
+        setActionLoading(true)
+        try {
+            const res = await fetch('/api/admin/subscriptions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            })
+            if (!res.ok) throw new Error('API Error')
+            toast.success("Assinatura criada com sucesso!")
+            setIsCreateModalOpen(false)
+            fetchSubscriptions()
+        } catch (error) {
+            toast.error("Erro ao criar assinatura")
+        } finally {
+            setActionLoading(false)
+        }
+    }
+
+    async function handleUpdate() {
+        if (!selectedSub) return
+        setActionLoading(true)
+        try {
+            const res = await fetch('/api/admin/subscriptions', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: selectedSub.id, ...formData })
+            })
+            if (!res.ok) throw new Error('API Error')
+            toast.success("Assinatura atualizada!")
+            setIsEditModalOpen(false)
+            fetchSubscriptions()
+        } catch (error) {
+            toast.error("Erro ao atualizar assinatura")
+        } finally {
+            setActionLoading(false)
+        }
+    }
+
+    async function handleDelete() {
+        if (!selectedSub) return
+        setActionLoading(true)
+        try {
+            const res = await fetch(`/api/admin/subscriptions?id=${selectedSub.id}`, {
+                method: 'DELETE'
+            })
+            if (!res.ok) throw new Error('API Error')
+            toast.success("Assinatura excluída!")
+            setIsDeleteOpen(false)
+            fetchSubscriptions()
+        } catch (error) {
+            toast.error("Erro ao excluir assinatura")
+        } finally {
+            setActionLoading(false)
+        }
+    }
+
+    const openEdit = (sub: Subscription) => {
+        setSelectedSub(sub)
+        setFormData({
+            user_id: sub.user_id,
+            company_id: (sub as any).company_id || '',
+            plan_id: (sub as any).plan_id || '',
+            status: sub.status,
+            frequency: (sub as any).frequency || 'mensal',
+            trial_end: sub.trial_end ? sub.trial_end.split('T')[0] : '',
+            current_period_end: sub.current_period_end ? sub.current_period_end.split('T')[0] : ''
+        })
+        setIsEditModalOpen(true)
+    }
+
+    const openCreate = () => {
+        setFormData({
+            user_id: '',
+            company_id: '',
+            plan_id: plans[0]?.id || '',
+            status: 'trial',
+            frequency: 'mensal',
+            trial_end: new Date(Date.now() + 86400000 * 7).toISOString().split('T')[0],
+            current_period_end: ''
+        })
+        setIsCreateModalOpen(true)
+    }
+
     const filteredSubscriptions = subscriptions.filter(s => {
         const matchesSearch = 
             s.company_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -125,56 +256,56 @@ export default function SubscriptionsManagement() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-[60vh]">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="size-12 border-4 border-slate-800 border-t-indigo-500 rounded-full animate-spin shadow-[0_0_15px_rgba(99,102,241,0.5)]" />
-                    <span className="text-xs font-black uppercase tracking-widest text-slate-500">Caregando Assinaturas...</span>
-                </div>
+            <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+                <div className="size-16 border-4 border-white/[0.05] border-t-indigo-500 rounded-full animate-spin" />
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">Caregando Assinaturas...</p>
             </div>
         )
     }
 
     return (
-        <div className="space-y-10 animate-in fade-in duration-700">
+        <div className="space-y-10 animate-in fade-in duration-500">
             {/* Header Area */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 relative z-10 w-full xl:max-w-[70%]">
-                <div className="space-y-2">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="size-2 bg-indigo-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(99,102,241,0.8)]" />
-                        <span className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.3em] italic">Subscription Lifecycle</span>
-                    </div>
-                    <h2 className="text-5xl md:text-7xl font-black text-white italic uppercase tracking-tighter leading-[0.85]">
-                        Gestão de <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-blue-400">Assinaturas</span>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div>
+                    <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white tracking-tight leading-tight">
+                        Gestão de <span className="text-indigo-400">Assinaturas</span>
                     </h2>
-                    <p className="text-slate-400 font-bold uppercase tracking-widest text-xs italic mt-4">Lifecycle Analytics // MRR Optimization</p>
+                    <p className="text-sm text-slate-500 mt-2">Controle completo do ciclo de vida e faturamento dos parceiros.</p>
                 </div>
                 
-                <div className="flex items-center gap-4 bg-slate-900 border border-white/5 px-6 py-4 rounded-2xl shadow-xl">
-                    <div className="flex flex-col text-right pr-4 border-r border-white/5">
-                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">Growth</p>
-                        <div className="flex gap-4 mt-1">
-                            <span className="text-xs font-black text-emerald-400 italic uppercase">{activeCount} Ativos</span>
-                            <span className="text-xs font-black text-amber-400 italic uppercase">{trialCount} Trials</span>
+                <div className="flex items-center gap-3">
+                    <div className="hidden sm:flex items-center gap-4 px-4 py-2 bg-white/[0.03] border border-white/[0.05] rounded-xl">
+                        <div className="text-right">
+                             <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider leading-none">Growth</p>
+                             <div className="flex gap-3 mt-1">
+                                <span className="text-xs font-bold text-emerald-500">{activeCount} Ativos</span>
+                                <span className="text-xs font-bold text-amber-500">{trialCount} Trial</span>
+                             </div>
                         </div>
+                        <button 
+                            onClick={fetchSubscriptions}
+                            className="size-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center hover:bg-indigo-500/20 transition-all border border-indigo-500/10"
+                        >
+                            <RefreshCw className={cn("size-4", loading && "animate-spin")} />
+                        </button>
                     </div>
-                    <button 
-                        onClick={() => {
-                            toast.success("Kernels sincronizados com sucesso!")
-                            fetchSubscriptions()
-                        }}
-                        className="size-12 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center font-bold hover:scale-105 transition-transform border border-indigo-500/20 shadow-[0_0_15px_rgba(99,102,241,0.2)] focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-                    >
-                        <RefreshCw className={cn("size-5", loading && "animate-spin")} />
-                    </button>
+
+                    <AdminButton 
+                        label="Nova Assinatura"
+                        icon={CreditCard}
+                        onClick={openCreate}
+                        className="bg-indigo-600 text-white h-11 px-6 rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/20 text-xs font-semibold"
+                    />
                 </div>
             </div>
 
             {/* List & Filters Section */}
             <motion.div 
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="bg-slate-900 border border-white/5 rounded-[32px] overflow-hidden shadow-2xl relative"
+                transition={{ delay: 0.1 }}
+                className="bg-[#09090b] border border-white/[0.05] rounded-xl overflow-hidden shadow-sm relative"
             >
                 <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
 
@@ -219,7 +350,11 @@ export default function SubscriptionsManagement() {
                         </thead>
                         <tbody className="divide-y divide-white/5">
                             {filteredSubscriptions.map((sub, index) => (
-                                <tr key={sub.id} className="hover:bg-slate-800/50 transition-colors group cursor-pointer">
+                                <tr 
+                                    key={sub.id} 
+                                    onClick={() => openEdit(sub)}
+                                    className="hover:bg-slate-800/20 transition-colors group cursor-pointer relative"
+                                >
                                     <td className="px-8 py-6">
                                         <div className="flex items-center gap-4">
                                             <div className="size-12 rounded-xl bg-slate-800 flex items-center justify-center text-slate-400 font-black group-hover:bg-indigo-500/20 group-hover:text-indigo-400 transition-colors shadow-inner shadow-black/50">
@@ -266,21 +401,76 @@ export default function SubscriptionsManagement() {
                                         </div>
                                     </td>
                                     <td className="px-8 py-6 text-right">
-                                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors">
-                                                <XCircle className="size-4" />
-                                            </button>
-                                            <button className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors">
-                                                <ChevronRight className="size-4" />
-                                            </button>
-                                        </div>
+                                        <TooltipProvider delayDuration={0}>
+                                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <button 
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                openEdit(sub)
+                                                            }}
+                                                            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors"
+                                                        >
+                                                            <Edit3 className="size-4" />
+                                                        </button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="bg-slate-900 border-white/10 text-white font-bold text-[10px] uppercase italic">
+                                                        Editar Assinatura
+                                                    </TooltipContent>
+                                                </Tooltip>
+
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <button 
+                                                            onClick={(e) => {
+                                                                e.stopPropagation()
+                                                                setSelectedSub(sub)
+                                                                setIsDeleteOpen(true)
+                                                            }}
+                                                            className="p-2 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 focus:outline-none focus:ring-2 focus:ring-rose-500/50 transition-colors"
+                                                        >
+                                                            <XCircle className="size-4" />
+                                                        </button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="bg-slate-900 border-white/10 text-rose-400 font-bold text-[10px] uppercase italic">
+                                                        Excluir Registro
+                                                    </TooltipContent>
+                                                </Tooltip>
+
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <button className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors">
+                                                            <ChevronRight className="size-4" />
+                                                        </button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="bg-slate-900 border-white/10 text-white font-bold text-[10px] uppercase italic">
+                                                        Ver Detalhes
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </div>
+                                        </TooltipProvider>
                                     </td>
                                 </tr>
                             ))}
                             {filteredSubscriptions.length === 0 && (
                                 <tr>
-                                    <td colSpan={6} className="px-8 py-12 text-center text-slate-500 font-bold">
-                                        Nenhuma assinatura encontrada na base.
+                                    <td colSpan={6} className="px-8 py-24 text-center">
+                                        <div className="flex flex-col items-center gap-6 max-w-xs mx-auto">
+                                            <div className="size-20 rounded-[32px] bg-slate-900 border border-white/5 flex items-center justify-center text-slate-600 shadow-inner">
+                                                <CreditCard className="size-8" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <p className="text-white font-black uppercase italic tracking-widest text-sm">Nenhuma Assinatura</p>
+                                                <p className="text-slate-500 text-xs font-bold leading-relaxed">Não encontramos contratos correspondentes aos filtros atuais.</p>
+                                            </div>
+                                            <button 
+                                                onClick={openCreate}
+                                                className="h-11 px-6 rounded-xl bg-indigo-500 text-white text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-transform active:scale-95 shadow-lg shadow-indigo-500/20"
+                                            >
+                                                Criar Primeira Assinatura
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             )}
@@ -288,6 +478,113 @@ export default function SubscriptionsManagement() {
                     </table>
                 </div>
             </motion.div>
+
+            {/* Modals */}
+            <AdminModal
+                isOpen={isCreateModalOpen || isEditModalOpen}
+                onClose={() => { setIsCreateModalOpen(false); setIsEditModalOpen(false); }}
+                title={isCreateModalOpen ? "Configurar Assinatura" : "Editar Assinatura"}
+                description="Defina os parâmetros do ciclo de vida do parceiro."
+            >
+                <div className="space-y-6">
+                    <div className="grid grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 italic">User ID</Label>
+                            <Input 
+                                value={formData.user_id}
+                                onChange={(e) => setFormData({...formData, user_id: e.target.value})}
+                                placeholder="UUID do Usuário"
+                                className="bg-slate-950 border-white/5 h-12 rounded-xl focus:ring-indigo-500/20"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 italic">Company ID</Label>
+                            <Input 
+                                value={formData.company_id}
+                                onChange={(e) => setFormData({...formData, company_id: e.target.value})}
+                                placeholder="UUID da Empresa"
+                                className="bg-slate-950 border-white/5 h-12 rounded-xl focus:ring-indigo-500/20"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 italic">Duração / Frequência</Label>
+                            <Select 
+                                value={formData.frequency}
+                                onValueChange={(v: any) => setFormData({...formData, frequency: v})}
+                            >
+                                <SelectTrigger className="bg-slate-950 border-white/5 h-12 rounded-xl">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="bg-slate-950 border-white/10 text-white">
+                                    <SelectItem value="mensal">Mensal</SelectItem>
+                                    <SelectItem value="anual">Anual</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 italic">Status Lifecycle</Label>
+                            <Select 
+                                value={formData.status}
+                                onValueChange={(v) => setFormData({...formData, status: v})}
+                            >
+                                <SelectTrigger className="bg-slate-950 border-white/5 h-12 rounded-xl">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="bg-slate-950 border-white/10 text-white">
+                                    <SelectItem value="trial">Em Teste (Trial)</SelectItem>
+                                    <SelectItem value="active">Ativo</SelectItem>
+                                    <SelectItem value="past_due">Em Atraso</SelectItem>
+                                    <SelectItem value="canceled">Cancelado</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 italic">Trial Ends At</Label>
+                            <Input 
+                                type="date"
+                                value={formData.trial_end}
+                                onChange={(e) => setFormData({...formData, trial_end: e.target.value})}
+                                className="bg-slate-950 border-white/5 h-12 rounded-xl focus:ring-indigo-500/20"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-500 italic">Period Ends At</Label>
+                            <Input 
+                                type="date"
+                                value={formData.current_period_end}
+                                onChange={(e) => setFormData({...formData, current_period_end: e.target.value})}
+                                className="bg-slate-950 border-white/5 h-12 rounded-xl focus:ring-indigo-500/20"
+                            />
+                        </div>
+                    </div>
+
+                    <button
+                        onClick={isCreateModalOpen ? handleCreate : handleUpdate}
+                        disabled={actionLoading}
+                        className="w-full h-14 bg-indigo-600 text-white rounded-2xl font-black uppercase italic tracking-widest text-xs shadow-xl shadow-indigo-600/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center"
+                    >
+                        {actionLoading ? (
+                            <div className="size-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                        ) : (isCreateModalOpen ? "Ativar Assinatura" : "Salvar Alterações")}
+                    </button>
+                </div>
+            </AdminModal>
+
+            <ConfirmationDialog 
+                isOpen={isDeleteOpen}
+                onClose={() => setIsDeleteOpen(false)}
+                onConfirm={handleDelete}
+                loading={actionLoading}
+                title="Excluir Assinatura?"
+                description="Esta ação removerá permanentemente o acesso do parceiro a este contrato. A empresa e o usuário não serão excluídos."
+                confirmText="Terminar Contrato"
+            />
         </div>
     )
 }

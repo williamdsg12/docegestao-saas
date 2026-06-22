@@ -19,7 +19,12 @@ export async function POST(req: Request) {
                 // 1. Update Order Status in 'orders' table
                 const { error: orderError } = await supabaseAdmin
                     .from('orders')
-                    .update({ status: 'novo' }) // 'novo' is the start of production
+                    .update({ 
+                        order_status: 'novo',
+                        payment_status: 'paid',
+                        paid: true,
+                        payment_confirmed_at: new Date().toISOString()
+                    }) // 'novo' is the start of production
                     .eq('id', pedidoId);
 
                 if (orderError) console.error('Error updating order to novo:', orderError);

@@ -59,17 +59,17 @@ export function PedidoKanbanCard({ pedido, onAccept, onReject, onNextStep }: Ped
   const isFinished = ['finalizado', 'delivered', 'done', 'cancelado', 'cancelled'].includes(pedido.status)
   
   const getUrgencyStyles = () => {
-    if (isFinished) return "border-slate-200 opacity-80"
-    if (minutesElapsed >= 15) return "border-rose-300 bg-rose-50/50"
-    if (minutesElapsed >= 5) return "border-amber-300 bg-amber-50/50"
-    return "border-emerald-200 bg-emerald-50/20"
+    if (isFinished) return "border-[var(--border)] opacity-60"
+    if (minutesElapsed >= 15) return "border-[var(--danger)]/30 bg-[var(--danger)]/5"
+    if (minutesElapsed >= 5) return "border-[var(--accent)]/30 bg-[var(--accent)]/5"
+    return "border-[var(--border)] bg-[var(--accent-light)]/30"
   }
 
   const getTimerStyles = () => {
-    if (isFinished) return "bg-slate-100 text-slate-500"
-    if (minutesElapsed >= 15) return "bg-rose-500 text-white"
-    if (minutesElapsed >= 5) return "bg-amber-400 text-white"
-    return "bg-emerald-500 text-white"
+    if (isFinished) return "bg-[var(--accent-light)] text-[var(--text-muted)]"
+    if (minutesElapsed >= 15) return "bg-[var(--danger)] text-white"
+    if (minutesElapsed >= 5) return "bg-[var(--accent)] text-white"
+    return "bg-[var(--secondary)] text-white"
   }
 
   const isNew = ['novo', 'pending'].includes(pedido.status)
@@ -82,15 +82,15 @@ export function PedidoKanbanCard({ pedido, onAccept, onReject, onNextStep }: Ped
       animate={{ opacity: 1, scale: 1 }}
       onClick={() => setSelecionado(pedido)}
       className={cn(
-        "group relative bg-white rounded-xl cursor-pointer transition-all border hover:shadow-md active:scale-95 p-2.5",
+        "group relative bg-[var(--bg-card)] rounded-xl cursor-pointer transition-all border hover:shadow-md active:scale-95 p-2.5",
         getUrgencyStyles(),
-        isNew && "shadow-lg border-orange-300 ring-2 ring-orange-400/20"
+        isNew && "shadow-lg border-[var(--secondary)] ring-2 ring-[var(--secondary)]/20"
       )}
     >
       {/* Header: ID & Urgency */}
       <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-bold text-slate-400">
+          <span className="text-[10px] font-bold text-[var(--text-muted)]">
             #{pedido.id.slice(0, 4).toUpperCase()}
           </span>
           <div className={cn(
@@ -109,20 +109,20 @@ export function PedidoKanbanCard({ pedido, onAccept, onReject, onNextStep }: Ped
 
       {/* Content: Customer & Price */}
       <div className="mb-2">
-        <h4 className="font-bold text-slate-800 truncate text-[11px] pr-2">
-            {pedido.customers?.name || "Cliente Final"}
+        <h4 className="font-black text-[var(--text-primary)] uppercase italic truncate text-[11px] pr-2">
+            {pedido.customers?.name || pedido.customer?.name || pedido.customerName || pedido.cliente_name || pedido.nomeCliente || pedido.cliente?.nome || "Cliente Final"}
         </h4>
         <div className="flex items-center justify-between mt-0.5">
-            <span className="font-bold text-emerald-600 text-sm tracking-tight">
+            <span className="font-black text-[var(--text-primary)] text-sm tracking-tight italic">
                 {formatCurrency(pedido.total)}
             </span>
-            <div className="flex items-center gap-1 bg-slate-50 border border-slate-100 px-1.5 py-0.5 rounded-md">
+            <div className="flex items-center gap-1 bg-[var(--accent-light)] border border-[var(--border)] px-1.5 py-0.5 rounded-md">
                 {pedido.payment_method === 'pix' ? (
-                   <span className="text-[8px] font-black text-emerald-500 uppercase">PIX</span>
+                   <span className="text-[8px] font-black text-[var(--secondary)] uppercase">PIX</span>
                 ) : pedido.payment_method === 'money' ? (
-                   <DollarSign className="size-2.5 text-amber-500" />
+                   <DollarSign className="size-2.5 text-[var(--accent)]" />
                 ) : (
-                   <CreditCard className="size-2.5 text-blue-500" />
+                   <CreditCard className="size-2.5 text-[var(--primary)]" />
                 )}
             </div>
         </div>
@@ -130,35 +130,36 @@ export function PedidoKanbanCard({ pedido, onAccept, onReject, onNextStep }: Ped
 
       {/* Footer: Actions */}
       <div className={cn(
-          "flex gap-1.5 border-t border-slate-100 pt-1.5 mt-1.5 transition-all",
-          "opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0"
+          "flex gap-2 border-t border-[var(--border)] pt-2 mt-2 transition-all",
+          "md:opacity-0 md:group-hover:opacity-100 md:translate-y-1 md:group-hover:translate-y-0"
       )} onClick={(e) => e.stopPropagation()}>
          {isNew ? (
-            <div className="flex w-full gap-1">
+            <div className="flex w-full gap-2">
                  <Button 
                    size="sm" 
-                   className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg h-7 p-0"
+                   className="flex-1 bg-[var(--secondary)] hover:bg-[var(--accent)] text-white rounded-xl h-12 md:h-8 p-0 shadow-sm active:scale-95"
                    onClick={() => onAccept?.(pedido.id)}
                  >
-                   <Check className="size-3.5" />
+                   <Check className="size-5 md:size-4" />
+                   <span className="md:hidden ml-2 font-black uppercase text-[10px] tracking-widest italic">Aceitar</span>
                  </Button>
                  <Button 
                    size="sm" 
                    variant="ghost"
-                   className="rounded-lg h-7 w-7 text-rose-500 p-0"
+                   className="rounded-xl h-12 md:h-8 w-12 md:w-8 text-[var(--danger)] p-0 border border-[var(--border)] bg-[var(--bg-app)]/50"
                    onClick={() => onReject?.(pedido.id)}
                  >
-                   <X className="size-3.5" />
+                   <X className="size-5 md:size-4" />
                  </Button>
             </div>
          ) : !isFinished && (
             <Button 
               size="sm" 
-              className="w-full bg-slate-900 hover:bg-slate-800 text-white rounded-lg h-7 text-[10px] p-0 font-bold"
+              className="w-full bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--primary-foreground)] rounded-xl h-12 md:h-8 text-[11px] md:text-[10px] p-0 font-black uppercase tracking-widest italic shadow-lg active:scale-95 transition-all"
               onClick={() => onNextStep?.(pedido.id, pedido.status)}
             >
               {['preparando', 'em_preparo', 'preparing'].includes(pedido.status) ? 'Despachar' : 'Finalizar'}
-              <ArrowRight className="ml-1 size-3" />
+              <ArrowRight className="ml-2 size-4 md:size-3" />
             </Button>
          )}
       </div>
@@ -166,8 +167,8 @@ export function PedidoKanbanCard({ pedido, onAccept, onReject, onNextStep }: Ped
       {/* Address pop-up on hover */}
       {isDelivery && !isFinished && (
           <div className="absolute left-0 bottom-[110%] w-full transition-all z-[60] opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 pointer-events-none">
-              <div className="bg-slate-900 shadow-xl text-white text-[9px] font-medium p-2 rounded-lg flex items-center gap-2 mx-1 border border-white/10">
-                  <MapPin className="size-3 text-emerald-400 shrink-0" />
+              <div className="bg-[var(--primary)] shadow-xl text-[var(--primary-foreground)] text-[9px] font-black uppercase italic p-2 rounded-lg flex items-center gap-2 mx-1 border border-[var(--border)]">
+                  <MapPin className="size-3 text-[var(--secondary)] shrink-0" />
                   <span className="truncate">{formatAddress(pedido)}</span>
               </div>
           </div>

@@ -105,3 +105,54 @@ export async function PATCH(req: Request) {
         return NextResponse.json({ error: error.message }, { status: 500 })
     }
 }
+
+export async function POST(req: Request) {
+    try {
+        const user = await getServerUser()
+        if (!isSuperAdmin(user)) {
+            return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
+        }
+
+        const body = await req.json()
+        const { data, error } = await supabaseAdmin
+            .from('profiles')
+            .insert([body])
+            .select()
+            .single()
+
+        if (error) throw error
+
+        return NextResponse.json(data)
+    } catch (error: any) {
+        console.error('POST Error [Admin Users]:', error.message)
+        return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+}
+
+export async function DELETE(req: Request) {
+    try {
+        const user = await getServerUser()
+        if (!isSuperAdmin(user)) {
+            return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
+        }
+
+        const { searchParams } = new URL(req.url)
+        const id = searchParams.get('id')
+
+        if (!id) {
+            return NextResponse.json({ error: 'ID do usuário é obrigatório' }, { status: 400 })
+        }
+
+        const { error } = await supabaseAdmin
+            .from('profiles')
+            .delete()
+            .eq('id', id)
+
+        if (error) throw error
+
+        return NextResponse.json({ success: true })
+    } catch (error: any) {
+        console.error('DELETE Error [Admin Users]:', error.message)
+        return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+}

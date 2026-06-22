@@ -31,7 +31,8 @@ import {
   Check,
   Star,
   Search,
-  ArrowRight
+  ArrowRight,
+  Plus
 } from "lucide-react"
 
 import {
@@ -232,16 +233,27 @@ export default function MenuEditorPage() {
 
     setSaving(true)
     try {
-      const { error } = await supabase
-        .from('digital_menu_settings')
-        .upsert({
+      const res = await fetch('/api/menu-design', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           ...settings,
-          company_id: (profile as any).company_id,
-          updated_at: new Date().toISOString()
+          company_id: (profile as any).company_id
         })
+      });
 
-      if (error) throw error
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Erro ao salvar');
+      }
+
       toast.success("Configurações salvas com sucesso!")
+      
+      // Revalidate the menu page
+      const bus = business as any;
+      if (bus?.menu_slug) {
+        await fetch(`/api/revalidate?path=/menu/${bus.menu_slug}`).catch(e => console.error("Revalidation error", e));
+      }
     } catch (error: any) {
       console.error("Error saving settings:", error.message)
       toast.error("Erro ao salvar configurações")
@@ -584,84 +596,64 @@ export default function MenuEditorPage() {
             >
               {/* 🏠 MOCKUP CONTENT */}
               <div className="relative">
-                {/* Immersive Cover Image */}
-                <div className="h-56 w-full relative overflow-hidden">
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={settings.menu_cover}
-                      initial={{ opacity: 0, scale: 1.1 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="size-full"
-                    >
-                      {settings.menu_cover ? (
-                        <img src={settings.menu_cover} className="size-full object-cover" />
-                      ) : (
-                        <div className="size-full bg-slate-100 flex items-center justify-center text-slate-200">
-                          <ImageIcon className="size-12" />
-                        </div>
-                      )}
-                    </motion.div>
-                  </AnimatePresence>
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                  
-                  {/* Floating Logo - Professional Interaction */}
-                  <motion.div 
-                    layoutId="logo"
-                    className="absolute -bottom-6 left-8 size-20 rounded-3xl bg-white shadow-xl p-1 z-10"
-                  >
-                    <div className="size-full rounded-2xl overflow-hidden bg-slate-50 flex items-center justify-center border border-slate-100">
-                      {settings.menu_logo ? (
-                        <img src={settings.menu_logo} className="size-full object-cover" />
-                      ) : (
-                        <Star className="size-6 text-slate-200" />
-                      )}
-                    </div>
-                  </motion.div>
-                </div>
-
-                {/* Glassmorphism Header Inside Mockup */}
-                <div className="sticky top-0 z-30 pt-4 px-6 pointer-events-none">
-                  <div className="h-10 w-full bg-white/60 backdrop-blur-md rounded-2xl border border-white/40 shadow-sm flex items-center px-4 gap-3">
-                    <Search className="size-3 text-slate-400" />
-                    <div className="h-2 w-24 bg-slate-200 rounded-full" />
+                {/* NEW IMMERSIVE HEADER PREVIEW */}
+                <div className="relative">
+                  <div className="h-44 w-full relative overflow-hidden">
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={settings.menu_cover}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="size-full"
+                      >
+                        {settings.menu_cover ? (
+                          <img src={settings.menu_cover} className="size-full object-cover" />
+                        ) : (
+                          <div className="size-full bg-gradient-to-r from-rose-100 to-amber-100 flex items-center justify-center" />
+                        )}
+                      </motion.div>
+                    </AnimatePresence>
                   </div>
-                </div>
-
-                <div className="pt-10 px-8 pb-32">
-                  <motion.div 
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    key={settings.store_name}
-                    className="space-y-1"
-                  >
-                    <h3 
-                      className="text-xl font-black italic tracking-tighter uppercase"
-                      style={{ color: settings.text_color }}
+                  
+                  {/* Centralized Logo Preview */}
+                  <div className="flex flex-col items-center -mt-8 relative z-10">
+                    <motion.div 
+                      layoutId="logo"
+                      className="size-16 rounded-full bg-white shadow-xl p-1 border-2 border-white"
                     >
+                      <div className="size-full rounded-full overflow-hidden bg-slate-50 flex items-center justify-center">
+                        {settings.menu_logo ? (
+                          <img src={settings.menu_logo} className="size-full object-cover" />
+                        ) : (
+                          <span className="text-xl">🍰</span>
+                        )}
+                      </div>
+                    </motion.div>
+                    
+                    <h3 className="mt-2 text-sm font-black italic tracking-tighter uppercase text-center px-4" style={{ color: settings.text_color }}>
                       {settings.store_name || "Sua Confeitaria"}
                     </h3>
-                    <div className="flex items-center gap-2">
-                       <Star className="size-3 fill-amber-400 text-amber-400" />
-                       <span className="text-[10px] font-black text-slate-900">4.9</span>
-                       <span className="text-[10px] font-bold text-slate-400 opacity-50 uppercase tracking-widest">• Aberto agora</span>
+                    
+                    <div className="mt-1 flex items-center gap-1.5 px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full text-[8px] font-black uppercase tracking-widest">
+                       <span className="size-1 rounded-full bg-emerald-500 animate-pulse" />
+                       Aberto
                     </div>
-                  </motion.div>
-
-                  {/* Category Chips - Modern Interactive */}
-                  <div className="mt-8 flex gap-2 overflow-x-auto no-scrollbar py-2">
+                  </div>
+                </div>                <div className="px-6 pb-32">
+                  {/* Category Chips - Sweet Savory Style */}
+                  <div className="mt-6 flex gap-0 overflow-x-auto no-scrollbar border-b border-slate-100">
                     {['Todos', 'Bolos', 'Doces', 'Salgados'].map((c, i) => (
                       <div 
                         key={c}
                         className={cn(
-                          "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
-                          i === 0 
-                            ? "text-white shadow-lg shadow-primary/20" 
-                            : "bg-white border border-slate-100 text-slate-400"
+                          "px-4 py-3 text-[9px] font-black uppercase tracking-widest transition-all relative whitespace-nowrap",
+                          i === 0 ? "text-red-600" : "text-slate-400"
                         )}
-                        style={i === 0 ? { backgroundColor: settings.primary_color } : {}}
                       >
                         {c}
+                        {i === 0 && (
+                          <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-red-600" />
+                        )}
                       </div>
                     ))}
                   </div>
@@ -820,13 +812,6 @@ export default function MenuEditorPage() {
   )
 }
 
-function Plus({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" />
-    </svg>
-  )
-}
 
 function SortableProductItem({ product }: { product: any }) {
   const {

@@ -1,5 +1,6 @@
 import { Instagram, Facebook, Mail, ShieldCheck, Lock } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 
 export function LandingFooter() {
   return (
@@ -10,13 +11,14 @@ export function LandingFooter() {
       <div className="container mx-auto px-6 lg:px-8 max-w-7xl">
         <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-4 lg:items-start">
           <div className="space-y-6">
-            <Link href="/" className="group flex items-center gap-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-secondary text-xl font-bold text-white shadow-lg relative overflow-hidden">
-                <span className="relative z-10">D</span>
-              </div>
-              <span className="text-xl font-bold tracking-tight text-foreground transition-colors group-hover:text-primary">
-                DoceGestão
-              </span>
+            <Link href="/" className="group flex items-center">
+              <Image 
+                src="/logo png.png" 
+                alt="Doce Gestão" 
+                width={200} 
+                height={66} 
+                className="h-14 w-auto object-contain transition-transform group-hover:scale-105" 
+              />
             </Link>
             <p className="text-base text-muted-foreground font-medium leading-relaxed max-w-xs">
               O sistema que transforma confeiteiras em empresárias lucrativas.

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { X, Plus, Minus, CheckCircle2 } from "lucide-react"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
@@ -92,16 +92,16 @@ export function ProductModal({ product, isOpen, onClose, onAddToCart }: ProductM
           {/* info */}
           <div className="space-y-4">
             <div className="flex justify-between items-start gap-4">
-              <h2 className="text-2xl md:text-3xl font-black italic uppercase tracking-tighter text-slate-900 leading-none">
+              <DialogTitle className="text-2xl md:text-3xl font-black italic uppercase tracking-tighter text-slate-900 leading-none">
                 {product.name}
-              </h2>
+              </DialogTitle>
               <span className="text-xl md:text-2xl font-black text-slate-900 italic tracking-tighter shrink-0">
                 R$ {parseFloat(product.price).toFixed(2)}
               </span>
             </div>
-            <p className="text-slate-500 font-medium leading-relaxed text-sm">
+            <DialogDescription className="text-slate-500 font-medium leading-relaxed text-sm">
               {product.description || "Delicioso produto artesanal, preparado com os melhores ingredientes."}
-            </p>
+            </DialogDescription>
           </div>
 
           {/* variations */}

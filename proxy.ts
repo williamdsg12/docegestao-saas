@@ -127,7 +127,7 @@ export default async function proxy(req: NextRequest) {
         .eq('id', user.id)
         .single()
 
-      if (!profile?.is_admin && user.email !== 'williamdev36@gmail.com' && user.email !== 'williamdsg@hotmail.com') {
+      if (!profile?.is_admin && user.email !== 'williamdev36@gmail.com' && user.email !== 'williamdsg@hotmail.com' && user.email !== 'andressamarcucci45@gmail.com') {
         console.log('[Proxy] Acesso Admin negado para:', user.email)
         return NextResponse.redirect(new URL('/dashboard', req.url))
       }

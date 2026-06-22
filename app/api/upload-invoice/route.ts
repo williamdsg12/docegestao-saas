@@ -42,35 +42,40 @@ export async function POST(req: Request) {
     const mimeType = file.type;
     console.log(`3. Base64 Prepared (${mimeType})`);
 
-    console.log('4. Calling OpenAI Vision (Model: gpt-4o)...');
+    console.log('4. Calling OpenAI Vision (Model: gpt-4o-mini)...');
     const response = await openai.chat.completions.create({
-      model: "gpt-4o", // Using the latest model with vision support
+      model: "gpt-4o-mini",
       messages: [
         {
           role: "user",
           content: [
             { 
               type: "text", 
-              text: `Analise esta nota fiscal e extraia os dados estruturados. 
-              Retorne APENAS um objeto JSON válido seguindo este formato:
+              text: `Analise esta imagem de Nota Fiscal (DANFE) ou Cupom Fiscal e extraia os dados estruturados para controle de estoque.
+              Retorne APENAS um objeto JSON válido.
+              
+              Formato esperado:
               {
-                "supplier": "Nome do estabelecimento",
-                "date": "YYYY-MM-DD",
-                "total": 123.45,
+                "fornecedor": "Nome da empresa/estabelecimento",
+                "numeroNota": "Número da NF ou extrato",
+                "dataEmissao": "YYYY-MM-DD",
+                "valorTotal": 123.45,
                 "items": [
                   {
-                    "name": "Nome do produto/insumo",
-                    "quantity": 10.5,
-                    "unit": "un|g|kg|ml|l",
-                    "price_total": 50.00
+                    "nome": "Descrição completa do produto",
+                    "quantidade": 1.0,
+                    "unidade": "un|g|kg|ml|l",
+                    "valorUnitario": 10.00,
+                    "valorTotal": 10.00
                   }
                 ]
               }
+              
               Regras:
-              - Se o item for por peso, converta para a unidade mais próxima (g ou kg).
-              - Se for por unidade, use 'un'.
-              - Se não conseguir identificar a unidade, use 'un'.
-              - O campo price_total é o valor total daquela linha (quantidade * preço unitário).` 
+              - Se o item for vendido por peso (Ex: 0,5kg), use quantidade 500 e unidade 'g'.
+              - Se for por unidade (Ex: 1 caixa, 1 fardo), use quantidade 1 e unidade 'un'.
+              - Atente-se ao valor total do item (quantidade * valor unitário).
+              - Se não encontrar a data, use a data atual (HOJE).` 
             },
             {
               type: "image_url",
@@ -96,6 +101,14 @@ export async function POST(req: Request) {
     // 4. Save to purchase_documents (metadata)
     console.log('7. Logging to purchase_documents...');
     try {
+        let finalDate = new Date().toISOString();
+        if (parsedContent.dataEmissao) {
+          const d = new Date(parsedContent.dataEmissao);
+          if (!isNaN(d.getTime())) {
+            finalDate = d.toISOString();
+          }
+        }
+
         const { error: dbErr } = await supabaseAdmin.from('purchase_documents').insert({
             user_id: userId,
             company_id: companyId,
@@ -103,9 +116,9 @@ export async function POST(req: Request) {
             image_url: publicUrl,
             extracted_text: response.choices[0].message.content,
             parsed_json: parsedContent,
-            total_amount: parsedContent.total,
-            supplier: parsedContent.supplier,
-            purchase_date: parsedContent.date ? new Date(parsedContent.date).toISOString() : new Date().toISOString(),
+            total_amount: parsedContent.valorTotal || 0,
+            supplier: parsedContent.fornecedor || 'Desconhecido',
+            purchase_date: finalDate,
             status: 'processed'
         });
         if (dbErr) console.warn('⚠️ DB Log Warn:', dbErr.message);
@@ -124,7 +137,7 @@ export async function POST(req: Request) {
     console.error('CRITICAL OCR ERROR:', error)
     return NextResponse.json({ 
       error: 'Erro ao processar a nota fiscal',
-      details: error.message 
+      details: error.message || 'Erro desconhecido no servidor'
     }, { status: 500 })
   }
 }

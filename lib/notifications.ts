@@ -1,7 +1,6 @@
 // Notification and Alert Utility (iFood-Level)
 
 let audio: HTMLAudioElement | null = null;
-let interval: any = null;
 let initialized = false;
 
 /**
@@ -9,11 +8,13 @@ let initialized = false;
  */
 export async function initSound() {
   if (typeof window === 'undefined') return false;
+  if (initialized && audio) return true;
   
   try {
     // Usar o som local alert.mp3 que já existe no diretório public
     audio = new Audio("/alert.mp3");
     audio.volume = 1;
+    audio.loop = true; // Habilitar loop nativo
     
     // Tentar um play/pause rápido para desbloquear o contexto de áudio
     await audio.play();
@@ -40,38 +41,29 @@ export function isSoundEnabled() {
  * Start the looped alert
  */
 export function startAlert() {
-  if (!audio || !initialized) {
-    console.warn("⚠️ Sound not initialized or blocked. User interaction required.");
-    return;
+  if (!audio) {
+    if (typeof window !== 'undefined') {
+      audio = new Audio("/alert.mp3");
+      audio.volume = 1;
+      audio.loop = true;
+    }
   }
-
-  play();
-
-  // Loop every 3 seconds for new orders
-  if (interval) clearInterval(interval);
-  interval = setInterval(() => {
-    play();
-  }, 3000);
+  
+  if (audio) {
+    audio.currentTime = 0;
+    audio.play().catch((err) => {
+      console.warn("🔇 Audio play blocked/failed. Interaction required.", err);
+    });
+  }
 }
 
 /**
  * Stop the alert
  */
 export function stopAlert() {
-  if (interval) {
-    clearInterval(interval);
-    interval = null;
-  }
   if (audio) {
     audio.pause();
     audio.currentTime = 0;
-  }
-}
-
-function play() {
-  if (audio && initialized) {
-    audio.currentTime = 0;
-    audio.play().catch((err) => console.error("🔇 Audio play blocked/failed:", err));
   }
 }
 
@@ -89,12 +81,37 @@ export async function requestNotificationPermission() {
   }
 }
 
-export function sendBrowserNotification(order: any) {
-  if (typeof window !== 'undefined' && "Notification" in window && Notification.permission === "granted") {
-    const n = new Notification("Novo pedido recebido! 🚀", {
-      body: `Valor: R$ ${order.total?.toFixed(2)} - Clique para ver`,
-      icon: "/favicon.png", // Use a generic favicon if logo.png is missing
-      tag: "new-order", // Avoid multiple popups for the same order
+export async function sendBrowserNotification(order: any) {
+  if (typeof window === 'undefined') return;
+  
+  const title = "Novo pedido recebido! 🚀";
+  const body = `Cliente: ${order.customer?.name || order.customer_name || 'Cliente'}\nPedido: #${order.code || order.id?.slice(-4).toUpperCase()}\nTotal: R$ ${Number(order.total || 0).toFixed(2)}`;
+  
+  if ("Notification" in window && Notification.permission === "granted") {
+    // Tentar via Service Worker para suporte a segundo plano profissional
+    if ("serviceWorker" in navigator) {
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        if (reg) {
+          reg.showNotification(title, {
+            body,
+            icon: "/logo_cupcake.png",
+            badge: "/favicon.png",
+            tag: order.id || "new-order",
+            requireInteraction: true
+          });
+          return;
+        }
+      } catch (err) {
+        console.warn("SW notification failed, falling back to window Notification", err);
+      }
+    }
+    
+    // Fallback para notificação nativa simples
+    const n = new Notification(title, {
+      body,
+      icon: "/logo_cupcake.png",
+      tag: order.id || "new-order",
     });
 
     n.onclick = () => {
@@ -112,6 +129,7 @@ export function vibrateDevice() {
     navigator.vibrate([300, 100, 300, 100, 500]);
   }
 }
+
 /**
  * Plays a short, distinct beep for delayed orders (Web Audio API)
  */

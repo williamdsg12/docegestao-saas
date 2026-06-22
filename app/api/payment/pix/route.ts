@@ -106,8 +106,11 @@ export async function POST(req: Request) {
         // 🧪 PASSO 2 — GARANTIR RETORNO CORRETO
         return NextResponse.json({
             qr_code: qrContent,
+            pix_code: qrContent,
             qr_code_base64: qrBase64,
-            payment_id: result.id
+            payment_id: result.id,
+            order_id: order_id,
+            expires_at: new Date(Date.now() + 3600000).toISOString() // 1 hour expiry
         });
 
     } catch (error: any) {

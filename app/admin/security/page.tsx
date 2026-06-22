@@ -69,18 +69,19 @@ export default function SecurityManagement() {
     ]
 
     return (
-        <div className="space-y-12">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+        <div className="space-y-10 animate-in fade-in duration-500 pb-20">
+            {/* Header Area */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                    <h2 className="text-4xl font-black text-slate-900 italic uppercase tracking-tighter flex items-center gap-4">
+                    <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white tracking-tight leading-tight">
                         Sistema <span className="text-rose-500">Anti-Fraude</span>
                     </h2>
-                    <p className="text-slate-500 font-medium">Monitoramento de riscos, abusos e proteção do SaaS</p>
+                    <p className="text-sm text-slate-500 mt-2">Monitoramento de riscos, abusos e proteção integrada do ecossistema.</p>
                 </div>
-                <div className="flex gap-4">
-                    <Button variant="outline" className="h-14 px-8 rounded-2xl border-slate-200 font-black uppercase italic text-xs tracking-widest gap-2 bg-white">
-                        <Filter className="size-5" /> Relatório de Risco
+                
+                <div className="flex items-center gap-3">
+                    <Button variant="outline" className="h-11 px-6 rounded-xl border-white/[0.05] bg-white/[0.02] text-xs font-semibold text-slate-400 hover:text-white transition-all flex items-center gap-2">
+                        <Filter className="size-4" /> Relatório de Risco
                     </Button>
                 </div>
             </div>
@@ -89,46 +90,46 @@ export default function SecurityManagement() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {stats.map((stat, idx) => (
                     <motion.div 
-                        initial={{ opacity: 0, y: 20 }}
+                        initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: idx * 0.1 }}
+                        transition={{ delay: idx * 0.05 }}
                         key={idx} 
-                        className="bg-white rounded-[32px] p-8 border border-slate-100 shadow-sm flex items-center gap-6"
+                        className="bg-[#09090b] border border-white/[0.05] p-6 rounded-xl shadow-sm flex items-center gap-6"
                     >
-                        <div className={cn("size-16 rounded-2xl flex items-center justify-center", stat.bg, stat.color)}>
-                            <stat.icon className="size-8" />
+                        <div className={cn("size-12 rounded-lg flex items-center justify-center bg-white/[0.03] border border-white/[0.05]", stat.color)}>
+                            <stat.icon className="size-6" />
                         </div>
                         <div>
-                            <p className="text-3xl font-black text-slate-900 italic uppercase tracking-tighter">{stat.value}</p>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</p>
+                            <p className="text-2xl font-bold text-white tracking-tight">{stat.value}</p>
+                            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">{stat.label}</p>
                         </div>
                     </motion.div>
                 ))}
             </div>
 
             {/* Active Threats */}
-            <div className="bg-white rounded-[40px] border border-slate-100 shadow-sm overflow-hidden">
-                <div className="p-8 border-b border-slate-50 bg-slate-50/30 flex items-center gap-4">
-                    <div className="size-12 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-500 shadow-inner">
-                        <AlertTriangle className="size-6" />
+            <div className="bg-[#09090b] border border-white/[0.05] rounded-xl shadow-sm overflow-hidden">
+                <div className="p-6 border-b border-white/[0.05] flex items-center gap-4">
+                    <div className="size-10 rounded-lg bg-rose-500/10 flex items-center justify-center text-rose-500">
+                        <AlertTriangle className="size-5" />
                     </div>
                     <div>
-                        <h4 className="text-lg font-black text-slate-900 italic uppercase">Alerta de Ameaças</h4>
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Incidentes detectados pela inteligência artificial</p>
+                        <h4 className="text-base font-bold text-white tracking-tight">Alerta de Ameaças</h4>
+                        <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mt-0.5">Incidentes detectados pela inteligência artificial</p>
                     </div>
                 </div>
 
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="border-b border-slate-50 bg-slate-50/50">
-                                <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Risco</th>
-                                <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Alvo Detectado</th>
-                                <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Diagnóstico (Motivo)</th>
-                                <th className="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Ação Rápida</th>
+                            <tr className="border-b border-white/[0.05] bg-white/[0.01]">
+                                <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Risco / Nível</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Alvo Detectado</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Diagnóstico (Motivo)</th>
+                                <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest text-right">Ações</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-50">
+                        <tbody className="divide-y border-white/[0.05]">
                             <AnimatePresence mode="popLayout">
                                 {loading ? (
                                     Array.from({ length: 3 }).map((_, i) => (
@@ -144,43 +145,43 @@ export default function SecurityManagement() {
                                             animate={{ opacity: 1 }}
                                             exit={{ opacity: 0 }}
                                             key={alert.id}
-                                            className={cn("hover:bg-slate-50/50 transition-colors group", alert.status === 'resolved' && "opacity-50")}
+                                            className={cn("hover:bg-white/[0.02] transition-colors group", alert.status === 'resolved' && "opacity-40")}
                                         >
-                                            <td className="px-8 py-6">
+                                            <td className="px-6 py-5">
                                                 <div className="flex items-center gap-4">
-                                                    <div className={cn("size-12 rounded-2xl flex items-center justify-center shadow-inner", getSeverityColor(alert.severity))}>
+                                                    <div className={cn("size-10 rounded-lg flex items-center justify-center border border-current/10", alert.severity === 'high' ? 'bg-rose-500/10 text-rose-500' : alert.severity === 'medium' ? 'bg-amber-500/10 text-amber-500' : 'bg-emerald-500/10 text-emerald-500')}>
                                                         {getTypeIcon(alert.type)}
                                                     </div>
                                                     <div className="flex flex-col">
-                                                        <span className="font-black text-slate-900 italic uppercase tracking-tighter leading-none mb-1 text-sm bg-rose-100 w-fit px-2 py-1 rounded-md text-rose-700">
-                                                            Nível {alert.severity}
+                                                        <span className="font-bold text-white text-xs tracking-tight leading-none mb-1">
+                                                            {alert.type.replace('_', ' ').toUpperCase()}
                                                         </span>
-                                                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-1 mt-1">
+                                                        <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-widest">
                                                             {new Date(alert.date).toLocaleTimeString()}
                                                         </span>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-8 py-6">
-                                                <span className="font-bold text-slate-700 text-sm tracking-tight">{alert.target}</span>
+                                            <td className="px-6 py-5">
+                                                <span className="font-semibold text-slate-300 text-sm tracking-tight">{alert.target}</span>
                                             </td>
-                                            <td className="px-8 py-6">
-                                                <p className="text-xs text-slate-500 font-medium max-w-sm">
+                                            <td className="px-6 py-5">
+                                                <p className="text-xs text-slate-500 font-medium max-w-sm truncate">
                                                     {alert.description}
                                                 </p>
                                             </td>
-                                            <td className="px-8 py-6 text-right">
+                                            <td className="px-6 py-5 text-right">
                                                 {alert.status === 'pending' ? (
-                                                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <button title="Bloquear IP / Usuário" className="size-10 rounded-xl bg-slate-900 text-white flex items-center justify-center hover:scale-110 transition-transform shadow-xl shadow-slate-900/20">
-                                                            <Ban className="size-4" />
+                                                    <div className="flex justify-end gap-2">
+                                                        <button title="Bloquear" className="p-2.5 rounded-lg bg-black text-rose-500 border border-rose-500/10 hover:bg-rose-500 hover:text-white transition-all">
+                                                            <Ban className="size-3.5" />
                                                         </button>
-                                                        <button title="Investigar" className="size-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all shadow-sm">
-                                                            <Eye className="size-4" />
+                                                        <button title="Investigar" className="p-2.5 rounded-lg bg-black text-indigo-400 border border-white/[0.05] hover:bg-indigo-500 hover:text-white transition-all">
+                                                            <Eye className="size-3.5" />
                                                         </button>
                                                     </div>
                                                 ) : (
-                                                    <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest italic flex items-center justify-end gap-1">
+                                                    <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-[0.2em] flex items-center justify-end gap-1.5 px-3 py-1 bg-emerald-500/5 rounded-full border border-emerald-500/10 h-8">
                                                         <ShieldCheck className="size-3" /> Mitigado
                                                     </span>
                                                 )}
@@ -189,12 +190,12 @@ export default function SecurityManagement() {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan={4} className="px-8 py-20 text-center">
+                                        <td colSpan={4} className="px-6 py-20 text-center">
                                             <div className="flex flex-col items-center gap-4">
-                                                <div className="size-20 rounded-[32px] bg-emerald-50 flex items-center justify-center text-emerald-500">
-                                                    <ShieldCheck className="size-10" />
+                                                <div className="size-16 rounded-xl bg-emerald-500/5 flex items-center justify-center text-emerald-500 border border-emerald-500/10">
+                                                    <ShieldCheck className="size-8" />
                                                 </div>
-                                                <p className="text-emerald-600 font-bold uppercase tracking-widest text-xs italic">Nenhuma ameaça ativa no momento</p>
+                                                <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Proteção ativa e estável</p>
                                             </div>
                                         </td>
                                     </tr>

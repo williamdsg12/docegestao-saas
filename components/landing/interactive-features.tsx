@@ -2,48 +2,48 @@
 
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { ShoppingBag, Users, DollarSign, Calendar } from "lucide-react"
+import { ShoppingBag, Users, DollarSign, Calendar, BookOpen, PackageSearch } from "lucide-react"
 
 const features = [
   {
-    id: "dashboard",
-    title: "Visão Geral",
-    description: "Inteligência de negócio em tempo real.",
-    icon: ShoppingBag,
-    color: "from-indigo-400 to-cyan-400",
-    image: "/assets/images/dashboard_overview.png"
-  },
-  {
     id: "pedidos",
-    title: "Pedidos",
-    description: "Controle de encomendas de ponta a ponta.",
+    title: "Organize Pedidos",
+    description: "Controle de encomendas de ponta a ponta sem perder nada no WhatsApp.",
     icon: ShoppingBag,
     color: "from-pink-400 to-rose-400",
     image: "/assets/images/feature_pedidos.png"
   },
   {
-    id: "clientes",
-    title: "Clientes",
-    description: "Histórico completo e fidelização.",
-    icon: Users,
-    color: "from-blue-400 to-indigo-400",
-    image: "/assets/images/feature_clientes.png"
-  },
-  {
     id: "financeiro",
-    title: "Financeiro",
-    description: "Fluxo de caixa transparente e lucro real.",
+    title: "Controle Financeiro",
+    description: "Fluxo de caixa transparente, previsibilidade e lucro real na sua mão.",
     icon: DollarSign,
     color: "from-emerald-400 to-teal-400",
     image: "/assets/images/feature_financeiro.png"
   },
   {
-    id: "agenda",
-    title: "Agenda",
-    description: "Calendário de entregas unificado.",
-    icon: Calendar,
+    id: "ficha_tecnica",
+    title: "Ficha Técnica Automática",
+    description: "Saiba exatamente o custo de cada receita e nunca mais tenha prejuízo.",
+    icon: BookOpen,
     color: "from-amber-400 to-orange-400",
+    image: "/assets/images/dashboard_overview.png"
+  },
+  {
+    id: "estoque",
+    title: "Estoque Inteligente",
+    description: "Baixa automática de ingredientes através das receitas e alertas de falta.",
+    icon: PackageSearch,
+    color: "from-indigo-400 to-cyan-400",
     image: "/assets/images/feature_agenda.png"
+  },
+  {
+    id: "clientes",
+    title: "Clientes Fidelizados",
+    description: "Histórico completo de compras, tags VIP e alerta de aniversariantes.",
+    icon: Users,
+    color: "from-blue-400 to-indigo-400",
+    image: "/assets/images/feature_clientes.png"
   },
 ]
 

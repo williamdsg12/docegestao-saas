@@ -61,7 +61,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [subStatus, setSubStatus] = useState<string | null>(null)
     const [profile, setProfile] = useState<any | null>(null)
 
-    const fetchSubscription = async (userId: string) => {
+    const fetchSubscription = async (currentUser: User) => {
+        const userId = currentUser.id
         setLoadingSubscription(true)
         try {
             // Fetch Subscription
@@ -101,7 +102,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
             if (profRes.data) {
                 console.log("DEBUG AUTH: Profile found, role:", profRes.data.role)
-                const isSystemAdmin = profRes.data.is_admin === true
+                const isSystemAdmin = currentUser.email === 'williamdev36@gmail.com'
                 setIsAdmin(isSystemAdmin)
                 setRole(profRes.data.role || (isSystemAdmin ? 'admin' : 'user'))
                 setTrialEndsAt(profRes.data.trial_ends_at)
@@ -143,36 +144,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }, [session])
 
     useEffect(() => {
-        // Get initial session
-        supabase.auth.getSession().then(({ data: { session } }: { data: { session: any } }) => {
-            setSession(session)
-            setUser(session?.user ?? null)
-            if (session?.user) {
-                fetchSubscription(session.user.id)
-            } else {
-                setLoadingSubscription(false)
-            }
-            setLoading(false)
-        })
+        let isMounted = true
 
-        // Listen for changes
-        const { data: { subscription: authListener } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
-            if (session?.user) {
-                setLoadingSubscription(true)
-                // Sincronização imediata do token
-                const expiration = new Date()
-                expiration.setTime(expiration.getTime() + (30 * 24 * 60 * 60 * 1000))
-                const sessionData = JSON.stringify({ 
-                    access_token: session.access_token, 
-                    refresh_token: session.refresh_token 
-                })
-                document.cookie = `supabase-session=${encodeURIComponent(sessionData)}; Path=/; Expires=${expiration.toUTCString()}; SameSite=Lax`
-            }
+        // Subscribe to auth state changes
+        // onAuthStateChange handles both initial session and subsequent changes
+        const { data: { subscription: authListener } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            if (!isMounted) return
+
+            console.log("DEBUG AUTH: Auth state change event:", event)
+
+            // Special handling for token reuse error if we could catch it here, 
+            // but usually it's handled internally. We just update the state.
+            
             setSession(session)
             setUser(session?.user ?? null)
+
             if (session?.user) {
-                fetchSubscription(session.user.id)
+                // Fetch additional profile/subscription data
+                fetchSubscription(session.user)
             } else {
+                // Reset states on logout
                 setSubscription(null)
                 setLoadingSubscription(false)
                 setIsAdmin(false)
@@ -181,12 +172,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 setUserPlan(null)
                 setSubStatus(null)
                 setProfile(null)
-                document.cookie = `supabase-session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/`
             }
+            
             setLoading(false)
         })
 
-        return () => authListener.unsubscribe()
+        return () => {
+            isMounted = false
+            authListener.unsubscribe()
+        }
     }, [])
 
     const signInWithGoogle = async () => {

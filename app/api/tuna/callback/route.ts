@@ -54,10 +54,10 @@ export async function GET(req: Request) {
     // Column names matched with migrations and TunaSettings.tsx
     const { error: dbError } = await supabase.from("tuna_accounts").upsert({
       tenant_id: tenantId,
-      tuna_account_id: data.account_id,
+      account_id: data.account_id,
       access_token: data.access_token,
       refresh_token: data.refresh_token,
-      connected: true,
+      conectado: true,
       updated_at: new Date().toISOString()
     }, { onConflict: 'tenant_id' })
 

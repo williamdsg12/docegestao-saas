@@ -16,47 +16,39 @@ interface MenuCategoryBarProps {
 
 export function MenuCategoryBar({ categories, activeCategory, onCategoryChange }: MenuCategoryBarProps) {
   return (
-    <div className="sticky top-0 z-40 w-full bg-white/95 backdrop-blur-md border-b border-slate-100 overflow-x-auto no-scrollbar shadow-sm">
-      <div className="max-w-4xl mx-auto px-4 flex gap-2 py-3 min-w-max">
+    <div className="sticky top-0 z-40 w-full bg-white border-b border-slate-100 overflow-x-auto no-scrollbar">
+      <div className="max-w-4xl mx-auto px-6 flex gap-8 min-w-max">
         <button
           onClick={() => onCategoryChange("all")}
           className={cn(
-            "px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-widest transition-all relative overflow-hidden",
-            activeCategory === "all" 
-              ? "text-white shadow-md shadow-red-100" 
-              : "text-slate-400 hover:text-slate-600 bg-white border border-slate-100"
+            "py-4 text-[11px] font-black uppercase tracking-widest transition-all relative",
+            activeCategory === "all" ? "text-[var(--primary-color)]" : "text-slate-400 hover:text-slate-600"
           )}
-          style={activeCategory === "all" ? { backgroundColor: "var(--ifood-red)" } : {}}
         >
+          Tudo
           {activeCategory === "all" && (
             <motion.div 
-              layoutId="category-bg" 
-              className="absolute inset-0 z-[-1]" 
-              style={{ backgroundColor: "var(--ifood-red)" }} 
+              layoutId="active-underline" 
+              className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--primary-color)]" 
             />
           )}
-          Todos
         </button>
         {categories.map((cat) => (
           <button
             key={cat.id}
             onClick={() => onCategoryChange(cat.id)}
             className={cn(
-              "px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-widest transition-all relative overflow-hidden",
-              activeCategory === cat.id 
-                ? "text-white shadow-md shadow-red-100" 
-                : "text-slate-400 hover:text-slate-600 bg-white border border-slate-100"
+              "py-4 text-[11px] font-black uppercase tracking-widest transition-all relative",
+              activeCategory === cat.id ? "text-[var(--primary-color)]" : "text-slate-400 hover:text-slate-600"
             )}
-            style={activeCategory === cat.id ? { backgroundColor: "var(--ifood-red)" } : {}}
           >
+            {cat.name}
             {activeCategory === cat.id && (
               <motion.div 
-                layoutId="category-bg" 
-                className="absolute inset-0 z-[-1]" 
-                style={{ backgroundColor: "var(--ifood-red)" }} 
+                layoutId="active-underline" 
+                className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--primary-color)]" 
               />
             )}
-            {cat.name}
           </button>
         ))}
       </div>

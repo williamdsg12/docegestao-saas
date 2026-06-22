@@ -20,7 +20,12 @@ interface Order {
   precisa_troco?: boolean
   valor_pago?: number
   troco?: number
-  customers?: { name: string }
+  customers?: { name: string; phone?: string }
+  customer?: { name: string; phone?: string }
+  customerName?: string
+  cliente_name?: string
+  nomeCliente?: string
+  cliente?: { nome: string }
 }
 
 const statusConfig: Record<string, { label: string, color: string, icon: any, bg: string, iconBg: string, border: string }> = {
@@ -73,7 +78,7 @@ export function OrderCard({
           </h3>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1.5 flex items-center gap-1.5">
             <User size={10} className="text-slate-300" />
-            {order.customers?.name || "Cliente sem nome"}
+            {order.customers?.name || order.customer?.name || order.customerName || order.cliente_name || order.nomeCliente || order.cliente?.nome || "Cliente sem nome"}
           </p>
         </div>
       </div>

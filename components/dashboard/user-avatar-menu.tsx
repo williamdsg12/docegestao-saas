@@ -68,13 +68,13 @@ export function UserAvatarMenu({ variant = "default" }: { variant?: "default" | 
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <div className={cn(
-                    "flex items-center gap-4 pl-4 cursor-pointer group select-none",
-                    variant === "default" ? "border-l border-slate-200" : "border-l border-white/20"
+                    "flex items-center gap-3 pl-3 cursor-pointer group select-none transition-all",
+                    variant === "default" ? "border-l border-[var(--border)]" : "border-l border-white/20"
                 )}>
                     <div className="relative">
                         <div className={cn(
-                            "size-10 rounded-full border-2 border-white shadow-sm overflow-hidden flex items-center justify-center font-black transition-all duration-300",
-                            variant === "default" ? "bg-rose-50 text-primary ring-1 ring-slate-100 group-hover:ring-primary/20" : "bg-white/20 backdrop-blur-md text-white group-hover:bg-white/30"
+                            "size-10 rounded-2xl border-2 border-[var(--bg-card)] shadow-sm overflow-hidden flex items-center justify-center font-black transition-all duration-300",
+                            variant === "default" ? "bg-[var(--accent-light)] text-[var(--primary)] ring-1 ring-[var(--border)] group-hover:ring-[var(--secondary)]/30" : "bg-white/20 backdrop-blur-md text-white group-hover:bg-white/30"
                         )}>
                             {avatarUrl ? (
                                 <img
@@ -83,33 +83,21 @@ export function UserAvatarMenu({ variant = "default" }: { variant?: "default" | 
                                     className="size-full object-cover"
                                 />
                             ) : (
-                                <span className="text-xs uppercase italic">{getInitials(fullName)}</span>
+                                <span className="text-[10px] uppercase italic tracking-tighter">{getInitials(fullName)}</span>
                             )}
                         </div>
                         {/* Status Online */}
-                        <div className={cn(
-                            "absolute bottom-0 right-0 size-3 bg-emerald-500 rounded-full border-2 shadow-sm animate-pulse",
-                            variant === "default" ? "border-white ring-1 ring-emerald-100" : "border-pink-400"
-                        )} />
+                        <div className="absolute -bottom-1 -right-1 size-3.5 bg-emerald-500 rounded-full border-[3px] border-[var(--bg-card)] shadow-sm" />
                     </div>
 
-                    <div className="flex flex-col items-start leading-tight">
+                    <div className="hidden sm:flex flex-col items-start leading-tight">
                         <div className="flex items-center gap-1.5">
-                            <span className={cn(
-                                "text-sm font-black italic uppercase tracking-tighter transition-colors",
-                                variant === "default" ? "text-slate-900 group-hover:text-primary" : "text-slate-900 group-hover:text-white"
-                            )}>
-                                {fullName.split(' ')[0]} {fullName.split(' ').length > 1 ? fullName.split(' ').slice(-1) : ''}
+                            <span className="text-[11px] font-black italic uppercase tracking-tighter text-[var(--text-primary)] group-hover:text-[var(--secondary)] transition-colors">
+                                {fullName.split(' ')[0]}
                             </span>
-                            <ChevronDown className={cn(
-                                "size-3 transition-all group-hover:translate-y-0.5",
-                                variant === "default" ? "text-slate-400 group-hover:text-primary" : "text-pink-700 group-hover:text-white"
-                            )} />
+                            <ChevronDown className="size-3 text-[var(--text-muted)] transition-all group-hover:translate-y-0.5 group-hover:text-[var(--secondary)]" />
                         </div>
-                        <span className={cn(
-                            "text-[10px] font-black uppercase tracking-widest mt-0.5",
-                            variant === "default" ? "text-slate-400" : "text-pink-700"
-                        )}>
+                        <span className="text-[8px] font-black uppercase tracking-widest text-[var(--text-muted)] mt-0.5">
                             {roleDisplay}
                         </span>
                     </div>
@@ -117,18 +105,18 @@ export function UserAvatarMenu({ variant = "default" }: { variant?: "default" | 
             </DropdownMenuTrigger>
             <DropdownMenuContent 
                 align="end" 
-                className="w-72 rounded-[32px] p-2 shadow-2xl border-slate-100/50 bg-white/80 backdrop-blur-xl animate-in fade-in-0 zoom-in-95 data-[side=bottom]:slide-in-from-top-2"
+                className="w-72 rounded-[32px] p-2 shadow-2xl border-[var(--border)] bg-[var(--bg-card)]/95 backdrop-blur-xl animate-in fade-in-0 zoom-in-95 data-[side=bottom]:slide-in-from-top-2"
             >
                 <DropdownMenuLabel className="p-4 mb-2">
                     <div className="flex items-center gap-4">
-                        <div className="size-12 rounded-2xl bg-slate-900 flex items-center justify-center text-white shrink-0 shadow-lg shadow-slate-900/10">
+                        <div className="size-12 rounded-2xl bg-[var(--primary)] flex items-center justify-center text-[var(--primary-foreground)] shrink-0 shadow-lg shadow-[var(--primary)]/10">
                             <UserCircle className="size-7" />
                         </div>
                         <div className="flex flex-col overflow-hidden">
-                            <p className="text-sm font-black text-slate-900 uppercase italic tracking-tighter truncate">
+                            <p className="text-[11px] font-black text-[var(--text-primary)] uppercase italic tracking-tighter truncate">
                                 {fullName}
                             </p>
-                            <p className="text-[10px] font-bold text-slate-400 truncate uppercase tracking-widest">
+                            <p className="text-[9px] font-bold text-[var(--text-muted)] truncate uppercase tracking-widest">
                                 {email}
                             </p>
                         </div>
@@ -138,40 +126,33 @@ export function UserAvatarMenu({ variant = "default" }: { variant?: "default" | 
                 <div className="px-2 pb-2 space-y-1">
                     <DropdownMenuItem 
                         onClick={() => router.push("/dashboard/profile")}
-                        className="rounded-[18px] px-4 py-3 text-[11px] font-black text-slate-600 uppercase tracking-widest italic focus:bg-slate-50 focus:text-primary cursor-pointer gap-3 transition-all"
+                        className="rounded-[18px] px-4 py-3 text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest italic focus:bg-[var(--accent-light)] focus:text-[var(--primary)] cursor-pointer gap-3 transition-all"
                     >
-                        <User className="size-4 text-primary/50" />
+                        <User className="size-4 opacity-50" />
                         Meu Perfil
                     </DropdownMenuItem>
                     <DropdownMenuItem 
                         onClick={() => router.push("/dashboard/settings")}
-                        className="rounded-[18px] px-4 py-3 text-[11px] font-black text-slate-600 uppercase tracking-widest italic focus:bg-slate-50 focus:text-primary cursor-pointer gap-3 transition-all"
+                        className="rounded-[18px] px-4 py-3 text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest italic focus:bg-[var(--accent-light)] focus:text-[var(--primary)] cursor-pointer gap-3 transition-all"
                     >
-                        <Settings className="size-4 text-primary/50" />
+                        <Settings className="size-4 opacity-50" />
                         Configurações
                     </DropdownMenuItem>
                     <DropdownMenuItem 
                         onClick={() => router.push("/dashboard/notificacoes")}
-                        className="rounded-[18px] px-4 py-3 text-[11px] font-black text-slate-600 uppercase tracking-widest italic focus:bg-slate-50 focus:text-primary cursor-pointer gap-3 transition-all"
+                        className="rounded-[18px] px-4 py-3 text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest italic focus:bg-[var(--accent-light)] focus:text-[var(--primary)] cursor-pointer gap-3 transition-all"
                     >
-                        <Bell className="size-4 text-primary/50" />
+                        <Bell className="size-4 opacity-50" />
                         Notificações
-                    </DropdownMenuItem>
-                    <DropdownMenuItem 
-                        onClick={() => router.push("/dashboard/security")}
-                        className="rounded-[18px] px-4 py-3 text-[11px] font-black text-slate-600 uppercase tracking-widest italic focus:bg-slate-50 focus:text-primary cursor-pointer gap-3 transition-all"
-                    >
-                        <Shield className="size-4 text-primary/50" />
-                        Segurança
                     </DropdownMenuItem>
                 </div>
 
-                <DropdownMenuSeparator className="mx-2 my-2 bg-slate-100/50" />
+                <DropdownMenuSeparator className="mx-2 my-2 bg-[var(--border)]" />
                 
                 <div className="px-2 pb-2 space-y-1">
                     <div 
                         onClick={toggleTheme}
-                        className="flex items-center justify-between rounded-[18px] px-4 py-3 text-[11px] font-black text-slate-600 uppercase tracking-widest italic hover:bg-slate-50 hover:text-primary cursor-pointer transition-all"
+                        className="flex items-center justify-between rounded-[18px] px-4 py-3 text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-widest italic hover:bg-[var(--accent-light)] hover:text-[var(--primary)] cursor-pointer transition-all"
                     >
                         <div className="flex items-center gap-3">
                             {theme === 'dark' ? <Sun className="size-4 text-amber-500" /> : <Moon className="size-4 text-indigo-500" />}
@@ -179,7 +160,7 @@ export function UserAvatarMenu({ variant = "default" }: { variant?: "default" | 
                         </div>
                         <div className={cn(
                             "w-10 h-5 rounded-full relative transition-colors duration-300 p-1",
-                            theme === 'dark' ? "bg-slate-900" : "bg-slate-200"
+                            theme === 'dark' ? "bg-[var(--primary)]" : "bg-[var(--border)]"
                         )}>
                             <div className={cn(
                                 "size-3 bg-white rounded-full shadow-sm transition-transform duration-300",
@@ -190,7 +171,7 @@ export function UserAvatarMenu({ variant = "default" }: { variant?: "default" | 
 
                     <DropdownMenuItem
                         onClick={handleLogout}
-                        className="rounded-[18px] px-4 py-3 text-[11px] font-black text-rose-500 uppercase tracking-widest italic focus:bg-rose-50 focus:text-rose-600 cursor-pointer gap-3 transition-all"
+                        className="rounded-[18px] px-4 py-3 text-[10px] font-black text-rose-500 uppercase tracking-widest italic focus:bg-rose-500/10 focus:text-rose-600 cursor-pointer gap-3 transition-all"
                     >
                         <LogOut className="size-4" />
                         Sair do Sistema
@@ -200,3 +181,4 @@ export function UserAvatarMenu({ variant = "default" }: { variant?: "default" | 
         </DropdownMenu>
     )
 }
+

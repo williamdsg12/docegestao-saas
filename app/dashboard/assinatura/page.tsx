@@ -33,6 +33,7 @@ import {
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { PageHeader } from "@/components/dashboard/PageHeader"
+import { VipConsultationModal } from "@/components/dashboard/assinatura/VipConsultationModal"
 
 export default function AssinaturaPage() {
   const { profile } = useBusiness()
@@ -42,6 +43,7 @@ export default function AssinaturaPage() {
   const [loadingPlans, setLoadingPlans] = useState(true)
   const [isLoading, setIsLoading] = useState(false)
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annually">("annually")
+  const [isVipModalOpen, setIsVipModalOpen] = useState(false)
 
   const planIcons: Record<string, any> = {
     'iniciante': {
@@ -175,11 +177,29 @@ export default function AssinaturaPage() {
                  ))}
               </ul>
            </div>
-           <Button className="mt-10 h-14 rounded-2xl bg-white text-slate-900 hover:bg-rose-500 hover:text-white font-black uppercase tracking-widest text-[10px] shadow-xl transition-all">
-              Consultar Consultor VIP
-           </Button>
+           {subscription?.plans?.slug === 'premium' ? (
+              <Button disabled className="mt-10 h-14 rounded-2xl bg-white/10 text-white/50 font-black uppercase tracking-widest text-[10px] border border-white/10">
+                 Você já possui acesso VIP
+              </Button>
+           ) : (
+              <Button 
+                onClick={() => setIsVipModalOpen(true)}
+                className="mt-10 h-14 rounded-2xl bg-white text-slate-900 hover:bg-rose-500 hover:text-white font-black uppercase tracking-widest text-[10px] shadow-xl transition-all hover:scale-[1.02] active:scale-95 group overflow-hidden relative"
+              >
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:animate-[shimmer_1.5s_infinite]" />
+                  Consultar Consultor VIP
+              </Button>
+           )}
         </div>
       </motion.div>
+
+      <VipConsultationModal 
+         isOpen={isVipModalOpen} 
+         onClose={() => setIsVipModalOpen(false)} 
+         currentPlan={subscription?.plans?.slug || 'free'} 
+         userId={profile?.id} 
+         tenantId={profile?.tenant_id || profile?.company_id} 
+      />
 
       {/* Billing Switcher */}
       <div className="flex justify-center py-10">
