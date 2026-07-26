@@ -139,3 +139,59 @@ export const normalizePhone = (phone: string): string => {
     }
     return normalized
 }
+
+/**
+ * Formats a date string, number, or object to America/Sao_Paulo timezone (HH:MM).
+ */
+export const formatTimeSP = (dateInput: string | Date | number | null | undefined): string => {
+  if (!dateInput) return ''
+  try {
+    const date = typeof dateInput === 'string' ? new Date(dateInput) : new Date(dateInput)
+    if (isNaN(date.getTime())) return ''
+    return new Intl.DateTimeFormat('pt-BR', {
+      timeZone: 'America/Sao_Paulo',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    }).format(date)
+  } catch (error) {
+    console.error("Error formatting time in America/Sao_Paulo:", error)
+    return ''
+  }
+}
+
+/**
+ * Formats a date string, number, or object to America/Sao_Paulo timezone (DD/MM/YY HH:MM or DD/MM/YYYY HH:MM).
+ */
+export const formatDateTimeSP = (
+  dateInput: string | Date | number | null | undefined,
+  formatType: 'short' | 'long' = 'short'
+): string => {
+  if (!dateInput) return ''
+  try {
+    const date = typeof dateInput === 'string' ? new Date(dateInput) : new Date(dateInput)
+    if (isNaN(date.getTime())) return ''
+    
+    const parts = new Intl.DateTimeFormat('pt-BR', {
+      timeZone: 'America/Sao_Paulo',
+      day: '2-digit',
+      month: '2-digit',
+      year: formatType === 'short' ? '2-digit' : 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    }).formatToParts(date)
+    
+    const day = parts.find(p => p.type === 'day')?.value || '00'
+    const month = parts.find(p => p.type === 'month')?.value || '00'
+    const year = parts.find(p => p.type === 'year')?.value || (formatType === 'short' ? '00' : '0000')
+    const hour = parts.find(p => p.type === 'hour')?.value || '00'
+    const minute = parts.find(p => p.type === 'minute')?.value || '00'
+    
+    return `${day}/${month}/${year} ${hour}:${minute}`
+  } catch (error) {
+    console.error("Error formatting date/time in America/Sao_Paulo:", error)
+    return ''
+  }
+}
+

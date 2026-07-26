@@ -15,6 +15,7 @@ export async function GET(
         *,
         tenants!company_id(slug, name, logo_url, whatsapp, endereco, address_lat, address_lng),
         customers!customer_id(name, phone),
+        addresses!address_id(*),
         order_items(*)
       `)
       .eq('id', id)
@@ -125,15 +126,26 @@ export async function GET(
         nome_mascarado: maskName(order.customers?.name),
         telefone_mascarado: maskPhone(order.customers?.phone)
       },
-      endereco: order.address || "Retirada no balcão",
+      endereco: order.order_type === 'pickup' 
+        ? "Retirada no balcão" 
+        : (order.formatted_address || 
+           (order.addresses 
+              ? `${order.addresses.street || ''} ${order.addresses.number || ''}, ${order.addresses.neighborhood || ''}, ${order.addresses.city || ''} ${order.addresses.state || ''}`.replace(/\s+/g, ' ').trim() 
+              : "Retirada no balcão")),
       codigo_br: `BR-${order.id.split("-")[0].toUpperCase()}${order.id.split("-")[1].toUpperCase()}`,
       pontos: 2, 
       pagamento: {
-        status: order.payment_status === "paid" ? "pago" : "nao_pago",
+        status: order.payment_status || "PENDENTE",
         forma: order.payment_method || "Não informado",
+        origem: order.payment_origin || "NA ENTREGA",
+        troco_para: order.change_for || 0,
+        change_needed: order.change_needed || false,
         valor: order.total,
         troco: order.change_amount || 0
       },
+      delivery_type: order.delivery_type || "DELIVERY",
+      remaining_distance_km: order.remaining_distance_km != null ? Number(order.remaining_distance_km) : null,
+      remaining_duration_min: order.remaining_duration_min != null ? Number(order.remaining_duration_min) : null,
       produtos: (order.order_items || []).map((item: any) => ({
         nome: item.name || "Produto",
         qtd: item.quantity || 0,

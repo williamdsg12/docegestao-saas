@@ -9,41 +9,93 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Faltam campos obrigatórios (nome, email, senha, company_id)' }, { status: 400 })
     }
 
-    // 1. Create the user in Supabase Auth via admin client
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: {
-        role: 'delivery_driver',
-        name,
-        phone
-      }
-    })
+    const searchEmail = email.trim().toLowerCase()
 
-    if (authError || !authData.user) {
-      console.error('Error creating driver auth:', authError)
-      return NextResponse.json({ error: authError?.message || 'Erro ao criar autenticação do entregador' }, { status: 500 })
+    // 1. Check if driver already exists in delivery_drivers
+    const { data: existingDriver } = await supabaseAdmin
+      .from('delivery_drivers')
+      .select('id')
+      .eq('email', searchEmail)
+      .maybeSingle()
+
+    if (existingDriver) {
+      return NextResponse.json({ error: 'Este e-mail já está cadastrado no sistema.' }, { status: 400 })
     }
 
-    const userId = authData.user.id
-
-    // 2. Create the profile in profiles table
-    const { error: profileError } = await supabaseAdmin
+    // 2. Check if profile already exists in profiles table
+    const { data: existingProfile } = await supabaseAdmin
       .from('profiles')
-      .insert({
-        id: userId,
+      .select('id')
+      .eq('email', searchEmail)
+      .maybeSingle()
+
+    let userId = existingProfile?.id
+    let isNewUser = !existingProfile
+
+    if (!userId) {
+      // Try to create the user in Supabase Auth via admin client
+      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
         email,
-        role: 'delivery_driver',
-        company_id,
-        tenant_id: company_id
+        password,
+        email_confirm: true,
+        user_metadata: {
+          role: 'delivery_driver',
+          name,
+          phone
+        }
       })
 
-    if (profileError) {
-      console.error('Error creating driver profile:', profileError)
-      // Rollback auth creation if profile fails
-      await supabaseAdmin.auth.admin.deleteUser(userId)
-      return NextResponse.json({ error: profileError.message }, { status: 500 })
+      if (authError) {
+        console.error('Error creating driver auth:', authError)
+        const msg = authError.message || ''
+        if (msg.includes('already been registered') || msg.includes('already registered') || msg.includes('exists')) {
+          // Find existing user in auth to associate
+          const { data: listData } = await supabaseAdmin.auth.admin.listUsers()
+          const foundAuthUser = listData?.users?.find(u => u.email?.toLowerCase() === searchEmail)
+          if (foundAuthUser) {
+            userId = foundAuthUser.id
+            isNewUser = false
+            // Create missing profile
+            await supabaseAdmin.from('profiles').insert({
+              id: userId,
+              email: searchEmail,
+              role: 'delivery_driver',
+              company_id,
+              tenant_id: company_id
+            })
+          } else {
+            return NextResponse.json({ error: 'Este e-mail já está cadastrado no sistema.' }, { status: 400 })
+          }
+        } else {
+          return NextResponse.json({ error: authError.message || 'Erro ao criar autenticação do entregador' }, { status: 500 })
+        }
+      } else if (authData?.user) {
+        userId = authData.user.id
+      }
+    }
+
+    if (!userId) {
+      return NextResponse.json({ error: 'Erro ao identificar ou criar o ID do usuário.' }, { status: 500 })
+    }
+
+    if (isNewUser) {
+      // Create the profile in profiles table
+      const { error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .insert({
+          id: userId,
+          email: searchEmail,
+          role: 'delivery_driver',
+          company_id,
+          tenant_id: company_id
+        })
+
+      if (profileError) {
+        console.error('Error creating driver profile:', profileError)
+        // Rollback auth creation if profile fails
+        await supabaseAdmin.auth.admin.deleteUser(userId)
+        return NextResponse.json({ error: profileError.message }, { status: 500 })
+      }
     }
 
     // 3. Create record in delivery_drivers
@@ -52,7 +104,7 @@ export async function POST(req: Request) {
       .insert({
         id: userId,
         name,
-        email,
+        email: searchEmail,
         phone,
         whatsapp,
         cpf,
@@ -68,9 +120,15 @@ export async function POST(req: Request) {
 
     if (driverError) {
       console.error('Error inserting delivery driver:', driverError)
-      // Rollback auth and profile
-      await supabaseAdmin.from('profiles').delete().eq('id', userId)
-      await supabaseAdmin.auth.admin.deleteUser(userId)
+      // Rollback auth and profile only if it's a completely new user
+      if (isNewUser) {
+        await supabaseAdmin.from('profiles').delete().eq('id', userId)
+        await supabaseAdmin.auth.admin.deleteUser(userId)
+      }
+      const driverMsg = driverError.message || ''
+      if (driverMsg.includes('unique') || driverMsg.includes('key') || driverMsg.includes('duplicate')) {
+        return NextResponse.json({ error: 'Este e-mail já está cadastrado no sistema.' }, { status: 400 })
+      }
       return NextResponse.json({ error: driverError.message }, { status: 500 })
     }
 

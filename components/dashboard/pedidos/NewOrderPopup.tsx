@@ -4,6 +4,7 @@ import { X, ShoppingBag, Truck, Check } from "lucide-react"
 import { motion } from "framer-motion"
 import { format } from "date-fns"
 import { Badge } from "@/components/ui/badge"
+import { formatTimeSP } from "@/lib/formatters"
 
 interface NewOrderPopupProps {
   order: any
@@ -32,7 +33,7 @@ export function NewOrderPopup({ order, onClose, onClick }: NewOrderPopupProps) {
           <div className="flex-1 min-w-0 space-y-2">
             <div className="flex items-center justify-between">
               <h3 className="font-black text-slate-800 text-sm italic tracking-tighter uppercase">Novo pedido - #{order.id.slice(-4).toUpperCase()}</h3>
-              <span className="text-[10px] font-bold text-slate-400 uppercase italic">Hoje {format(new Date(), "HH:mm aa")}</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase italic">Hoje {formatTimeSP(order.created_at) || formatTimeSP(new Date())}</span>
             </div>
 
             <div className="flex flex-col">

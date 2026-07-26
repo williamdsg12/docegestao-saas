@@ -22,6 +22,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { toast } from "sonner"
+import { formatDateTimeSP } from "@/lib/formatters"
+
 
 interface OrderDrawerProps {
   order: any
@@ -67,7 +69,7 @@ export function OrderDrawer({ order, isOpen, onClose, onUpdateStatus }: OrderDra
             <div class="header">
               <h2>COMANDA DE COZINHA</h2>
               <p>#${order.id.slice(-5).toUpperCase()}</p>
-              <p>${new Date(order.created_at).toLocaleString('pt-BR')}</p>
+              <p>${formatDateTimeSP(order.created_at, 'long')}</p>
               <p>${order.customer_name}</p>
             </div>
             <div class="items">
@@ -140,7 +142,7 @@ export function OrderDrawer({ order, isOpen, onClose, onUpdateStatus }: OrderDra
                         </Badge>
                      </div>
                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
-                       {new Date(order.created_at).toLocaleString('pt-BR')}
+                       {formatDateTimeSP(order.created_at, 'long')}
                      </p>
                   </div>
                </div>
@@ -258,17 +260,33 @@ export function OrderDrawer({ order, isOpen, onClose, onUpdateStatus }: OrderDra
                             <CreditCard size={20} />
                           </div>
                           <div>
-                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1 italic">Método</p>
-                            <p className="text-base font-black italic uppercase tracking-tighter">{order.payment_method || "Não inf."}</p>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1 italic">Método / Origem</p>
+                            <p className="text-base font-black italic uppercase tracking-tighter leading-tight">
+                              {order.payment_method || "Não inf."} 
+                              <span className="text-[10px] font-bold text-slate-400 normal-case block mt-0.5">
+                                Origem: {order.payment_origin === 'ONLINE' ? 'Online' : 
+                                         order.payment_origin === 'NA ENTREGA' ? 'Entrega' : 
+                                         order.payment_origin === 'NO BALCÃO' ? 'Balcão' : 'Entrega'}
+                              </span>
+                            </p>
                           </div>
                         </div>
                         <Badge className={cn(
                           "px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border-none shadow-lg",
-                          order.payment_status === 'paid' || order.payment_status === 'pago' ? "bg-emerald-500 text-white" : "bg-amber-500 text-white"
+                          order.payment_status === 'paid' || order.payment_status === 'pago' || order.payment_status === 'PAGO' ? "bg-emerald-500 text-white" : "bg-amber-500 text-white"
                         )}>
-                          {order.payment_status === 'paid' || order.payment_status === 'pago' ? "Pago" : "Pendente"}
+                          {order.payment_status === 'paid' || order.payment_status === 'pago' || order.payment_status === 'PAGO' 
+                            ? "Pago" 
+                            : (order.payment_origin === 'ONLINE' ? "Pendente" : "Receber na Entrega")}
                         </Badge>
                       </div>
+
+                      {Boolean(order.change_needed || (order.change_for && Number(order.change_for) > 0)) && (
+                        <div className="pt-4 border-t border-white/10 flex justify-between items-center text-slate-400">
+                          <span className="text-[10px] font-black uppercase tracking-widest italic">Troco para</span>
+                          <span className="text-sm font-bold text-amber-500">R$ {Number(order.change_for).toFixed(2)}</span>
+                        </div>
+                      )}
 
                       <div className="pt-6 border-t border-white/10 space-y-3">
                         <div className="flex justify-between items-center text-slate-400">

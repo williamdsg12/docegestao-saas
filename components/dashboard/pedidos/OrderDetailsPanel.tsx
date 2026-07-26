@@ -17,6 +17,8 @@ import { supabase } from "@/lib/supabase"
 import { criarEntregaSeNaoExistir } from "@/lib/services/delivery"
 import { useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
+import { formatDateTimeSP, formatTimeSP } from "@/lib/formatters"
+
 
 interface OrderDetailsPanelProps {
   order: any | null
@@ -92,13 +94,13 @@ function generateKitchenTicket(order: any): string {
   <div class="header">**** PEDIDO #${orderCode} ****</div>
   <div class="header">${typeLabel}</div>
   <div class="sep"></div>
-  <p style="margin:4px 0">Data: ${format(parseOrderDate(order.createdAt || order.created_at || new Date().toISOString()), "dd/MM/yyyy HH:mm")}</p>
+  <p style="margin:4px 0">Data: ${formatDateTimeSP(order.createdAt || order.created_at, 'long')}</p>
   <div class="sep"></div>
   <div style="font-weight: bold; text-align: center; margin-bottom: 8px;">ITENS DO PEDIDO</div>
   ${items}
   ${order.notes ? `<div class="sep"></div><p style="margin:4px 0;"><b>OBS GERAL:</b> ${order.notes}</p>` : ""}
   <div class="sep"></div>
-  <p style="text-align:center; font-size: 10px;">IMPRESSO EM ${format(new Date(), "dd/MM/yyyy HH:mm")}</p>
+  <p style="text-align:center; font-size: 10px;">IMPRESSO EM ${formatDateTimeSP(new Date(), 'long')}</p>
   </body></html>`
 }
 
@@ -137,7 +139,7 @@ function generateClientTicket(order: any): string {
   <div class="header">${typeLabel}</div>
   <div class="header" style="font-size: 14px; margin-top: 8px;">${order.merchant_name || 'NOME DO ESTABELECIMENTO'}</div>
   
-  <p style="margin:4px 0">Data do Pedido: ${format(parseOrderDate(order.createdAt || order.created_at || new Date().toISOString()), "dd/MM/yyyy HH:mm")}</p>
+  <p style="margin:4px 0">Data do Pedido: ${formatDateTimeSP(order.createdAt || order.created_at, 'long')}</p>
   <p style="margin:4px 0">Cliente: ${order.customer?.name || order.customerName || order.cliente_name || order.nomeCliente || order.cliente?.nome || "NOME DO CLIENTE"}</p>
   <p style="margin:4px 0">Telefone: ${order.customer?.phone || "NÃO INFORMADO"}</p>
   
@@ -467,7 +469,7 @@ export function OrderDetailsPanel({ order, isOpen, onClose, onUpdateStatus }: Or
                 </div>
                 <div className="flex items-center gap-1">
                   <Calendar size={9} />
-                  {format(orderDate, "dd/MM/yy HH:mm", { locale: ptBR })}
+                  {formatDateTimeSP(order.createdAt || order.created_at, 'short')}
                 </div>
               </div>
               <TimerDisplay />
@@ -766,40 +768,55 @@ export function OrderDetailsPanel({ order, isOpen, onClose, onUpdateStatus }: Or
               </div>
 
               {/* Payment Details */}
-              <div className="px-4 py-3">
-                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2 flex items-center gap-1">
+              <div className="px-4 py-3 bg-slate-50 border border-slate-100 rounded-2xl space-y-2 mt-2 mx-4">
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1">
                   <CreditCard size={9} /> Pagamento
                 </p>
-                <div className="flex items-center gap-2">
-                  <DollarSign size={13} className="text-slate-400" />
-                  <span className="text-xs font-black text-slate-600 uppercase">
-                    {(() => {
-                      const labels: any = {
-                        dinheiro: 'Dinheiro',
-                        cash: 'Dinheiro',
-                        credito: 'Cartão de Crédito',
-                        credit: 'Cartão de Crédito',
-                        debito: 'Cartão de Débito',
-                        debit: 'Cartão de Débito',
-                        pix: 'PIX'
-                      };
-                      const base = labels[order.payment?.method?.toLowerCase()] || order.payment?.method || 'Não informado'
-                      if (order.payment?.method?.toLowerCase().includes('dinheiro') && order.payment?.changeFor) {
-                        return `${base} — Troco para R$ ${Number(order.payment.changeFor).toFixed(2)}`
-                      }
-                      return base
-                    })()}
-                  </span>
-                </div>
+                
+                <div className="grid grid-cols-2 gap-2.5 text-xs font-bold text-slate-700">
+                  <div>
+                    <span className="text-[9px] font-black text-slate-400 block uppercase leading-none mb-1">Método</span>
+                    <span className="uppercase">{order.payment_method || order.payment?.method || 'Dinheiro'}</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-black text-slate-400 block uppercase leading-none mb-1">Origem</span>
+                    <span className="uppercase">
+                      {order.payment_origin === 'ONLINE' ? 'Online' : 
+                       order.payment_origin === 'NA ENTREGA' ? 'Entrega' : 
+                       order.payment_origin === 'NO BALCÃO' ? 'Balcão' : 
+                       (order.payment?.origin || 'Entrega')}
+                    </span>
+                  </div>
+                  
+                  {Boolean(order.change_needed || order.payment?.changeFor || order.payment?.needs_change) && (
+                    <div className="col-span-2 pt-1.5 border-t border-slate-100">
+                      <span className="text-[9px] font-black text-slate-400 block uppercase leading-none mb-1">Troco para</span>
+                      <span className="text-amber-600">R$ {Number(order.change_for || order.payment?.changeFor || 0).toFixed(2)}</span>
+                    </div>
+                  )}
 
-                <div className="flex items-center gap-2 mt-1">
-                  <div className={cn(
-                    "size-2 rounded-full",
-                    order.payment?.status === 'paid' ? "bg-green-500" : "bg-orange-500"
-                  )} />
-                  <span className="text-[10px] font-bold text-slate-400 uppercase italic">
-                    {order.payment?.status === 'paid' ? 'Pagamento Aprovado' : 'Aguardando Pagamento'}
-                  </span>
+                  {order.payment_method === 'PIX' && (order.payment_status === 'PAGO' || order.payment_status === 'pago' || order.payment?.status === 'paid') && (
+                    <div className="col-span-2 pt-1.5 border-t border-slate-100">
+                      <span className="text-[9px] font-black text-slate-400 block uppercase leading-none mb-1">TXID</span>
+                      <span className="font-mono text-slate-600 text-[10px]">
+                        {order.pix_txid || `TX${order.id.slice(0, 8).toUpperCase()}`}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="col-span-2 pt-1.5 border-t border-slate-100 flex items-center justify-between">
+                    <span className="text-[9px] font-black text-slate-400 uppercase leading-none">Status</span>
+                    <Badge className={cn(
+                      "border-none text-[8px] font-black uppercase tracking-wider px-2 py-0.5",
+                      (order.payment_status === 'PAGO' || order.payment_status === 'pago' || order.payment?.status === 'paid') 
+                        ? "bg-green-100 text-green-600" 
+                        : "bg-orange-100 text-orange-600"
+                    )}>
+                      {order.payment_status === 'PAGO' || order.payment_status === 'pago' || order.payment?.status === 'paid' 
+                        ? 'Pago' 
+                        : (order.payment_origin === 'ONLINE' ? 'Aguardando Pagamento' : 'Receber na Entrega')}
+                    </Badge>
+                  </div>
                 </div>
               </div>
             </div>

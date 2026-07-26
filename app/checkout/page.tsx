@@ -192,6 +192,72 @@ export default function CheckoutPage() {
         return
       }
 
+      const orderType = (distance || 0) > 0 ? 'delivery' : 'pickup'
+      let finalLat = address?.lat || null
+      let finalLng = address?.lng || null
+      let formattedAddress = address?.formatted_address || ""
+      let locationAccuracy = "approximate"
+      let apiUsed = "client"
+
+      // Only perform backend geocoding if coordinates are missing (like manual entries) for delivery
+      if (orderType === 'delivery' && (!finalLat || !finalLng)) {
+        try {
+          const addressStr = `${address.street || ''} ${address.number || ''}, ${address.neighborhood || ''}, ${address.city || ''} ${address.state || ''}, ${address.zip || ''}, Brasil`.replace(/\s+/g, ' ').trim()
+          
+          const geocodeRes = await fetch('/api/geocode', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ address: addressStr })
+          })
+          const geocodeData = await geocodeRes.json()
+          
+          if (geocodeRes.ok && geocodeData.success) {
+            finalLat = geocodeData.latitude
+            finalLng = geocodeData.longitude
+            formattedAddress = geocodeData.formatted_address
+            locationAccuracy = geocodeData.location_accuracy
+            apiUsed = geocodeData.api_used
+          }
+        } catch (e) {
+          console.error("Geocoding failed during checkout:", e)
+        }
+      } else if (orderType === 'delivery') {
+        locationAccuracy = "rooftop"
+        apiUsed = "google_autocomplete"
+      }
+
+      // Check if coordinates were successfully resolved for delivery
+      if (orderType === 'delivery' && (!finalLat || !finalLng)) {
+        toast.error("Não foi possível localizar o endereço informado.")
+        setIsSubmitting(false)
+        return
+      }
+
+      // Map payment details to standard database formats
+      let paymentMethodMapped = "DINHEIRO"
+      let paymentOriginMapped = "NA ENTREGA"
+      let paymentStatusMapped = "PENDENTE"
+      
+      if (customerInfo.payment_method === 'pix') {
+        paymentMethodMapped = "PIX"
+        paymentOriginMapped = "ONLINE"
+        paymentStatusMapped = "PENDENTE"
+      } else if (customerInfo.payment_method === 'mercadopago_card') {
+        paymentMethodMapped = "CARTÃO CRÉDITO"
+        paymentOriginMapped = "ONLINE"
+        paymentStatusMapped = "PENDENTE"
+      } else if (customerInfo.payment_method === 'money') {
+        paymentMethodMapped = "DINHEIRO"
+        paymentOriginMapped = "NA ENTREGA"
+        paymentStatusMapped = "PENDENTE"
+      } else if (customerInfo.payment_method === 'card_on_delivery') {
+        paymentMethodMapped = "CARTÃO DÉBITO"
+        paymentOriginMapped = "NA ENTREGA"
+        paymentStatusMapped = "PENDENTE"
+      }
+
+      const deliveryTypeMapped = orderType === 'delivery' ? 'DELIVERY' : 'RETIRADA'
+
       // 1. Prepare data for the Transactional RPC (Relational Model v12)
       const rpcParams = {
         p_tenant_id: effectiveTenantId,
@@ -210,13 +276,17 @@ export default function CheckoutPage() {
         },
         p_order: {
           total: total,
-          status: 'pending',
-          order_type: (distance || 0) > 0 ? 'delivery' : 'pickup',
+          status: 'novo',
+          order_status: 'novo',
+          order_type: orderType,
           notes: customerInfo.notes,
           delivery_fee: deliveryFee,
           discount: 0,
-          latitude: address?.lat || null,
-          longitude: address?.lng || null
+          latitude: finalLat,
+          longitude: finalLng,
+          formatted_address: formattedAddress,
+          location_accuracy: locationAccuracy,
+          delivery_type: deliveryTypeMapped
         },
         p_items: cart.map(item => ({
           product_id: item.id,
@@ -229,10 +299,15 @@ export default function CheckoutPage() {
         })),
         p_payment: {
           amount: total,
-          method: customerInfo.payment_method,
-          status: 'pending',
+          method: paymentMethodMapped,
+          status: paymentStatusMapped,
+          origin: paymentOriginMapped,
+          payment_method: paymentMethodMapped,
+          payment_status: paymentStatusMapped,
+          payment_origin: paymentOriginMapped,
           needs_change: customerInfo.payment_method === 'money' && Number(customerInfo.change_for || 0) > total,
-          change_for: customerInfo.payment_method === 'money' ? Number(customerInfo.change_for || 0) : 0
+          change_for: customerInfo.payment_method === 'money' ? Number(customerInfo.change_for || 0) : 0,
+          change_needed: customerInfo.payment_method === 'money' && Number(customerInfo.change_for || 0) > total
         }
       }
 
@@ -252,6 +327,25 @@ export default function CheckoutPage() {
       }
 
       const newOrderId = result.order_id
+
+      // 3. Log geocoding attempt in background (Monitoramento)
+      if (orderType === 'delivery') {
+        const addressInput = `${address.street || ''} ${address.number || ''}, ${address.neighborhood || ''}, ${address.city || ''} ${address.state || ''}, ${address.zip || ''}, Brasil`.trim()
+        supabase
+          .from('geocoding_logs')
+          .insert({
+            order_id: newOrderId,
+            input_address: addressInput,
+            lat: finalLat,
+            lng: finalLng,
+            api_used: apiUsed,
+            accuracy: locationAccuracy
+          })
+          .then(({ error: logErr }) => {
+            if (logErr) console.error("Error creating geocoding log:", logErr)
+          })
+      }
+
       const order = { id: newOrderId, ...rpcParams.p_order } // Mock order object for webhook
 
       // Save store slug in localStorage for post-delivery redirects

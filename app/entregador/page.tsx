@@ -26,6 +26,7 @@ import {
   X
 } from "lucide-react"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
 
 interface DriverProfile {
   id: string
@@ -93,6 +94,11 @@ export default function DriverDashboardPage() {
   const [dispatchOrderDetails, setDispatchOrderDetails] = useState<any | null>(null)
   const [countdown, setCountdown] = useState<number>(20)
   const lastCoordsRef = useRef<{ latitude: number; longitude: number; timestamp: number } | null>(null)
+
+  // Real-time chat states
+  const [chatOrderId, setChatOrderId] = useState<string | null>(null)
+  const [chatMessages, setChatMessages] = useState<any[]>([])
+  const [chatInput, setChatInput] = useState("")
 
   const audioContextRef = useRef<AudioContext | null>(null)
   const alarmIntervalRef = useRef<number | null>(null)
@@ -269,6 +275,14 @@ export default function DriverDashboardPage() {
       setCountdown(secondsLeft)
 
       startSyntheticAlarm()
+
+      // Trigger browser push notification
+      import("@/lib/services/notifications").then(({ NotificationService }) => {
+        NotificationService.showLocalNotification(
+          "Nova corrida disponível! 🛵",
+          `Estabelecimento: ${order.tenants?.name || "Doce Gestão"}\nValor: R$ ${Number(order.total || 0).toFixed(2)}`
+        )
+      })
     } catch (err) {
       console.error(err)
     }
@@ -339,6 +353,7 @@ export default function DriverDashboardPage() {
       .subscribe()
 
     async function checkPendingDispatches() {
+      if (!driver) return
       const { data } = await supabase
         .from('delivery_dispatches')
         .select('*')
@@ -383,6 +398,68 @@ export default function DriverDashboardPage() {
       clearInterval(interval)
     }
   }, [activeDispatchCall, stopSyntheticAlarm])
+
+  // Real-time Chat Load & Subscription in Driver Page
+  useEffect(() => {
+    if (!chatOrderId) {
+      setChatMessages([])
+      return
+    }
+
+    async function loadMessages() {
+      const { data } = await supabase
+        .from('delivery_messages')
+        .select('*')
+        .eq('order_id', chatOrderId)
+        .order('created_at', { ascending: true })
+      setChatMessages(data || [])
+    }
+    loadMessages()
+
+    const channel = supabase
+      .channel(`chat-${chatOrderId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'delivery_messages',
+        filter: `order_id=eq.${chatOrderId}`
+      }, (payload) => {
+        setChatMessages(prev => [...prev, payload.new])
+        if (payload.new.sender_type !== 'driver') {
+          import("@/lib/services/notifications").then(({ NotificationService }) => {
+            NotificationService.showLocalNotification(
+              "Nova mensagem da loja 💬",
+              payload.new.message
+            )
+          })
+        }
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [chatOrderId])
+
+  async function sendChatMessage() {
+    if (!chatInput.trim() || !chatOrderId) return
+    const msg = chatInput
+    setChatInput("")
+
+    const { error } = await supabase
+      .from('delivery_messages')
+      .insert({
+        order_id: chatOrderId,
+        sender_id: driver?.id,
+        sender_type: 'driver',
+        message: msg
+      })
+
+    if (error) {
+      console.error("Error sending message:", error)
+      toast.error("Erro ao enviar mensagem")
+    }
+  }
 
   useEffect(() => {
     if (driver) {
@@ -895,6 +972,13 @@ export default function DriverDashboardPage() {
                       <MessageCircle size={12} /> WhatsApp
                     </Button>
                   </div>
+                  <Button 
+                    variant="outline"
+                    onClick={() => setChatOrderId(order.id)}
+                    className="w-full h-10 rounded-xl border-slate-800 text-pink-500 hover:bg-pink-500/10 font-bold text-[10px] uppercase gap-1"
+                  >
+                    <MessageCircle size={12} /> Chat Interno (Loja)
+                  </Button>
 
                   {/* Navigation & Action Button */}
                   <div className="pt-2">
@@ -1179,6 +1263,51 @@ export default function DriverDashboardPage() {
               className="h-16 bg-emerald-500 hover:bg-emerald-600 text-white rounded-[24px] font-black uppercase italic tracking-widest text-sm shadow-lg shadow-emerald-500/20 animate-pulse"
             >
               Aceitar
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Chat Drawer overlay */}
+      {chatOrderId && (
+        <div className="fixed inset-y-0 right-0 w-full sm:w-[400px] bg-slate-900 border-l border-white/10 z-[9999] flex flex-col animate-in slide-in-from-right duration-300">
+          <div className="p-4 border-b border-white/10 flex justify-between items-center bg-slate-950">
+            <div>
+              <h3 className="font-black text-sm uppercase italic">Chat de Entrega</h3>
+              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Pedido #{chatOrderId.slice(-4).toUpperCase()}</p>
+            </div>
+            <Button variant="ghost" size="icon" onClick={() => setChatOrderId(null)} className="text-slate-400 hover:text-white rounded-xl">
+              <X className="size-5" />
+            </Button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-900/50">
+            {chatMessages.map((msg) => {
+              const isMe = msg.sender_type === 'driver'
+              return (
+                <div key={msg.id} className={cn("flex flex-col max-w-[80%] rounded-2xl p-3 text-xs font-sans", 
+                  isMe ? "ml-auto bg-pink-500 text-white rounded-tr-none" : "mr-auto bg-slate-800 text-slate-200 rounded-tl-none"
+                )}>
+                  <span className="text-[8px] font-black uppercase text-slate-400 mb-1">{msg.sender_type}</span>
+                  <p className="font-medium leading-relaxed">{msg.message}</p>
+                  <span className="text-[8px] text-white/50 text-right mt-1 block font-mono">
+                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+
+          <div className="p-4 border-t border-white/10 bg-slate-950 flex gap-2">
+            <input 
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && sendChatMessage()}
+              placeholder="DIGITAR MENSAGEM..."
+              className="flex-1 h-12 bg-white/5 border border-white/10 rounded-xl px-4 text-xs font-bold uppercase tracking-wider focus:outline-none focus:border-pink-500 placeholder:text-slate-600 text-white"
+            />
+            <Button onClick={sendChatMessage} className="bg-pink-500 hover:bg-pink-600 text-white rounded-xl h-12 px-5 font-black uppercase text-xs">
+              Enviar
             </Button>
           </div>
         </div>

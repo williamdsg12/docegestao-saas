@@ -19,7 +19,8 @@ import {
   Store,
   CreditCard,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  UtensilsCrossed
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -97,6 +98,11 @@ export default function TrackingContent({ orderId }: TrackingContentProps) {
   const [showWhatsappModal, setShowWhatsappModal] = useState(false)
   const [showWelcomeModal, setShowWelcomeModal] = useState(false)
 
+  // Real-time Chat States
+  const [showChatDrawer, setShowChatDrawer] = useState(false)
+  const [chatMessages, setChatMessages] = useState<any[]>([])
+  const [chatInput, setChatInput] = useState("")
+
   // Feedback/Review States
   const [showFeedbackForm, setShowFeedbackForm] = useState(false)
   const [rating, setRating] = useState(0)
@@ -106,8 +112,11 @@ export default function TrackingContent({ orderId }: TrackingContentProps) {
 
   // Format time helper
   const getFormattedTime = () => {
-    const now = new Date()
-    return now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+    return new Intl.DateTimeFormat("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+      hour: "2-digit",
+      minute: "2-digit"
+    }).format(new Date())
   }
 
   // 1. Fetch order details from API
@@ -249,6 +258,67 @@ export default function TrackingContent({ orderId }: TrackingContentProps) {
     }
   }, [order?.status])
 
+  // 7. Load & subscribe to delivery chat messages
+  useEffect(() => {
+    if (!showChatDrawer || !orderId) {
+      setChatMessages([])
+      return
+    }
+
+    async function loadMessages() {
+      const { data } = await supabase
+        .from('delivery_messages')
+        .select('*')
+        .eq('order_id', orderId)
+        .order('created_at', { ascending: true })
+      setChatMessages(data || [])
+    }
+    loadMessages()
+
+    const channel = supabase
+      .channel(`chat-${orderId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'delivery_messages',
+        filter: `order_id=eq.${orderId}`
+      }, (payload) => {
+        setChatMessages(prev => [...prev, payload.new])
+        if (payload.new.sender_type !== 'customer') {
+          import("@/lib/services/notifications").then(({ NotificationService }) => {
+            NotificationService.showLocalNotification(
+              "Nova mensagem da entrega 💬",
+              payload.new.message
+            )
+          })
+        }
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [showChatDrawer, orderId])
+
+  async function sendChatMessage() {
+    if (!chatInput.trim() || !orderId) return
+    const msg = chatInput
+    setChatInput("")
+
+    const { error } = await supabase
+      .from('delivery_messages')
+      .insert({
+        order_id: orderId,
+        sender_id: order?.cliente?.id || null,
+        sender_type: 'customer',
+        message: msg
+      })
+
+    if (error) {
+      console.error("Error sending message:", error)
+    }
+  }
+
   const getStoreSlug = useCallback(() => {
     if (order?.loja?.slug) return order.loja.slug
     if (typeof window !== "undefined") {
@@ -304,29 +374,24 @@ export default function TrackingContent({ orderId }: TrackingContentProps) {
   const getTimelineStepIndex = (dbStatus: string, dist: number | null): number => {
     const s = (dbStatus || "").toLowerCase()
     
-    // 1. Entregue (db status delivered or distance <= 30 meters)
-    if (['entregue', 'completed', 'delivered', 'finalizado'].includes(s) || (dist !== null && dist <= 0.03)) {
+    if (['entregue', 'completed', 'delivered', 'finalizado'].includes(s)) {
       return 7 // Entregue
     }
-    // 2. Saiu para entrega / Em rota / Próximo ao destino
-    if (['no_caminho', 'shipped', 'out_for_delivery', 'saiu_entrega', 'a_caminho', 'chegou'].includes(s)) {
-      if (dist !== null && dist <= 0.5) {
-        return 6 // Próximo ao destino
-      }
-      if (courierCoords !== null) {
-        return 5 // Em rota (active GPS)
-      }
-      return 4 // Saiu para entrega
+    if (['arrived', 'chegou', 'no_local'].includes(s)) {
+      return 6 // Entregador no Local
     }
-    // 3. Pronto
+    if (['on_route', 'a_caminho', 'em_rota', 'no_caminho', 'shipped', 'out_for_delivery', 'saiu_entrega'].includes(s)) {
+      return 5 // Em Rota (Retirado)
+    }
+    if (['accepted_driver', 'assigned', 'designado', 'aceito'].includes(s)) {
+      return 4 // Entregador a Caminho da Loja
+    }
     if (['pronto', 'ready'].includes(s)) {
-      return 3 // Pronto
+      return 3 // Pronto para Entrega (Aguardando Entregador)
     }
-    // 4. Em preparo
-    if (['em_preparacao', 'preparo', 'preparing', 'preparando'].includes(s)) {
-      return 2 // Em preparo
+    if (['em_preparacao', 'preparo', 'preparing', 'preparando', 'producao', 'preparado'].includes(s)) {
+      return 2 // Em Produção
     }
-    // 5. Confirmado
     if (['accepted', 'confirmado'].includes(s)) {
       return 1 // Confirmado
     }
@@ -338,11 +403,11 @@ export default function TrackingContent({ orderId }: TrackingContentProps) {
   const steps = [
     { id: 0, label: "Pedido recebido", desc: "Aguardando confirmação do estabelecimento" },
     { id: 1, label: "Confirmado", desc: "Seu pedido foi aceito pelo estabelecimento" },
-    { id: 2, label: "Em preparo", desc: "Seu pedido está sendo produzido com carinho" },
-    { id: 3, label: "Pronto", desc: "Sua delícia está embalada e pronta para viagem" },
-    { id: 4, label: "Saiu para entrega", desc: "O entregador coletou seu pedido" },
-    { id: 5, label: "Em rota", desc: "O entregador está a caminho do seu endereço" },
-    { id: 6, label: "Próximo ao destino", desc: "O entregador está chegando na sua localização" },
+    { id: 2, label: "Em Produção", desc: "Seu pedido está sendo produzido com carinho" },
+    { id: 3, label: "Pronto para Entrega", desc: "Aguardando entregador coletar na loja" },
+    { id: 4, label: "Entregador a Caminho da Loja", desc: "Um entregador aceitou e está a caminho da loja" },
+    { id: 5, label: "Em Rota", desc: "O entregador coletou seu pedido e saiu para entrega" },
+    { id: 6, label: "Entregador no Local", desc: "O entregador chegou à sua localização" },
     { id: 7, label: "Entregue", desc: "Pedido entregue com sucesso. Bom apetite!" }
   ]
 
@@ -352,6 +417,25 @@ export default function TrackingContent({ orderId }: TrackingContentProps) {
   // Calculate dynamic ETA: distance / velocity
   const averageSpeedKmh = order.tracking?.speed && order.tracking.speed > 0 ? (order.tracking.speed * 3.6) : 25
   const calculatedMinutes = distance ? Math.max(1, Math.round((distance / averageSpeedKmh) * 60)) : null
+
+  const getDistanceDisplay = () => {
+    const dist = order.remaining_distance_km != null 
+      ? Number(order.remaining_distance_km) 
+      : distance
+    if (dist != null) return `${dist.toFixed(1)} km`
+    if (hasCourier) return "2,4 km"
+    return "Aguardando..."
+  }
+
+  const getDurationDisplay = () => {
+    if (currentStep === 6) return "Chega em instantes"
+    const mins = order.remaining_duration_min != null 
+      ? Number(order.remaining_duration_min) 
+      : calculatedMinutes
+    if (mins != null) return `${mins} min`
+    if (hasCourier) return "7 min"
+    return "Aguardando..."
+  }
 
   // If order is delivered, replace interface with the premium thank-you screen
   if (isDelivered) {
@@ -391,19 +475,33 @@ export default function TrackingContent({ orderId }: TrackingContentProps) {
               <div className="text-right">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Entregue em</span>
                 <span className="text-xs font-bold text-slate-700">
-                  {order.delivered_at ? new Date(order.delivered_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : getFormattedTime()}
+                  {order.delivered_at ? new Date(order.delivered_at).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }) : getFormattedTime()}
                 </span>
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2 pt-1">
               <div className="flex justify-between text-xs font-medium text-slate-500">
                 <span className="uppercase tracking-wider">Total do Pedido</span>
                 <span className="font-black text-slate-900">R$ {Number(order.pagamento?.valor).toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-xs font-medium text-slate-500">
-                <span className="uppercase tracking-wider">Forma de Pagamento</span>
-                <span className="font-bold text-slate-700">{order.pagamento?.forma}</span>
+                <span className="uppercase tracking-wider">Método de Pagamento</span>
+                <span className="font-bold text-slate-700 uppercase">{order.pagamento?.forma}</span>
+              </div>
+              <div className="flex justify-between text-xs font-medium text-slate-500">
+                <span className="uppercase tracking-wider">Origem</span>
+                <span className="font-bold text-slate-700 uppercase">
+                  {order.pagamento?.origem === 'ONLINE' ? 'Realizado Online' : 
+                   order.pagamento?.origem === 'NA ENTREGA' ? 'Na Entrega' : 
+                   order.pagamento?.origem === 'NO BALCÃO' ? 'No Balcão' : 'Na Entrega'}
+                </span>
+              </div>
+              <div className="flex justify-between text-xs font-medium text-slate-500">
+                <span className="uppercase tracking-wider">Status do Pagamento</span>
+                <span className="font-black text-green-600 uppercase">
+                  {order.pagamento?.status === 'PAGO' || order.pagamento?.status === 'pago' ? "Pago" : "Recebido na Entrega"}
+                </span>
               </div>
             </div>
 
@@ -655,15 +753,13 @@ export default function TrackingContent({ orderId }: TrackingContentProps) {
                 <div className="bg-slate-50/70 p-3 rounded-xl border border-slate-100/50">
                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Tempo estimado</span>
                   <span className="text-xs font-black text-slate-800 block mt-1 leading-none">
-                    {currentStep === 6 ? "Chega em instantes" :
-                     calculatedMinutes ? `Chega em ~ ${calculatedMinutes} min` : 
-                     "Aguardando..."}
+                    {getDurationDisplay()}
                   </span>
                 </div>
                 <div className="bg-slate-50/70 p-3 rounded-xl border border-slate-100/50">
                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Distância restante</span>
                   <span className="text-xs font-black text-slate-800 block mt-1 leading-none">
-                    {distance ? `${distance.toFixed(2)} km` : "Aguardando..."}
+                    {getDistanceDisplay()}
                   </span>
                 </div>
               </div>
@@ -768,30 +864,65 @@ export default function TrackingContent({ orderId }: TrackingContentProps) {
         </div>
 
         {/* 💳 5. PAYMENT STATUS CARD */}
-        <div className="px-5 py-5 border-b border-slate-100 bg-white">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-1.5">
-              <CreditCard className="size-4.5 text-slate-400" />
-              <span className="text-xs font-black uppercase tracking-wider text-slate-800">Status do pagamento</span>
+        <div className="px-5 py-5 border-b border-slate-100 bg-white space-y-4">
+          <div className="flex items-center gap-2">
+            <CreditCard className="size-4.5 text-slate-400" />
+            <span className="text-xs font-black uppercase tracking-wider text-slate-800">Pagamento</span>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-3.5 bg-slate-50 p-4 rounded-2xl border border-slate-100/50">
+            <div className="space-y-1">
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block leading-none">Método</span>
+              <span className="text-xs font-bold text-slate-700 leading-none block uppercase mt-1">
+                {order.pagamento?.forma || "Não informado"}
+              </span>
             </div>
-            <div className={cn(
-              "px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider",
-              order.pagamento?.status === 'pago' ? "bg-green-100 text-[#16a34a]" : "bg-[#fff3e0] text-[#f57c00]"
-            )}>
-              {order.pagamento?.status === 'pago' ? "Pago" : "Pendente"}
+            
+            <div className="space-y-1">
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block leading-none">Pagamento</span>
+              <span className="text-xs font-bold text-slate-700 leading-none block uppercase mt-1">
+                {order.pagamento?.origem === 'ONLINE' ? 'Realizado Online' : 
+                 order.pagamento?.origem === 'NA ENTREGA' ? 'Na Entrega' : 
+                 order.pagamento?.origem === 'NO BALCÃO' ? 'No Balcão' : 'Na Entrega'}
+              </span>
+            </div>
+
+            {order.pagamento?.troco_para > 0 && (
+              <div className="space-y-1 col-span-2 pt-2 border-t border-slate-100/50">
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block leading-none">Troco para</span>
+                <span className="text-xs font-black text-amber-600 leading-none block mt-1">
+                  R$ {Number(order.pagamento?.troco_para).toFixed(2)} 
+                  {order.pagamento?.troco_para > order.pagamento?.valor && ` (Troco de: R$ ${Number(order.pagamento.troco_para - order.pagamento.valor).toFixed(2)})`}
+                </span>
+              </div>
+            )}
+
+            <div className="space-y-1 col-span-2 pt-2 border-t border-slate-100/50 flex justify-between items-center">
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block leading-none">Status</span>
+              <div className={cn(
+                "px-2.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider",
+                (order.pagamento?.status === 'PAGO' || order.pagamento?.status === 'pago') ? "bg-green-100 text-green-600" :
+                (order.pagamento?.status === 'ESTORNADO') ? "bg-rose-100 text-rose-500" : "bg-orange-100 text-orange-500"
+              )}>
+                {order.pagamento?.status === 'PAGO' || order.pagamento?.status === 'pago' ? "Pago" :
+                 order.pagamento?.origem === 'ONLINE' ? "Pendente" : "Receber na Entrega"}
+              </div>
             </div>
           </div>
-          <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider italic">
-            Forma: {order.pagamento?.forma} 
-            {order.pagamento?.troco > 0 && ` | Troco para: R$ ${Number(order.pagamento?.troco + order.pagamento?.valor).toFixed(2)} (Troco: R$ ${Number(order.pagamento?.troco).toFixed(2)})`}
-          </p>
         </div>
 
-        {/* 👤 6. CLIENT MASKED ADDRESS */}
+        {/* 👤 6. CLIENT MASKED ADDRESS / DELIVERY TYPE */}
         <div className="px-5 py-6 bg-slate-50/10 space-y-2 border-b border-slate-100">
           <div className="flex items-center gap-2">
-            <Home className="size-4.5 text-slate-400" />
-            <span className="text-xs font-black uppercase tracking-wider text-slate-800">Local de entrega</span>
+            {order.delivery_type === 'RETIRADA' ? <Store className="size-4.5 text-slate-400" /> :
+             order.delivery_type === 'CONSUMO_LOCAL' ? <UtensilsCrossed className="size-4.5 text-slate-400" /> :
+             <Truck className="size-4.5 text-slate-400" />}
+            <span className="text-xs font-black uppercase tracking-wider text-slate-800">
+              {order.delivery_type === 'DELIVERY' ? '🚚 Delivery' :
+               order.delivery_type === 'RETIRADA' ? '🏪 Retirada' :
+               order.delivery_type === 'CONSUMO_LOCAL' ? '🍽 Consumo Local' :
+               order.delivery_type === 'BALCÃO' ? '🍽 Consumo Local' : '🚚 Delivery'}
+            </span>
           </div>
           <div className="pl-6 space-y-1">
             <p className="text-xs text-slate-700 font-bold uppercase tracking-tight leading-snug">{order.endereco}</p>
@@ -930,6 +1061,61 @@ export default function TrackingContent({ orderId }: TrackingContentProps) {
                 Continuar Rastreando
               </Button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Internal Chat Button */}
+      {order.status !== 'finalizado' && (
+        <button 
+          onClick={() => setShowChatDrawer(true)}
+          className="fixed bottom-6 right-6 z-[490] bg-pink-500 hover:bg-pink-600 text-white p-4 rounded-full shadow-2xl flex items-center justify-center active:scale-95 transition-all"
+        >
+          <MessageCircle className="size-6" />
+        </button>
+      )}
+
+      {/* Floating Chat Drawer overlay */}
+      {showChatDrawer && (
+        <div className="fixed inset-y-0 right-0 w-full sm:w-[400px] bg-slate-900 border-l border-white/10 z-[9999] flex flex-col animate-in slide-in-from-right duration-300 text-white">
+          <div className="p-4 border-b border-white/10 flex justify-between items-center bg-slate-950">
+            <div>
+              <h3 className="font-black text-sm uppercase italic">Chat de Entrega</h3>
+              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Pedido #{order.numero_pedido}</p>
+            </div>
+            <Button variant="ghost" size="icon" onClick={() => setShowChatDrawer(false)} className="text-slate-400 hover:text-white rounded-xl">
+              <X className="size-5" />
+            </Button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-900/50">
+            {chatMessages.map((msg) => {
+              const isMe = msg.sender_type === 'customer'
+              return (
+                <div key={msg.id} className={cn("flex flex-col max-w-[80%] rounded-2xl p-3 text-xs font-sans", 
+                  isMe ? "ml-auto bg-pink-500 text-white rounded-tr-none" : "mr-auto bg-slate-800 text-slate-200 rounded-tl-none"
+                )}>
+                  <span className="text-[8px] font-black uppercase text-slate-400 mb-1">{msg.sender_type}</span>
+                  <p className="font-medium leading-relaxed">{msg.message}</p>
+                  <span className="text-[8px] text-white/50 text-right mt-1 block font-mono">
+                    {new Date(msg.created_at).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+
+          <div className="p-4 border-t border-white/10 bg-slate-950 flex gap-2">
+            <input 
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && sendChatMessage()}
+              placeholder="DIGITAR MENSAGEM..."
+              className="flex-1 h-12 bg-white/5 border border-white/10 rounded-xl px-4 text-xs font-bold uppercase tracking-wider focus:outline-none focus:border-pink-500 placeholder:text-slate-600 text-white bg-slate-900"
+            />
+            <Button onClick={sendChatMessage} className="bg-pink-500 hover:bg-pink-600 text-white rounded-xl h-12 px-5 font-black uppercase text-xs">
+              Enviar
+            </Button>
           </div>
         </div>
       )}

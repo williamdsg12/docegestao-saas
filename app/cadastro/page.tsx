@@ -39,6 +39,7 @@ export default function RegisterPage() {
     const [showPassword, setShowPassword] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
     const [activeTab, setActiveTab] = useState("user")
+    const [isDuplicateEmail, setIsDuplicateEmail] = useState(false)
 
     useEffect(() => {
         if (user && !loadingSubscription) {
@@ -65,6 +66,19 @@ export default function RegisterPage() {
 
         setIsLoading(true)
         try {
+            // Check if email already exists to prevent duplicate signup
+            const checkRes = await fetch("/api/auth/check-email", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email })
+            })
+            const checkData = await checkRes.json()
+            if (checkData.exists) {
+                setIsDuplicateEmail(true)
+                setIsLoading(false)
+                return
+            }
+
             // Check for affiliate referral
             let affiliateId = null
             
@@ -112,9 +126,14 @@ export default function RegisterPage() {
             })
 
             if (error) {
-                toast.error("Erro ao criar conta", {
-                    description: error.message
-                })
+                const msg = error.message || ""
+                if (msg.includes("already been registered") || msg.includes("already registered") || msg.includes("exists")) {
+                    setIsDuplicateEmail(true)
+                } else {
+                    toast.error("Erro ao criar conta", {
+                        description: error.message
+                    })
+                }
             } else {
                 toast.success("Conta criada! Verifique seu e-mail.")
             }
@@ -186,13 +205,51 @@ export default function RegisterPage() {
                     </Link>
                 </div>
 
-                {/* Title Section */}
-                <div className="text-center mb-6">
-                    <h1 className="text-2xl font-bold text-slate-900">Criar minha Conta</h1>
-                    <p className="mt-1 text-sm text-slate-500 font-medium">Escolha seu melhor e-mail para começar.</p>
-                </div>
+                {isDuplicateEmail ? (
+                    <div className="flex flex-col items-center text-center py-6 w-full">
+                        <div className="size-16 rounded-full bg-pink-100 flex items-center justify-center mb-6 text-pink-500">
+                            <Mail className="size-8" />
+                        </div>
+                        <h2 className="text-xl font-bold text-slate-900 mb-3">
+                            Este e-mail já possui cadastro.
+                        </h2>
+                        <p className="text-slate-500 font-medium text-sm mb-8 leading-relaxed max-w-sm">
+                            Identificamos que o endereço <strong className="text-slate-700">{email}</strong> já está cadastrado em nossa plataforma. Deseja fazer login ou recuperar sua senha?
+                        </p>
+                        
+                        <div className="w-full space-y-3">
+                            <Button
+                                onClick={() => router.push('/login')}
+                                className="w-full h-12 rounded-xl bg-gradient-to-r from-[#FF6B9A] to-[#ff8cae] hover:from-[#e65a88] hover:to-[#ff759f] shadow-lg shadow-[#FF6B9A]/20 text-white font-bold text-sm transition-all hover:shadow-[#FF6B9A]/40 hover:-translate-y-0.5"
+                            >
+                                FAZER LOGIN
+                            </Button>
+                            
+                            <Button
+                                variant="outline"
+                                onClick={() => router.push('/recuperar-senha')}
+                                className="w-full h-12 rounded-xl border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900 font-bold text-sm transition-all"
+                            >
+                                RECUPERAR SENHA
+                            </Button>
 
-                <Tabs defaultValue="user" onValueChange={setActiveTab} className="w-full">
+                            <button
+                                onClick={() => setIsDuplicateEmail(false)}
+                                className="text-xs text-slate-400 hover:text-[#FF6B9A] font-semibold mt-4 transition-colors focus:outline-none"
+                            >
+                                Voltar para o cadastro
+                            </button>
+                        </div>
+                    </div>
+                ) : (
+                    <>
+                        {/* Title Section */}
+                        <div className="text-center mb-6">
+                            <h1 className="text-2xl font-bold text-slate-900">Criar minha Conta</h1>
+                            <p className="mt-1 text-sm text-slate-500 font-medium">Escolha seu melhor e-mail para começar.</p>
+                        </div>
+
+                        <Tabs defaultValue="user" onValueChange={setActiveTab} className="w-full">
                     <TabsList className="grid w-full grid-cols-2 mb-6 bg-slate-100/50 rounded-xl h-12 p-1 border border-slate-200/50">
                         <TabsTrigger 
                             value="user" 
@@ -421,6 +478,8 @@ export default function RegisterPage() {
                         </div>
                     </TabsContent>
                 </Tabs>
+                </>
+                )}
             </motion.div>
         </main>
     )

@@ -4,6 +4,8 @@ import { motion } from "framer-motion"
 import { Bike, Hand, X, Globe } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import { formatTimeSP } from "@/lib/formatters"
+
 
 interface OrderNotificationProps {
     order: any
@@ -59,7 +61,7 @@ export function OrderNotification({ order, onClose }: OrderNotificationProps) {
 
                 {/* Footer Info */}
                 <div className="flex items-center justify-between pt-2 border-t border-slate-50 mt-2">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Agora • {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Agora • {formatTimeSP(new Date())}</span>
                     <div className="flex items-center gap-1.5 bg-slate-900 text-white px-2.5 py-1 rounded-lg">
                         <Globe className="size-3 text-rose-500" />
                         <span className="text-[9px] font-black uppercase tracking-widest">WEB</span>

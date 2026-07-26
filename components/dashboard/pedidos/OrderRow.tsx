@@ -31,6 +31,7 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { useOrderTimer } from "@/hooks/useOrderTimer"
+import { formatDateTimeSP } from "@/lib/formatters"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -126,7 +127,7 @@ export function OrderRow({ order, onAccept, onUpdateStatus, onOpenPayment, onOpe
          </div>
          
          <span className="text-[9px] font-bold text-slate-400 uppercase mt-0.5 tracking-tighter">
-            {format(new Date(order.createdAt), "dd/MM/yy HH:mm")}
+            {formatDateTimeSP(order.createdAt || order.created_at, 'short')}
          </span>
       </div>
 

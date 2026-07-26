@@ -9,6 +9,8 @@ import { supabase } from "@/lib/supabase"
 import { stopAlert } from "@/lib/notifications"
 import { toast } from "sonner"
 
+import { formatTimeSP } from "@/lib/formatters"
+
 export function NewOrderAlertModal() {
   const router = useRouter()
   const popupQueue = usePedidoStore(s => s.popupQueue)
@@ -35,9 +37,7 @@ export function NewOrderAlertModal() {
     currency: "BRL"
   })
   
-  const createdTime = order.created_at 
-    ? new Date(order.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
-    : new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+  const createdTime = formatTimeSP(order.created_at) || formatTimeSP(new Date())
 
   const handleAccept = async () => {
     try {

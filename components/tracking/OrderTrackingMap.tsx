@@ -101,14 +101,18 @@ function MapBoundsController({
   const map = useMap()
 
   useEffect(() => {
-    const points: L.LatLngExpression[] = []
-    if (store) points.push(store)
-    if (customer) points.push(customer)
-    if (courier) points.push(courier)
+    if (!customer) return
 
-    if (points.length > 0) {
+    if (courier) {
+      const points: L.LatLngExpression[] = []
+      if (store) points.push(store)
+      points.push(customer)
+      points.push(courier)
+      
       const bounds = L.latLngBounds(points)
       map.fitBounds(bounds, { padding: [60, 60], maxZoom: 16 })
+    } else {
+      map.setView(customer, 17)
     }
   }, [map, store, customer, courier])
 
@@ -131,47 +135,12 @@ export default function OrderTrackingMap({
   const [animatedCourierCoords, setAnimatedCourierCoords] = useState<[number, number] | null>(null)
   const [geocoding, setGeocoding] = useState(true)
 
-  // 1. Geocode locations only if DB coordinates are not provided
+  // 1. Coordinates are loaded directly from parameters to prevent global fallback issues
   useEffect(() => {
-    async function geocode() {
-      if (storeLatLng && customerLatLng) {
-        setStoreCoords(storeLatLng)
-        setCustomerCoords(customerLatLng)
-        setGeocoding(false)
-        return
-      }
-
-      try {
-        setGeocoding(true)
-        let cust = customerLatLng || null
-        let st = storeLatLng || null
-
-        if (!cust && customerAddress) {
-          const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(customerAddress)}&format=json&limit=1`)
-          const data = await res.json()
-          if (data && data.length > 0) {
-            cust = [parseFloat(data[0].lat), parseFloat(data[0].lon)]
-          }
-        }
-
-        if (!st && storeAddress) {
-          const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(storeAddress)}&format=json&limit=1`)
-          const data = await res.json()
-          if (data && data.length > 0) {
-            st = [parseFloat(data[0].lat), parseFloat(data[0].lon)]
-          }
-        }
-
-        setCustomerCoords(cust)
-        setStoreCoords(st)
-      } catch (err) {
-        console.error("Geocoding failed:", err)
-      } finally {
-        setGeocoding(false)
-      }
-    }
-    geocode()
-  }, [customerAddress, storeAddress, storeLatLng, customerLatLng])
+    setStoreCoords(storeLatLng || null)
+    setCustomerCoords(customerLatLng || null)
+    setGeocoding(false)
+  }, [storeLatLng, customerLatLng])
 
   // 2. Perform smooth sliding coordinate transitions using requestAnimationFrame
   useEffect(() => {
@@ -230,7 +199,7 @@ export default function OrderTrackingMap({
   }) : null
 
   const customerIcon = typeof window !== "undefined" ? L.divIcon({
-    html: `<div class="w-11 h-11 rounded-full bg-red-500 border-[3px] border-white flex items-center justify-center shadow-xl text-2xl text-white">📍</div>`,
+    html: `<div class="w-11 h-11 rounded-full bg-red-500 border-[3px] border-white flex items-center justify-center shadow-xl text-2xl text-white">🏠</div>`,
     className: "",
     iconSize: [44, 44],
     iconAnchor: [22, 22]
@@ -241,7 +210,7 @@ export default function OrderTrackingMap({
       <div class="relative flex items-center justify-center w-14 h-14">
         <div class="absolute w-14 h-14 rounded-full bg-emerald-500 opacity-25 animate-ping"></div>
         <div class="absolute w-11 h-11 rounded-full bg-emerald-500 border-[3px] border-white flex items-center justify-center shadow-xl text-2xl transition-transform duration-300" style="transform: rotate(${courierHeading || 0}deg);">
-          🏍️
+          🚴
         </div>
       </div>
     `,
@@ -291,7 +260,7 @@ export default function OrderTrackingMap({
         {customerCoords && customerIcon && (
           <Marker position={customerCoords} icon={customerIcon}>
             <Popup>
-              <div className="text-xs font-bold p-1">📍 Cliente</div>
+              <div className="text-xs font-bold p-1">🏠 Cliente</div>
             </Popup>
           </Marker>
         )}
@@ -299,7 +268,7 @@ export default function OrderTrackingMap({
         {!isDelivered && (animatedCourierCoords || courierCoords) && courierIcon && (
           <Marker position={animatedCourierCoords || courierCoords!} icon={courierIcon}>
             <Popup>
-              <div className="text-xs font-bold p-1">🏍️ Entregador</div>
+              <div className="text-xs font-bold p-1">🚴 Entregador</div>
             </Popup>
           </Marker>
         )}
