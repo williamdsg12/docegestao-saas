@@ -394,14 +394,24 @@ export function DashboardSidebar({ children }: { children: React.ReactNode }) {
           />
         </motion.aside>
 
-        {/* Mobile & Tablet Drawer (sm, md) */}
-        <Sheet open={isOpenMobile} onOpenChange={setIsOpenMobile}>
-          <SheetContent side="left" className="p-0 border-none w-[280px] bg-[var(--bg-sidebar)]">
-            <SidebarContent isCollapsed={false} onLogout={handleLogout} isMobile />
-          </SheetContent>
-        </Sheet>
+        {isMobile && (
+          <Sheet open={isOpenMobile} onOpenChange={setIsOpenMobile}>
+            <SheetContent side="left" className="p-0 border-none w-[280px] sm:w-[320px] bg-[#0F172A] safe-area-pt">
+              <SidebarContent isCollapsed={false} onLogout={handleLogout} isMobile />
+            </SheetContent>
+          </Sheet>
+        )}
 
-        {children}
+        <main className="flex-1 flex flex-col h-full overflow-hidden relative min-w-0 bg-[#F8FAFC]">
+          <div className="flex-1 flex flex-col min-h-0">
+            {children}
+          </div>
+          {/* Footer - Hidden on mobile due to bottom nav */}
+          <div className="hidden md:flex h-10 lg:h-12 bg-white border-t border-slate-200 px-4 lg:px-8 items-center justify-between text-[9px] lg:text-[10px] font-bold text-slate-400 shrink-0">
+            <div className="truncate uppercase tracking-tighter italic">Copyright © 2026 <span className="text-blue-600 font-black">Doce Gestão</span></div>
+            <div className="hidden lg:block uppercase tracking-widest text-[9px]">v4.5.0 Premium</div>
+          </div>
+        </main>
       </div>
     </SidebarContext.Provider>
   )

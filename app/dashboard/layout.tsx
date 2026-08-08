@@ -15,6 +15,7 @@ import { useState, useEffect } from "react"
 import { toast } from "sonner"
 import { SidebarTrigger } from "@/components/dashboard/sidebar"
 import { CommandPalette } from "@/components/dashboard/CommandPalette"
+import { BottomNav } from "@/components/dashboard/BottomNav"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { usePedidoStore } from "@/store/pedidoStore"
@@ -23,7 +24,6 @@ import { AuthGuard } from "@/components/auth/AuthGuard"
 import { initSound, requestNotificationPermission, startAlert, stopAlert } from "@/lib/notifications"
 import { usePedidosRealtime } from "@/hooks/usePedidosRealtime"
 import { NewOrderAlertModal } from "@/components/dashboard/NewOrderAlertModal"
-import { BottomNav } from "@/components/dashboard/BottomNav"
 
 export default function DashboardLayout({
   children,
